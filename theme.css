@@ -11,6 +11,8 @@
   --danger-soft: rgba(214, 69, 69, 0.10);
   --ok: #1fa15a;
   --ok-soft: rgba(31, 161, 90, 0.12);
+  --warn: #b8791a;
+  --warn-soft: rgba(217, 150, 43, 0.14);
   --input-bg: #ffffff;
   --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
   --radius: 12px;
@@ -29,6 +31,8 @@
     --danger-soft: rgba(239, 107, 107, 0.14);
     --ok: #3ccf7d;
     --ok-soft: rgba(60, 207, 125, 0.14);
+    --warn: #e0a54a;
+    --warn-soft: rgba(224, 165, 74, 0.16);
     --input-bg: #121418;
     --shadow: 0 1px 2px rgba(0, 0, 0, 0.45);
   }

@@ -1,27 +1,14 @@
 // options.js
-import {
-  loadConfig,
-  saveConfig,
-  validateSchedule,
-  HHMM_RE,
-  MAX_BLOCKS,
-} from "./clockodo-api.js";
+import { loadConfig, saveConfig, validateSchedule, HHMM_RE, MAX_BLOCKS } from "./clockodo-api.js";
 
 const $ = (id) => document.getElementById(id);
 
 const TEXT_FIELDS = ["apiUser", "apiKey", "mode", "autoTime"];
-const CHECKBOXES = ["autoApprove", "billable", "skipWeekends", "autoDaily"];
-
-const FALLBACK_TIMEZONES = [
-  "Europe/Berlin", "Europe/London", "Europe/Paris", "Europe/Madrid", "Europe/Rome",
-  "Europe/Amsterdam", "Europe/Zurich", "Europe/Vienna", "Europe/Warsaw", "Europe/Istanbul",
-  "Asia/Dubai", "Asia/Kolkata", "Asia/Singapore", "Asia/Tokyo",
-  "America/New_York", "America/Chicago", "America/Denver", "America/Los_Angeles",
-  "America/Sao_Paulo", "Australia/Sydney", "UTC",
-];
+const CHECKBOXES = ["autoApprove", "billable", "skipWeekends", "autoDaily", "checkUpdates"];
 
 let skipDates = [];
 let blocks = [];
+let blockRows = []; // { dur, chip } per block, in order
 let savedCustomersId = null;
 let savedServicesId = null;
 
@@ -32,13 +19,14 @@ function setStatus(el, text, kind = "") {
 }
 
 // ---------------------------------------------------------------------------
-// Working blocks
+// Time helpers ("HH:MM" <-> minutes)
 // ---------------------------------------------------------------------------
-function minutes(hhmm) {
+const toMinutes = (hhmm) => {
   const [h, m] = hhmm.split(":").map(Number);
   return h * 60 + m;
-}
-
+};
+const toHHMM = (mins) =>
+  `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
 const fmtDuration = (mins) => {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
@@ -46,7 +34,10 @@ const fmtDuration = (mins) => {
 };
 const isValidBlock = (b) => HHMM_RE.test(b.start) && HHMM_RE.test(b.end) && b.start < b.end;
 
-function timeInput(block, key, label, onChange) {
+// ---------------------------------------------------------------------------
+// Working blocks
+// ---------------------------------------------------------------------------
+function timeInput(block, key, label) {
   const wrap = document.createElement("div");
   const lbl = document.createElement("label");
   lbl.className = "field-label";
@@ -55,7 +46,7 @@ function timeInput(block, key, label, onChange) {
   input.type = "time";
   input.value = block[key];
   input.setAttribute("aria-label", label);
-  input.addEventListener("input", () => { block[key] = input.value; onChange(); });
+  input.addEventListener("input", () => { block[key] = input.value; refreshBlockDerived(); });
   wrap.append(lbl, input);
   return wrap;
 }
@@ -65,86 +56,74 @@ function renderTimeline() {
   const axis = $("timelineAxis");
   bar.innerHTML = "";
   axis.innerHTML = "";
-  const valid = blocks.filter(isValidBlock);
+  const valid = [...blocks.filter(isValidBlock)].sort((a, b) => a.start.localeCompare(b.start));
   if (!valid.length) return;
 
   // Fit the axis to the day with 1 h padding, snapped to whole hours.
-  const first = Math.min(...valid.map((b) => minutes(b.start)));
-  const last = Math.max(...valid.map((b) => minutes(b.end)));
+  const first = toMinutes(valid[0].start);
+  const last = Math.max(...valid.map((b) => toMinutes(b.end)));
   const from = Math.max(0, Math.floor(first / 60) * 60 - 60);
   const to = Math.min(24 * 60, Math.ceil(last / 60) * 60 + 60);
   const span = to - from || 1;
   const pct = (m) => ((m - from) / span) * 100;
 
-  const sorted = [...valid].sort((a, b) => a.start.localeCompare(b.start));
-  sorted.forEach((b, i) => {
+  const segment = (cls, startMin, endMin, text, title) => {
     const seg = document.createElement("div");
-    seg.className = "seg";
-    seg.style.left = `${pct(minutes(b.start))}%`;
-    seg.style.width = `${pct(minutes(b.end)) - pct(minutes(b.start))}%`;
-    seg.textContent = fmtDuration(minutes(b.end) - minutes(b.start));
-    seg.title = `${b.start} – ${b.end}`;
+    seg.className = cls;
+    seg.style.left = `${pct(startMin)}%`;
+    seg.style.width = `${pct(endMin) - pct(startMin)}%`;
+    seg.textContent = text;
+    seg.title = title;
     bar.appendChild(seg);
+  };
 
-    const next = sorted[i + 1];
+  valid.forEach((b, i) => {
+    const s = toMinutes(b.start);
+    const e = toMinutes(b.end);
+    segment("seg", s, e, fmtDuration(e - s), `${b.start} – ${b.end}`);
+    const next = valid[i + 1];
     if (next && next.start > b.end) {
-      const gap = document.createElement("div");
-      gap.className = "seg gap";
-      gap.style.left = `${pct(minutes(b.end))}%`;
-      gap.style.width = `${pct(minutes(next.start)) - pct(minutes(b.end))}%`;
-      gap.textContent = "break";
-      gap.title = `Break ${fmtDuration(minutes(next.start) - minutes(b.end))}`;
-      bar.appendChild(gap);
+      const ns = toMinutes(next.start);
+      segment("seg gap", e, ns, "break", `Break ${fmtDuration(ns - e)}`);
     }
   });
 
-  const ticks = Math.min(6, span / 60);
+  const ticks = Math.max(1, Math.min(6, Math.round(span / 60)));
   for (let i = 0; i <= ticks; i++) {
     const t = document.createElement("span");
-    const m = from + Math.round((span * i) / ticks / 60) * 60;
-    t.textContent = `${String(Math.floor(m / 60)).padStart(2, "0")}:00`;
+    t.textContent = toHHMM(from + Math.round((span * i) / ticks / 60) * 60);
     axis.appendChild(t);
   }
 }
 
-function renderBlocksTotal() {
-  const total = blocks.filter(isValidBlock)
-    .reduce((sum, b) => sum + minutes(b.end) - minutes(b.start), 0);
-  const el = $("blocksTotal");
-  el.textContent = total ? `${fmtDuration(total)} / day` : "—";
-  el.classList.toggle("warn", total > 10 * 60);
-}
-
 function refreshBlockDerived() {
   blocks.forEach((b, i) => {
-    const dur = $("blocksList").children[i * 2]?.querySelector(".dur");
-    if (!dur) return;
+    const { dur, chip } = blockRows[i];
     const ok = isValidBlock(b);
-    dur.textContent = ok ? fmtDuration(minutes(b.end) - minutes(b.start)) : "invalid";
+    dur.textContent = ok ? fmtDuration(toMinutes(b.end) - toMinutes(b.start)) : "invalid";
     dur.classList.toggle("bad", !ok);
-  });
-  renderGapChips();
-  renderTimeline();
-  renderBlocksTotal();
-}
 
-function renderGapChips() {
-  const list = $("blocksList");
-  blocks.forEach((b, i) => {
-    const chip = list.children[i * 2 + 1];
-    if (!chip || !chip.classList.contains("gap-chip")) return;
+    if (!chip) return;
     const next = blocks[i + 1];
-    if (!next || !isValidBlock(b) || !HHMM_RE.test(next.start)) { chip.textContent = ""; return; }
-    const gap = minutes(next.start) - minutes(b.end);
+    if (!ok || !HHMM_RE.test(next.start)) { chip.textContent = ""; return; }
+    const gap = toMinutes(next.start) - toMinutes(b.end);
     chip.classList.toggle("bad", gap < 0);
     chip.textContent = gap < 0 ? "overlaps next block" : gap === 0 ? "no break" : `break ${fmtDuration(gap)}`;
   });
+
+  const total = blocks.filter(isValidBlock)
+    .reduce((sum, b) => sum + toMinutes(b.end) - toMinutes(b.start), 0);
+  const badge = $("blocksTotal");
+  badge.textContent = total ? `${fmtDuration(total)} / day` : "—";
+  badge.classList.toggle("warn", total > 10 * 60);
+
+  renderTimeline();
 }
 
 function renderBlocks() {
   const list = $("blocksList");
   list.innerHTML = "";
-  blocks.forEach((block, i) => {
+  blockRows = blocks.map((block, i) => {
     const row = document.createElement("div");
     row.className = "block-row";
 
@@ -166,20 +145,17 @@ function renderBlocks() {
       renderBlocks();
     });
 
-    row.append(
-      idx,
-      timeInput(block, "start", "Start", refreshBlockDerived),
-      timeInput(block, "end", "End", refreshBlockDerived),
-      dur,
-      remove
-    );
+    row.append(idx, timeInput(block, "start", "Start"), timeInput(block, "end", "End"), dur, remove);
     list.appendChild(row);
 
-    const chip = document.createElement("div");
-    chip.className = "gap-chip";
-    list.appendChild(chip);
+    let chip = null;
+    if (i < blocks.length - 1) {
+      chip = document.createElement("div");
+      chip.className = "gap-chip";
+      list.appendChild(chip);
+    }
+    return { dur, chip };
   });
-  list.lastElementChild?.remove(); // no gap chip after the final block
   $("addBlockBtn").disabled = blocks.length >= MAX_BLOCKS;
   refreshBlockDerived();
 }
@@ -188,34 +164,21 @@ $("addBlockBtn").addEventListener("click", () => {
   if (blocks.length >= MAX_BLOCKS) return;
   const last = blocks[blocks.length - 1];
   // Suggest a block starting one hour after the previous one ends.
-  const startMin = last ? Math.min(minutes(last.end) + 60, 22 * 60) : 9 * 60;
-  const endMin = Math.min(startMin + 4 * 60, 23 * 60 + 59);
-  const fmt = (mins) => `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
-  blocks.push({ start: fmt(startMin), end: fmt(endMin) });
+  const start = last ? Math.min(toMinutes(last.end) + 60, 22 * 60) : 9 * 60;
+  const end = Math.min(start + 4 * 60, 23 * 60 + 59);
+  blocks.push({ start: toHHMM(start), end: toHHMM(end) });
   renderBlocks();
 });
 
 // ---------------------------------------------------------------------------
 // Timezone
 // ---------------------------------------------------------------------------
-function timezoneOptions() {
-  try {
-    if (typeof Intl.supportedValuesOf === "function") return Intl.supportedValuesOf("timeZone");
-  } catch { /* fall through */ }
-  return FALLBACK_TIMEZONES;
-}
-
 function renderTimezones(selected) {
   const select = $("timezone");
   select.innerHTML = "";
-  const zones = timezoneOptions();
+  const zones = Intl.supportedValuesOf("timeZone");
   if (!zones.includes(selected)) zones.unshift(selected);
-  for (const tz of zones) {
-    const opt = document.createElement("option");
-    opt.value = tz;
-    opt.textContent = tz;
-    select.appendChild(opt);
-  }
+  for (const tz of zones) select.appendChild(new Option(tz, tz));
   select.value = selected;
 }
 
@@ -232,7 +195,7 @@ function renderSkipList() {
     ul.appendChild(li);
     return;
   }
-  [...skipDates].sort().forEach((d) => {
+  for (const d of [...skipDates].sort()) {
     const li = document.createElement("li");
     const span = document.createElement("span");
     span.textContent = d;
@@ -246,7 +209,7 @@ function renderSkipList() {
     });
     li.append(span, btn);
     ul.appendChild(li);
-  });
+  }
 }
 
 $("addSkipBtn").addEventListener("click", () => {
@@ -270,17 +233,16 @@ $("mode").addEventListener("change", toggleModeFields);
 
 function fillSelect(select, items, savedId) {
   select.innerHTML = "";
-  const placeholder = document.createElement("option");
-  placeholder.value = "";
-  placeholder.textContent = items.length ? "Select…" : "No items found";
-  select.appendChild(placeholder);
-  for (const item of items) {
-    const opt = document.createElement("option");
-    opt.value = item.id;
-    opt.textContent = `${item.name} (#${item.id})`;
-    select.appendChild(opt);
-  }
+  select.appendChild(new Option(items.length ? "Select…" : "No items found", ""));
+  for (const item of items) select.appendChild(new Option(`${item.name} (#${item.id})`, String(item.id)));
   if (savedId != null) select.value = String(savedId);
+}
+
+// A select that was never populated (or whose saved id is not in the list)
+// must not overwrite the saved id with null on Save.
+function selectedId(select, savedId) {
+  if (select.value) return Number(select.value);
+  return select.options.length > 1 ? null : savedId;
 }
 
 $("loadCustomersServicesBtn").addEventListener("click", async () => {
@@ -322,14 +284,42 @@ $("testBtn").addEventListener("click", async () => {
 });
 
 // ---------------------------------------------------------------------------
+// Update check
+// ---------------------------------------------------------------------------
+$("checkUpdateBtn").addEventListener("click", async () => {
+  const el = $("updateResult");
+  setStatus(el, "Checking…");
+  try {
+    const res = await chrome.runtime.sendMessage({ action: "checkForUpdate" });
+    if (!res.ok) throw new Error(res.error);
+    if (res.disabled) return setStatus(el, "Update check is not configured in this build.");
+    if (res.update.available) {
+      el.textContent = "";
+      const a = document.createElement("a");
+      a.href = res.update.url;
+      a.target = "_blank";
+      a.rel = "noopener noreferrer";
+      a.textContent = `Version ${res.update.latest} is available — open download page`;
+      el.append(a);
+      el.classList.remove("bad");
+      el.classList.add("ok");
+    } else {
+      setStatus(el, `✓ You have the latest version (${res.update.current}).`, "ok");
+    }
+  } catch (e) {
+    setStatus(el, `✗ ${e.message}`, "bad");
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Collect + save
 // ---------------------------------------------------------------------------
 function collect() {
   const patch = {};
   for (const f of TEXT_FIELDS) patch[f] = $(f).value.trim();
   for (const c of CHECKBOXES) patch[c] = $(c).checked;
-  patch.customersId = $("customersId").value ? Number($("customersId").value) : null;
-  patch.servicesId = $("servicesId").value ? Number($("servicesId").value) : null;
+  patch.customersId = selectedId($("customersId"), savedCustomersId);
+  patch.servicesId = selectedId($("servicesId"), savedServicesId);
   patch.billable = $("billable").checked ? 1 : 0;
   patch.blocks = blocks.map((b) => ({ start: b.start, end: b.end }));
   patch.timezone = $("timezone").value;
@@ -344,9 +334,25 @@ $("saveBtn").addEventListener("click", async () => {
   if (scheduleError) return setStatus(el, `✗ ${scheduleError}`, "bad");
   if (!HHMM_RE.test(patch.autoTime)) return setStatus(el, "✗ Auto-fill time must be HH:MM.", "bad");
   await saveConfig(patch);
-  await chrome.runtime.sendMessage({ action: "rescheduleAlarm" });
+  const res = await chrome.runtime.sendMessage({ action: "rescheduleAlarm" });
+  if (!res.ok) return setStatus(el, `✗ Saved, but scheduling failed: ${res.error}`, "bad");
+  savedCustomersId = patch.customersId;
+  savedServicesId = patch.servicesId;
   setStatus(el, "✓ Saved", "ok");
   setTimeout(() => setStatus(el, ""), 2000);
+});
+
+// Keep the two settings the popup can change in sync while this page is open,
+// so a later Save here doesn't clobber them.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if (area !== "local" || !changes.config || !changes.config.newValue) return;
+  const cfg = changes.config.newValue;
+  $("autoDaily").checked = !!cfg.autoDaily;
+  const incoming = cfg.skipDates || [];
+  if (incoming.join() !== [...skipDates].sort().join()) {
+    skipDates = [...incoming];
+    renderSkipList();
+  }
 });
 
 // ---------------------------------------------------------------------------
@@ -354,7 +360,8 @@ $("saveBtn").addEventListener("click", async () => {
 // ---------------------------------------------------------------------------
 async function init() {
   $("appVersion").textContent = `v${chrome.runtime.getManifest().version}`;
-  const cfg = await loadConfig();
+  const [cfg, { pickLists }] = await Promise.all([loadConfig(), chrome.storage.local.get("pickLists")]);
+
   for (const f of TEXT_FIELDS) $(f).value = cfg[f] ?? "";
   for (const c of CHECKBOXES) $(c).checked = !!cfg[c];
   savedCustomersId = cfg.customersId;
@@ -367,7 +374,6 @@ async function init() {
   renderSkipList();
   toggleModeFields();
 
-  const { pickLists } = await chrome.storage.local.get("pickLists");
   if (pickLists) {
     fillSelect($("customersId"), pickLists.customers, savedCustomersId);
     fillSelect($("servicesId"), pickLists.services, savedServicesId);

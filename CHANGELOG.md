@@ -7,6 +7,10 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 ## [1.1.0] — 2026-09-15
 
 ### Added
+- **Update notice** — daily check of the public GitHub `manifest.json`; a
+  notification and a popup banner link to the download page when a newer
+  version exists. Opt-out in Options → Updates. Privacy policy and Chrome
+  Web Store listing text in `docs/`.
 - **Flexible working blocks** — one block by default; add up to six per day.
   Gaps between blocks are breaks. Live day timeline, per-block duration,
   break chips and a daily total in Options.
@@ -40,8 +44,22 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 
 ### Security / robustness
 - Message listener accepts only messages from the extension itself.
-- Range fill validates dates and is capped at 92 days.
-- Duplicate check fails closed on network errors (no accidental double booking).
+- Range fill validates dates and is capped at 92 days; existing days are
+  fetched with one request for the whole range.
+- Duplicate check fails closed on network errors or unexpected responses (no
+  accidental double booking). The check itself was silently broken before
+  (`/workTimes` wants plain `YYYY-MM-DD` dates) — fixed.
+- Entry mode is transactional per day: if a later block fails, the entries
+  already created that day are removed again.
+- Daily alarm is a one-shot rescheduled after every run, so the wall-clock
+  time survives DST changes; startup, install and alarm runs are serialised
+  so they cannot double-book; a failed run no longer blocks the catch-up.
+- Legacy 1.0.x hours are migrated correctly; Save no longer clears a saved
+  customer/service when the pick list isn't loaded; popup toggles report
+  errors and revert.
+- Timezone math fixed near DST transitions and for UTC+13/+14 zones.
+- `X-Clockodo-External-Application` is a constant integration identifier
+  instead of the user's (possibly truncated) email.
 - 30 s request timeout; schedule validated on Save and before every fill.
 - `rel="noopener noreferrer"` on external links.
 

@@ -93,6 +93,38 @@ Manage the full list of skipped dates (holidays, sick days) in
 
 ---
 
+## Security & privacy — in plain words
+
+- **Official API only.** The extension talks to Clockodo exclusively through
+  its documented public REST API (`https://my.clockodo.com/api`) — the same
+  one Clockodo's own integrations use. No scraping, no website automation,
+  no hidden endpoints.
+- **Your data stays on your computer.** Email, API key and settings live in
+  the extension's local storage inside *your* Chrome profile. Never synced,
+  uploaded or shared. There is no server behind this extension, no account,
+  no analytics, no crash reporting.
+- **Only one destination for your data.** Every request carrying your
+  credentials goes to `my.clockodo.com`, and only when you click Fill / Test /
+  Load or the scheduled fill runs. The extension has no permission for any
+  other website.
+- **Optional update check.** Once a day it downloads one public file (the
+  project's `manifest.json` on GitHub) to see whether a newer version exists.
+  That request contains no personal data. Turn it off in Options → Updates.
+  If a new version exists you get a notification and a banner in the popup
+  with the download link.
+- **API key, not password.** You never enter your Clockodo password. The
+  personal API key can be regenerated in Clockodo at any time, which
+  instantly invalidates the old one.
+- **Nothing runs without Chrome.** No background service, no cron job on your
+  machine. The daily auto-fill is a Chrome alarm: it fires only while Chrome
+  is running and catches up on the next launch if missed.
+- **Everyone uses their own key.** Colleagues each enter their own
+  credentials; nothing about your account is inside the shared files.
+- **Open source (MIT).** Every line is readable in the repository. Uninstalling
+  the extension deletes all stored data.
+
+---
+
 ## FAQ & troubleshooting
 
 **"Not configured — open Options"**

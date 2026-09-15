@@ -12,7 +12,14 @@ function send(msg) {
 function setStatus(text, kind = "") {
   const el = $("status");
   el.textContent = text;
-  el.className = text ? `show ${kind}` : "";
+  el.classList.remove("ok", "bad");
+  el.classList.toggle("show", Boolean(text));
+  if (kind) el.classList.add(kind);
+}
+
+function setConnection(kind, label) {
+  $("connDot").className = `dot ${kind}`;
+  $("connLabel").textContent = label;
 }
 
 function describe(result) {
@@ -40,9 +47,7 @@ function kindOf(results) {
 }
 
 function fmtTime(ts) {
-  return new Date(ts).toLocaleString(undefined, {
-    weekday: "short", hour: "2-digit", minute: "2-digit",
-  });
+  return new Date(ts).toLocaleString(undefined, { weekday: "short", hour: "2-digit", minute: "2-digit" });
 }
 
 async function refreshSchedule() {
@@ -50,50 +55,70 @@ async function refreshSchedule() {
   if (!res.ok) return;
   $("nextRun").textContent = res.nextRun ? `Next run: ${fmtTime(res.nextRun)}` : "Off";
   if (res.lastAutoRun) {
-    const r = res.lastAutoRun;
-    const when = new Date(r.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    $("lastRun").textContent = `Last auto: ${when} · ${r.status}`;
+    const when = new Date(res.lastAutoRun.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    $("lastRun").textContent = `Last auto: ${when} · ${res.lastAutoRun.status}`;
+  }
+  const banner = $("updateBanner");
+  if (res.update) {
+    $("updateText").textContent = `Version ${res.update.latest} is available (you have ${res.update.current}).`;
+    banner.href = res.update.url;
+    banner.hidden = false;
+  } else {
+    banner.hidden = true;
+  }
+}
+
+// Runs an action, surfaces {error} responses, and lets the caller revert UI state.
+async function run(btn, pending, fn) {
+  if (btn) btn.disabled = true;
+  setStatus(pending);
+  try {
+    const res = await fn();
+    if (!res.ok) throw new Error(res.error || "Unknown error");
+    return res;
+  } catch (e) {
+    setStatus(`Error: ${e.message}`, "bad");
+    return null;
+  } finally {
+    if (btn) btn.disabled = false;
   }
 }
 
 async function init() {
   const cfg = await loadConfig();
   mode = cfg.mode;
-  const today = todayStr(cfg.timezone);
+  $("autoDailyToggle").checked = !!cfg.autoDaily;
+
+  let today;
+  try {
+    today = todayStr(cfg.timezone);
+  } catch {
+    setConnection("bad", `Unknown timezone "${cfg.timezone}" — fix it in Options`);
+    return;
+  }
   $("fromDate").value = today;
   $("toDate").value = today;
-  $("autoDailyToggle").checked = !!cfg.autoDaily;
   $("skipTodayToggle").checked = (cfg.skipDates || []).includes(today);
   refreshSchedule();
 
   if (!cfg.apiUser || !cfg.apiKey) {
-    $("connDot").className = "dot bad";
-    $("connLabel").textContent = "Not configured — open Options";
+    setConnection("bad", "Not configured — open Options");
     return;
   }
+  // Show the cached identity immediately; verify in the background.
+  if (cfg.usersId) setConnection("", cfg.userName || cfg.apiUser);
   try {
     const res = await send({ action: "testConnection" });
-    $("connDot").className = res.ok ? "dot ok" : "dot bad";
-    $("connLabel").textContent = res.ok ? (res.name || cfg.apiUser) : (res.error || "Connection failed");
+    if (res.ok) setConnection("ok", res.name || cfg.apiUser);
+    else setConnection("bad", res.error || "Connection failed");
   } catch (e) {
-    $("connDot").className = "dot bad";
-    $("connLabel").textContent = e.message;
+    setConnection("bad", e.message);
   }
 }
 
 $("fillTodayBtn").addEventListener("click", async () => {
-  const btn = $("fillTodayBtn");
-  btn.disabled = true;
-  setStatus("Filling today…");
-  try {
-    const res = await send({ action: "fillToday" });
-    if (res.ok) setStatus(describe(res.result), kindOf([res.result]));
-    else setStatus(`Error: ${res.error}`, "bad");
-  } catch (e) {
-    setStatus(`Error: ${e.message}`, "bad");
-  } finally {
-    btn.disabled = false;
-  }
+  const res = await run($("fillTodayBtn"), "Filling today…", () => send({ action: "fillToday" }));
+  if (res) setStatus(describe(res.result), kindOf([res.result]));
 });
 
 $("fillRangeBtn").addEventListener("click", async () => {
@@ -101,33 +126,29 @@ $("fillRangeBtn").addEventListener("click", async () => {
   const to = $("toDate").value;
   if (!from || !to) return setStatus("Pick both dates first.", "bad");
   if (from > to) return setStatus("\"From\" must be before \"To\".", "bad");
-  const btn = $("fillRangeBtn");
-  btn.disabled = true;
-  setStatus("Filling range…");
-  try {
-    const res = await send({ action: "fillRange", from, to });
-    if (res.ok) setStatus(res.results.map(describe).join("\n"), kindOf(res.results));
-    else setStatus(`Error: ${res.error}`, "bad");
-  } catch (e) {
-    setStatus(`Error: ${e.message}`, "bad");
-  } finally {
-    btn.disabled = false;
-  }
+  const res = await run($("fillRangeBtn"), "Filling range…", () => send({ action: "fillRange", from, to }));
+  if (res) setStatus(res.results.map(describe).join("\n"), kindOf(res.results));
 });
 
 $("autoDailyToggle").addEventListener("change", async () => {
-  const enabled = $("autoDailyToggle").checked;
-  await send({ action: "setAutoDaily", enabled });
+  const toggle = $("autoDailyToggle");
+  const enabled = toggle.checked;
+  const res = await run(null, enabled ? "Enabling auto-fill…" : "Disabling auto-fill…",
+    () => send({ action: "setAutoDaily", enabled }));
+  if (!res) { toggle.checked = !enabled; return; }
   await refreshSchedule();
-  setStatus(enabled ? "Auto-fill enabled. Runs at the scheduled time while Chrome is open; catches up on launch if missed." : "Auto-fill disabled.");
+  setStatus(enabled
+    ? "Auto-fill enabled. Runs at the scheduled time while Chrome is open; catches up on launch if missed."
+    : "Auto-fill disabled.");
 });
 
 $("skipTodayToggle").addEventListener("change", async () => {
-  const res = await send({ action: "toggleSkipToday" });
-  if (res.ok) {
-    $("skipTodayToggle").checked = res.skippedToday;
-    setStatus(res.skippedToday ? "Today marked as skip." : "Today un-skipped.");
-  }
+  const toggle = $("skipTodayToggle");
+  const wanted = toggle.checked;
+  const res = await run(null, "Updating…", () => send({ action: "toggleSkipToday" }));
+  if (!res) { toggle.checked = !wanted; return; }
+  toggle.checked = res.skippedToday;
+  setStatus(res.skippedToday ? "Today marked as skip." : "Today un-skipped.");
 });
 
 $("optionsLink").addEventListener("click", (e) => {

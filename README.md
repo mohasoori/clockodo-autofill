@@ -66,12 +66,37 @@ for accounts that have a standalone timetable.
 Everything runs client-side. Requests go from your browser to
 `https://my.clockodo.com` and nowhere else.
 
+## Security & privacy
+
+- **Official API only** — every call goes through Clockodo's documented public
+  REST API at `https://my.clockodo.com/api`. No scraping, no website automation.
+- **Your data stays on your machine** — email, API key and settings are kept in
+  the extension's local storage in your own Chrome profile. Nothing is synced,
+  uploaded or shared. There is no server, no account, no analytics.
+- **Single destination for your data** — credentials are only ever sent to
+  `my.clockodo.com` (the only `host_permissions` entry), and only when you
+  trigger a fill or the scheduled fill runs.
+- **Optional update check** — once a day it downloads the public
+  `manifest.json` from this repository to detect a newer release (no personal
+  data in that request). Off switch in Options → Updates. Full policy:
+  [docs/PRIVACY.md](docs/PRIVACY.md).
+- **API key, not password** — regenerate the key in Clockodo any time to revoke
+  access.
+- **Nothing outside Chrome** — no cron job or background service; the daily fill
+  is a Chrome alarm that runs while Chrome is open and catches up on next launch.
+- **Everyone uses their own key** — the shared files contain no credentials.
+- **Open source, MIT** — read exactly what is sent; uninstalling removes all data.
+
 ## Sharing with your team
 
 - **Zip:** send the folder as a zip; each person loads it unpacked and enters
   their own API key.
 - **Chrome Web Store (unlisted):** one-time developer registration, upload as
   an unlisted item, share the link — colleagues get automatic updates.
+  Checklist and ready-made listing text: [docs/STORE_LISTING.md](docs/STORE_LISTING.md).
+- **New-version notice:** load-unpacked installs don't auto-update, so the
+  extension checks GitHub daily and shows a banner/notification with the
+  download link when a newer version exists.
 - **Managed Chrome:** IT can force-install via Google Admin if your org allows it.
 
 ## Project layout
@@ -83,9 +108,10 @@ background.js      service worker: daily alarm, catch-up, message router
 popup.html/js      one-click today, range fill, toggles
 options.html/js    account, booking target, hours, schedule, skip days
 help.html/js       illustrated setup guide + what's new
+updates.js         daily new-version check against the GitHub repo
 theme.css          shared design tokens (light/dark)
 icons/             16/48/128 px icons
-docs/              user guide (md + pdf), developer guide
+docs/              user guide (md + pdf), developer guide, privacy policy, store listing
 CHANGELOG.md       release notes
 ```
 

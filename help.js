@@ -1,5 +1,7 @@
-// help.js — fills in the running version (works only when opened as an extension page).
-const el = document.getElementById("appVersion");
-if (el && typeof chrome !== "undefined" && chrome.runtime?.getManifest) {
-  el.textContent = `v${chrome.runtime.getManifest().version}`;
+// help.js — fills in the running version (only when opened as an extension page).
+if (typeof chrome !== "undefined" && chrome.runtime?.getManifest) {
+  const version = chrome.runtime.getManifest().version;
+  for (const el of document.querySelectorAll("[data-version]")) {
+    el.textContent = el.dataset.version === "prefix" ? `v${version}` : version;
+  }
 }

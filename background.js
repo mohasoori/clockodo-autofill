@@ -1,5 +1,5 @@
 // background.js — MV3 service worker
-// Owns the daily auto-fill alarm and routes popup requests to clockodo-api.js.
+// Owns the daily auto-fill alarm and routes popup/options requests to clockodo-api.js.
 
 import {
   loadConfig,
@@ -10,14 +10,19 @@ import {
   getCustomers,
   getServices,
   todayStr,
+  addDays,
   wallclockToUTC,
+  DATE_RE,
 } from "./clockodo-api.js";
+import { fetchLatestVersion, updateCheckConfigured } from "./updates.js";
 
 const ALARM_NAME = "clockodo-daily-fill";
-const DAY_MS = 24 * 60 * 60 * 1000;
+const UPDATE_ALARM_NAME = "clockodo-update-check";
+const MAX_RANGE_DAYS = 92;
 
 // ---------------------------------------------------------------------------
-// Alarm scheduling (all in cfg.timezone, not the machine's zone)
+// Alarm scheduling — one-shot, recomputed after every fire so the wall-clock
+// time in cfg.timezone survives DST changes (a fixed 24 h period would drift).
 // ---------------------------------------------------------------------------
 function scheduledTodayMs(cfg) {
   return Date.parse(wallclockToUTC(todayStr(cfg.timezone), cfg.autoTime, cfg.timezone));
@@ -26,34 +31,43 @@ function scheduledTodayMs(cfg) {
 function nextFireTime(cfg) {
   const today = scheduledTodayMs(cfg);
   if (today > Date.now()) return today;
-  const tomorrow = new Date(Date.parse(todayStr(cfg.timezone) + "T12:00:00Z") + DAY_MS)
-    .toISOString().slice(0, 10);
-  return Date.parse(wallclockToUTC(tomorrow, cfg.autoTime, cfg.timezone));
+  return Date.parse(wallclockToUTC(addDays(todayStr(cfg.timezone), 1), cfg.autoTime, cfg.timezone));
 }
 
-async function rescheduleAlarm() {
+async function rescheduleAlarm(cfg) {
   await chrome.alarms.clear(ALARM_NAME);
-  const cfg = await loadConfig();
   if (!cfg.autoDaily) return null;
   const when = nextFireTime(cfg);
-  chrome.alarms.create(ALARM_NAME, { when, periodInMinutes: 24 * 60 });
+  await chrome.alarms.create(ALARM_NAME, { when });
   return when;
 }
 
-// Alarms only fire while Chrome is running. If today's scheduled time already
-// passed (Chrome was closed, or auto-fill was just enabled late in the day),
-// run once now so the day doesn't get missed. fillDay's dup check keeps this safe.
-async function catchUpIfMissed() {
-  const cfg = await loadConfig();
+// Alarms only fire while Chrome is running. If today's time already passed
+// (Chrome was closed, or auto-fill was just enabled late in the day) and today
+// hasn't been handled successfully yet, run once now.
+async function catchUpIfMissed(cfg) {
   if (!cfg.autoDaily || !cfg.usersId) return;
   if (Date.now() < scheduledTodayMs(cfg)) return;
   const { lastAutoRun } = await chrome.storage.local.get("lastAutoRun");
-  if (lastAutoRun && lastAutoRun.dateStr === todayStr(cfg.timezone)) return;
-  await runAutoFill();
+  const doneToday =
+    lastAutoRun &&
+    lastAutoRun.dateStr === todayStr(cfg.timezone) &&
+    lastAutoRun.status !== "error";
+  if (!doneToday) await runAutoFill(cfg);
 }
 
-async function runAutoFill() {
-  const cfg = await loadConfig();
+// Serialised: onInstalled, onStartup and a persisted alarm can all arrive at
+// launch; without this two runs could both pass the duplicate check and insert.
+let autoFillInFlight = null;
+
+function runAutoFill(cfg) {
+  if (!autoFillInFlight) {
+    autoFillInFlight = doAutoFill(cfg).finally(() => { autoFillInFlight = null; });
+  }
+  return autoFillInFlight;
+}
+
+async function doAutoFill(cfg) {
   if (!cfg.autoDaily || !cfg.usersId) return;
   const dateStr = todayStr(cfg.timezone);
   let result;
@@ -72,42 +86,78 @@ async function runAutoFill() {
   } else if (result.status === "error") {
     notify("Clockodo auto-fill failed", result.error || "Unknown error");
   }
-  // "skipped" / "exists" -> silent, nothing to report.
-}
-
-chrome.runtime.onInstalled.addListener(async () => {
-  await rescheduleAlarm();
-  await catchUpIfMissed();
-});
-chrome.runtime.onStartup.addListener(async () => {
-  await rescheduleAlarm();
-  await catchUpIfMissed();
-});
-
-chrome.alarms.onAlarm.addListener((alarm) => {
-  if (alarm.name === ALARM_NAME) runAutoFill();
-});
-
-function notify(title, message) {
-  chrome.notifications.create({
-    type: "basic",
-    iconUrl: "icons/icon128.png",
-    title,
-    message,
-  });
+  // "skipped" / "exists" → silent, nothing to report.
 }
 
 // ---------------------------------------------------------------------------
-// Message router (popup/options -> background)
+// Update check (opt-out). Fetches only the public manifest.json from GitHub.
+// ---------------------------------------------------------------------------
+const UPDATE_NOTIFICATION_ID = "clockodo-update-available";
+
+async function scheduleUpdateCheck(cfg) {
+  await chrome.alarms.clear(UPDATE_ALARM_NAME);
+  if (!cfg.checkUpdates || !updateCheckConfigured()) return;
+  await chrome.alarms.create(UPDATE_ALARM_NAME, { delayInMinutes: 1, periodInMinutes: 24 * 60 });
+}
+
+async function checkForUpdate() {
+  let info;
+  try {
+    info = await fetchLatestVersion();
+  } catch (e) {
+    console.warn("[Clockodo Auto-Fill] update check failed:", e.message);
+    return;
+  }
+  if (!info) return;
+  const { updateInfo } = await chrome.storage.local.get("updateInfo");
+  await chrome.storage.local.set({ updateInfo: { ...info, notifiedVersion: updateInfo?.notifiedVersion } });
+  if (info.available && updateInfo?.notifiedVersion !== info.latest) {
+    chrome.notifications.create(UPDATE_NOTIFICATION_ID, {
+      type: "basic",
+      iconUrl: "icons/icon128.png",
+      title: `Clockodo Auto-Fill ${info.latest} is available`,
+      message: `You have ${info.current}. Click to open the download page.`,
+    });
+    await chrome.storage.local.set({ updateInfo: { ...info, notifiedVersion: info.latest } });
+  }
+}
+
+chrome.notifications.onClicked.addListener(async (id) => {
+  if (id !== UPDATE_NOTIFICATION_ID) return;
+  const { updateInfo } = await chrome.storage.local.get("updateInfo");
+  if (updateInfo?.url) chrome.tabs.create({ url: updateInfo.url });
+  chrome.notifications.clear(id);
+});
+
+async function onLaunch() {
+  const cfg = await loadConfig();
+  await rescheduleAlarm(cfg);
+  await scheduleUpdateCheck(cfg);
+  await catchUpIfMissed(cfg);
+}
+chrome.runtime.onInstalled.addListener(onLaunch);
+chrome.runtime.onStartup.addListener(onLaunch);
+
+chrome.alarms.onAlarm.addListener(async (alarm) => {
+  if (alarm.name === UPDATE_ALARM_NAME) return checkForUpdate();
+  if (alarm.name !== ALARM_NAME) return;
+  const cfg = await loadConfig();
+  await runAutoFill(cfg);
+  await rescheduleAlarm(cfg);
+});
+
+function notify(title, message) {
+  chrome.notifications.create({ type: "basic", iconUrl: "icons/icon128.png", title, message });
+}
+
+// ---------------------------------------------------------------------------
+// Message router (popup/options → background)
 // ---------------------------------------------------------------------------
 chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
   if (sender.id !== chrome.runtime.id) return false;
   handle(msg).then(sendResponse, (e) => sendResponse({ error: e.message }));
   return true; // keep the channel open for the async response
 });
-
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
-const MAX_RANGE_DAYS = 92;
 
 function assertDate(s, label) {
   if (typeof s !== "string" || !DATE_RE.test(s) || Number.isNaN(Date.parse(s + "T12:00:00Z"))) {
@@ -116,18 +166,15 @@ function assertDate(s, label) {
 }
 
 async function handle(msg) {
+  const cfg = await loadConfig();
   switch (msg.action) {
     case "testConnection": {
-      const cfg = await loadConfig();
       const { usersId, name } = await testConnectionAndResolveUser(cfg);
-      await saveConfig({ usersId });
+      await saveConfig({ usersId, userName: name });
       return { ok: true, usersId, name };
     }
     case "fillToday": {
-      const cfg = await loadConfig();
-      const result = await fillDay(cfg, todayStr(cfg.timezone), {
-        force: !!msg.force,
-      });
+      const result = await fillDay(cfg, todayStr(cfg.timezone), { force: !!msg.force });
       return { ok: true, result };
     }
     case "fillRange": {
@@ -136,49 +183,47 @@ async function handle(msg) {
       if (msg.from > msg.to) throw new Error("\"From\" must not be after \"To\".");
       const days = Math.round((Date.parse(msg.to) - Date.parse(msg.from)) / 86400000) + 1;
       if (days > MAX_RANGE_DAYS) throw new Error(`Range too large (max ${MAX_RANGE_DAYS} days).`);
-      const cfg = await loadConfig();
-      const results = await fillRange(cfg, msg.from, msg.to, {
-        force: !!msg.force,
-      });
+      const results = await fillRange(cfg, msg.from, msg.to, { force: !!msg.force });
       return { ok: true, results };
     }
     case "toggleSkipToday": {
-      const cfg = await loadConfig();
       const day = todayStr(cfg.timezone);
       const skipDates = new Set(cfg.skipDates || []);
-      const skipped = skipDates.has(day);
-      if (skipped) skipDates.delete(day);
-      else skipDates.add(day);
+      const skippedToday = !skipDates.has(day);
+      if (skippedToday) skipDates.add(day); else skipDates.delete(day);
       await saveConfig({ skipDates: [...skipDates] });
-      return { ok: true, skippedToday: !skipped };
+      return { ok: true, skippedToday };
     }
     case "setAutoDaily": {
-      await saveConfig({ autoDaily: !!msg.enabled });
-      const nextRun = await rescheduleAlarm();
-      if (msg.enabled) await catchUpIfMissed();
+      const next = await saveConfig({ autoDaily: !!msg.enabled });
+      const nextRun = await rescheduleAlarm(next);
+      if (next.autoDaily) await catchUpIfMissed(next);
       return { ok: true, nextRun };
     }
     case "rescheduleAlarm": {
-      const nextRun = await rescheduleAlarm();
-      return { ok: true, nextRun };
+      await scheduleUpdateCheck(cfg);
+      return { ok: true, nextRun: await rescheduleAlarm(cfg) };
     }
     case "getStatus": {
       const alarm = await chrome.alarms.get(ALARM_NAME);
-      const { lastAutoRun } = await chrome.storage.local.get("lastAutoRun");
+      const { lastAutoRun, updateInfo } = await chrome.storage.local.get(["lastAutoRun", "updateInfo"]);
       return {
         ok: true,
         nextRun: alarm ? alarm.scheduledTime : null,
         lastAutoRun: lastAutoRun || null,
+        update: cfg.checkUpdates && updateInfo?.available ? updateInfo : null,
       };
     }
-    case "listCustomers": {
-      const cfg = await loadConfig();
+    case "checkForUpdate": {
+      if (!updateCheckConfigured()) return { ok: true, update: null, disabled: true };
+      const info = await fetchLatestVersion();
+      await chrome.storage.local.set({ updateInfo: info });
+      return { ok: true, update: info };
+    }
+    case "listCustomers":
       return { ok: true, customers: await getCustomers(cfg) };
-    }
-    case "listServices": {
-      const cfg = await loadConfig();
+    case "listServices":
       return { ok: true, services: await getServices(cfg) };
-    }
     default:
       throw new Error(`Unknown action: ${msg.action}`);
   }
