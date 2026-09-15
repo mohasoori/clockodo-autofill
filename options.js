@@ -14,11 +14,19 @@ let skipDates = [];
 function renderSkipList() {
   const ul = $("skipList");
   ul.innerHTML = "";
+  if (skipDates.length === 0) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "No opted-out dates.";
+    ul.appendChild(li);
+    return;
+  }
   [...skipDates].sort().forEach((d) => {
     const li = document.createElement("li");
     const span = document.createElement("span");
     span.textContent = d;
     const btn = document.createElement("button");
+    btn.className = "small";
     btn.textContent = "Remove";
     btn.addEventListener("click", () => {
       skipDates = skipDates.filter((x) => x !== d);
@@ -54,15 +62,22 @@ $("addSkipBtn").addEventListener("click", () => {
 });
 
 $("testBtn").addEventListener("click", async () => {
-  $("testResult").textContent = "Testing…";
+  const el = $("testResult");
+  el.className = "";
+  el.textContent = "Testing…";
   await saveConfig(collect());
   try {
     const res = await chrome.runtime.sendMessage({ action: "testConnection" });
-    $("testResult").textContent = res.ok
-      ? `✓ Connected as ${res.name} (id ${res.usersId})`
-      : `✗ ${res.error}`;
+    if (res.ok) {
+      el.className = "ok";
+      el.textContent = `✓ Connected as ${res.name} (id ${res.usersId})`;
+    } else {
+      el.className = "bad";
+      el.textContent = `✗ ${res.error}`;
+    }
   } catch (e) {
-    $("testResult").textContent = `✗ ${e.message}`;
+    el.className = "bad";
+    el.textContent = `✗ ${e.message}`;
   }
 });
 
@@ -80,8 +95,13 @@ function collect() {
 $("saveBtn").addEventListener("click", async () => {
   await saveConfig(collect());
   await chrome.runtime.sendMessage({ action: "rescheduleAlarm" });
-  $("saveResult").textContent = "Saved.";
-  setTimeout(() => ($("saveResult").textContent = ""), 2000);
+  const el = $("saveResult");
+  el.className = "ok";
+  el.textContent = "Saved.";
+  setTimeout(() => {
+    el.textContent = "";
+    el.className = "";
+  }, 2000);
 });
 
 init();

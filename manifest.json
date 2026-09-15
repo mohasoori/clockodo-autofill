@@ -3,7 +3,6 @@
   "name": "Clockodo Auto-Fill",
   "version": "1.0.0",
   "description": "Fills your daily Clockodo working times automatically: one-click, date-range, or scheduled daily. Configurable hours, per-day opt-out.",
-  "default_locale": "en",
   "permissions": ["storage", "alarms", "notifications"],
   "host_permissions": [
     "https://my.clockodo.com/*"
