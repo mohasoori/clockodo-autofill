@@ -1,6 +1,6 @@
 // options.js
 import {
-  loadConfig, saveConfig, validateSchedule, randomBlocksFor, isWeekend, todayStr, addDays,
+  loadConfig, saveConfig, validateSchedule, randomBlocks, isWeekend, todayStr, addDays,
   toMinutes, toHHMM, HHMM_RE, MAX_BLOCKS,
 } from "../lib/clockodo-api.js";
 
@@ -187,6 +187,7 @@ function randomSettings() {
     scheduleMode: "random",
     randomTotalMinutes: (Number($("randomTotalH").value) || 0) * 60 + (Number($("randomTotalM").value) || 0),
     randomBreakMinutes: Number($("randomBreakMinutes").value) || 0,
+    randomBreakJitter: Number($("randomBreakJitter").value) || 0,
     randomEarliestStart: $("randomEarliestStart").value,
     randomLatestStart: $("randomLatestStart").value,
     timezone: $("timezone").value,
@@ -210,12 +211,12 @@ function renderRandomPreview() {
     return;
   }
 
-  // Next five workdays, seeded like the real run (per date; user id may be unknown here).
+  // Sample for the next five workdays (each click draws new values, like a real run).
   let day = todayStr(cfg.timezone);
   let shown = 0;
   while (shown < 5) {
     if (!isWeekend(day, cfg.timezone)) {
-      const blocks = randomBlocksFor(cfg, day, `preview|${day}`);
+      const blocks = randomBlocks(cfg);
       const li = document.createElement("li");
       const label = document.createElement("span");
       label.className = "day";
@@ -231,7 +232,7 @@ function renderRandomPreview() {
 }
 
 $("previewRandomBtn").addEventListener("click", renderRandomPreview);
-for (const id of ["randomTotalH", "randomTotalM", "randomBreakMinutes", "randomEarliestStart", "randomLatestStart"]) {
+for (const id of ["randomTotalH", "randomTotalM", "randomBreakMinutes", "randomBreakJitter", "randomEarliestStart", "randomLatestStart"]) {
   $(id).addEventListener("input", renderRandomPreview);
 }
 
@@ -441,6 +442,7 @@ async function init() {
   $("randomTotalH").value = Math.floor(cfg.randomTotalMinutes / 60);
   $("randomTotalM").value = cfg.randomTotalMinutes % 60;
   $("randomBreakMinutes").value = cfg.randomBreakMinutes;
+  $("randomBreakJitter").value = cfg.randomBreakJitter ?? 0;
 
   renderBlocks();
   renderTimezones(cfg.timezone);

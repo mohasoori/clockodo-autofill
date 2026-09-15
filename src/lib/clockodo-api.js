@@ -46,12 +46,12 @@ export const DEFAULT_CONFIG = {
   // "fixed": book `blocks` as configured. "random": per day, pick a start time
   // inside [randomEarliestStart, randomLatestStart] and book exactly
   // randomTotalMinutes of work, split around a break of randomBreakMinutes
-  // (0 = one block). Times are derived deterministically from the date + user,
-  // so retries and "replace" produce the same day.
+  // (± randomBreakJitter; 0 = one block). Every run draws fresh values.
   scheduleMode: "fixed",
   blocks: [{ start: "09:00", end: "17:00" }], // fixed mode, user's timezone, 24h "HH:MM"
   randomTotalMinutes: 480,
   randomBreakMinutes: 60,
+  randomBreakJitter: 10,
   randomEarliestStart: "08:00",
   randomLatestStart: "09:30",
   timezone: "Europe/Berlin", // IANA zone used for blocks, autoTime, "today" and weekends
@@ -256,14 +256,19 @@ function validateRandomSchedule(cfg) {
   if (!Number.isInteger(brk) || brk < 0 || brk > MAX_BREAK_MINUTES) {
     return `Break must be between 0 and ${MAX_BREAK_MINUTES / 60} hours.`;
   }
+  const jitter = cfg.randomBreakJitter ?? 0;
+  if (!Number.isInteger(jitter) || jitter < 0 || jitter > 120) {
+    return "Break variation must be between 0 and 120 minutes.";
+  }
+  if (brk > 0 && jitter >= brk) return "Break variation must be smaller than the break itself.";
   if (!HHMM_RE.test(cfg.randomEarliestStart || "") || !HHMM_RE.test(cfg.randomLatestStart || "")) {
     return "Start window times must be HH:MM.";
   }
   const earliest = toMinutes(cfg.randomEarliestStart);
   const latest = toMinutes(cfg.randomLatestStart);
   if (earliest > latest) return "Earliest start must not be after latest start.";
-  if (latest + total + brk > 24 * 60) {
-    return `Latest start ${cfg.randomLatestStart} + ${toHHMM(total + brk)} of work and break runs past midnight.`;
+  if (latest + total + brk + jitter > 24 * 60) {
+    return `Latest start ${cfg.randomLatestStart} + ${toHHMM(total + brk + jitter)} of work and break runs past midnight.`;
   }
   return null;
 }
@@ -285,37 +290,25 @@ function validateFixedBlocks(blocks) {
 // ---------------------------------------------------------------------------
 // Blocks for a given day (fixed, or generated for random mode)
 // ---------------------------------------------------------------------------
-// Small deterministic PRNG (mulberry32) seeded from a string, so the same
-// user + date always yields the same "random" day.
-function seededRandom(seedStr) {
-  let h = 1779033703 ^ seedStr.length;
-  for (let i = 0; i < seedStr.length; i++) {
-    h = Math.imul(h ^ seedStr.charCodeAt(i), 3432918353);
-    h = (h << 13) | (h >>> 19);
-  }
-  let a = h >>> 0;
-  return () => {
-    a = (a + 0x6d2b79f5) >>> 0;
-    let t = a;
-    t = Math.imul(t ^ (t >>> 15), t | 1);
-    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
-    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
-  };
-}
+// Uniform integer in [min, max].
+const randInt = (min, max) => min + Math.floor(Math.random() * (max - min + 1));
 
-export function randomBlocksFor(cfg, dateStr, seed = `${cfg.usersId}|${dateStr}`) {
-  const rand = seededRandom(seed);
+// Fresh random values on every call: start inside the window, exact total,
+// break = base ± jitter, morning share 35–65 % of the total.
+export function randomBlocks(cfg) {
   const earliest = toMinutes(cfg.randomEarliestStart);
   const latest = toMinutes(cfg.randomLatestStart);
   const total = cfg.randomTotalMinutes;
-  const brk = cfg.randomBreakMinutes;
+  const jitter = cfg.randomBreakJitter ?? 0;
+  const brk = cfg.randomBreakMinutes > 0
+    ? Math.max(1, cfg.randomBreakMinutes + randInt(-jitter, jitter))
+    : 0;
 
-  const start = earliest + Math.floor(rand() * (latest - earliest + 1));
+  const start = randInt(earliest, latest);
   if (brk === 0 || total < 2) {
     return [{ start: toHHMM(start), end: toHHMM(start + total) }];
   }
-  // Morning share 45–60 % of the total, at least one minute on each side.
-  const morning = Math.min(total - 1, Math.max(1, Math.round(total * (0.45 + rand() * 0.15))));
+  const morning = Math.min(total - 1, Math.max(1, Math.round(total * (0.35 + Math.random() * 0.30))));
   const afternoonStart = start + morning + brk;
   return [
     { start: toHHMM(start), end: toHHMM(start + morning) },
@@ -323,8 +316,8 @@ export function randomBlocksFor(cfg, dateStr, seed = `${cfg.usersId}|${dateStr}`
   ];
 }
 
-export function blocksForDay(cfg, dateStr) {
-  return cfg.scheduleMode === "random" ? randomBlocksFor(cfg, dateStr) : cfg.blocks;
+export function blocksForDay(cfg) {
+  return cfg.scheduleMode === "random" ? randomBlocks(cfg) : cfg.blocks;
 }
 
 // ---------------------------------------------------------------------------
@@ -475,7 +468,7 @@ export async function fillDay(cfg, dateStr, { force = false, onExisting = "skip"
     }
   }
 
-  const blocks = blocksForDay(cfg, dateStr);
+  const blocks = blocksForDay(cfg);
   const result = cfg.mode === "entry"
     ? await fillDayAsEntries(cfg, dateStr, blocks)
     : await fillDayAsWorkTime(cfg, dateStr, blocks);

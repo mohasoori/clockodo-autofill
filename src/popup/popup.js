@@ -162,8 +162,15 @@ $("fillRangeBtn").addEventListener("click", async () => {
   const onExisting = existingPolicy(`between ${from} and ${to}`);
   if (!onExisting) return;
   const res = await run($("fillRangeBtn"), "Filling range…", () => send({ action: "fillRange", from, to, onExisting }));
-  if (res) setStatus(res.results.map(describe).join("\n"), kindOf(res.results));
+  if (res) setStatus(`${summarize(res.results)}\n${res.results.map(describe).join("\n")}`, kindOf(res.results));
 });
+
+function summarize(results) {
+  const counts = {};
+  for (const r of results) counts[r.status] = (counts[r.status] || 0) + 1;
+  const parts = Object.entries(counts).map(([status, n]) => `${n} ${status}`);
+  return `${results.length} day${results.length === 1 ? "" : "s"}: ${parts.join(" · ")}`;
+}
 
 $("onExisting").addEventListener("change", () => {
   $("onExisting").classList.toggle("danger", $("onExisting").value === "replace");

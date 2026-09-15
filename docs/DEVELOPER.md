@@ -88,7 +88,7 @@ See `DEFAULT_CONFIG` in `clockodo-api.js`. Notable fields:
 | `customersId`, `servicesId`, `billable` | number | entry mode only                    |
 | `scheduleMode` | `"fixed"`/`"random"` | which of the two block sources below is used                |
 | `blocks`       | `{start,end}[]`   | fixed mode: `"HH:MM"` wall-clock in `timezone`; ordered, non-overlapping, ≤ 6. Legacy `block1Start…block2End` is migrated on load. |
-| `randomTotalMinutes`, `randomBreakMinutes`, `randomEarliestStart`, `randomLatestStart` | number, number, `"HH:MM"`, `"HH:MM"` | random mode: `randomBlocksFor(cfg, date)` seeds a PRNG with `usersId|date`, picks a start in the window and splits the total 45–60 % / rest around the break. Deterministic per date. |
+| `randomTotalMinutes`, `randomBreakMinutes`, `randomBreakJitter`, `randomEarliestStart`, `randomLatestStart` | numbers, `"HH:MM"`, `"HH:MM"` | random mode: `randomBlocks(cfg)` draws a start in the window, a break of `base ± jitter`, and a 35–65 % morning share; total is exact. Fresh values on every call (`Math.random`). |
 | `timezone`     | IANA string       | default `Europe/Berlin`; validated with `Intl`   |
 | `skipWeekends` | bool              |                                                   |
 | `skipDates`    | `"YYYY-MM-DD"[]`  | never fill                                        |

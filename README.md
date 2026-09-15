@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill
 
-**Version 1.3.0** · [What's new](CHANGELOG.md) · MIT
+**Version 1.3.1** · [What's new](CHANGELOG.md) · MIT
 
 A small Chrome extension (Manifest V3) that fills your daily working times in
 [Clockodo](https://my.clockodo.com) — in one click, for a whole date range, or
