@@ -14,6 +14,7 @@ clockodo-api.js    API client + config store + date/timezone helpers (pure modul
 background.js      service worker: daily alarm, catch-up, message router
 popup.html/js      action popup
 options.html/js    settings page
+updates.js         new-version check (GITHUB_REPO constant; disabled until set)
 help.html/js       illustrated end-user guide + what's new (help.js only injects the version)
 theme.css          shared design tokens, light/dark
 icons/             16/48/128 px
@@ -32,15 +33,20 @@ CHANGELOG.md       release notes (keep in sync with manifest version)
 ```
 
 - **All network calls live in `clockodo-api.js`.** UI pages import it only for
-  `loadConfig`/`saveConfig`/`todayStr`/`validateHours`; anything that hits the
-  API goes through a message to the service worker so behaviour is identical
-  for the popup, options and the alarm.
-- **`background.js`** owns scheduling. `rescheduleAlarm()` creates one
-  `chrome.alarms` alarm at `cfg.autoTime` with a 24 h period.
-  `catchUpIfMissed()` runs on `onInstalled`, `onStartup` and when auto-fill is
-  enabled: if today's time already passed and `lastAutoRun.dateStr !== today`,
-  it fills immediately. `runAutoFill()` persists the result to
-  `chrome.storage.local.lastAutoRun` and notifies only on `created`/`error`.
+  `loadConfig`/`saveConfig`/`todayStr`/`validateSchedule` and constants;
+  anything that hits the API goes through a message to the service worker so
+  behaviour is identical for the popup, options and the alarm.
+- **`background.js`** owns scheduling. `rescheduleAlarm(cfg)` creates a
+  **one-shot** `chrome.alarms` alarm at the next `cfg.autoTime` in
+  `cfg.timezone`; `onAlarm` runs the fill and reschedules, so the wall-clock
+  time survives DST changes (a fixed 24 h period would drift an hour).
+  `catchUpIfMissed(cfg)` runs on `onInstalled`, `onStartup` and when auto-fill
+  is enabled: if today's time already passed and today has not been handled
+  successfully (`lastAutoRun.status !== "error"`), it fills now.
+  `runAutoFill()` is serialised through a module-level in-flight promise so
+  startup, install and a persisted alarm cannot double-book; it persists the
+  result to `chrome.storage.local.lastAutoRun` and notifies only on
+  `created`/`error`.
 - **Messages** (`{ action, ...payload }` → `{ ok, ... }` or `{ error }`):
 
   | action               | payload             | returns                          |
@@ -82,11 +88,14 @@ Other storage keys: `lastAutoRun` (result + `at`), `pickLists`
 Base: `https://my.clockodo.com/api`. Header auth:
 
 ```
-X-ClockodoApiUser: <email>
-X-ClockodoApiKey: <key>
-X-Clockodo-External-Application: ClockodoAutoFill;<email>   (≤ 50 chars)
+X-ClockodoApiUser: <user's login email>
+X-ClockodoApiKey: <user's personal key>
+X-Clockodo-External-Application: ClockodoAutoFill;contact@msoori.com
 X-ClockodoEnableIsoUtcDateTimes: 1
 ```
+
+`X-Clockodo-External-Application` identifies the *integration* and its
+technical contact (≤ 50 chars) — it is a constant, not the end user's email.
 
 | Purpose                     | Endpoint                                         | Version |
 |-----------------------------|--------------------------------------------------|---------|
@@ -122,8 +131,16 @@ Options page lists zones via `Intl.supportedValuesOf("timeZone")`.
 
 ## Safety properties worth keeping
 
-- Duplicate protection: `fillDay()` calls `hasWorkTime()` first and **fails
-  closed** — if the check errors, nothing is inserted.
+- Duplicate protection: `fillDay()` checks existing working time first
+  (`getFilledDays()` — one request for a whole range, `hasWorkTime()` for a
+  single day) and **fails closed** — on any error or unexpected response
+  shape nothing is inserted.
+- Entry mode is transactional per day: if a later block's POST fails, the
+  entries already created for that day are deleted again
+  (`rollbackEntries`), so a day is never left half-booked.
+- Config migration (`migrateStoredConfig`) runs on the raw stored object
+  *before* defaults are merged, otherwise the non-empty default `blocks`
+  would mask legacy `block1…/block2…` fields.
 - `fillRange` is capped at 92 days and validates `YYYY-MM-DD`.
 - Schedule (blocks + timezone) is validated (`validateSchedule`) both on Save
   and before every fill.
@@ -131,6 +148,18 @@ Options page lists zones via `Intl.supportedValuesOf("timeZone")`.
 - All UI text is set via `textContent`; no `innerHTML` with dynamic data.
 - No content scripts, no `externally_connectable`, host permission only for
   `my.clockodo.com`.
+
+## Update check
+
+Load-unpacked installs never auto-update, so `updates.js` fetches the public
+`manifest.json` from `https://raw.githubusercontent.com/<GITHUB_REPO>/main/`
+once a day (`clockodo-update-check` alarm) and compares versions. On a newer
+version it shows a notification (click → releases page) and the popup shows a
+banner. `GITHUB_REPO` must be set to `owner/repo`; while it still reads
+`OWNER/REPO` the feature is inert. raw.githubusercontent.com serves
+`Access-Control-Allow-Origin: *`, so no extra host permission is needed.
+Users can disable it (`cfg.checkUpdates`). Web Store installs get real
+auto-updates and don't need this.
 
 ## Local development
 
