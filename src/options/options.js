@@ -1,5 +1,5 @@
 // options.js
-import { loadConfig, saveConfig, validateSchedule, HHMM_RE, MAX_BLOCKS } from "./clockodo-api.js";
+import { loadConfig, saveConfig, validateSchedule, HHMM_RE, MAX_BLOCKS } from "../lib/clockodo-api.js";
 
 const $ = (id) => document.getElementById(id);
 

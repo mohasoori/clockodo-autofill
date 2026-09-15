@@ -19,6 +19,11 @@ All notable changes to Clockodo Auto-Fill. Versions follow
   `docs/PRIVACY.md` (privacy policy) and `docs/STORE_LISTING.md` (Chrome Web
   Store checklist + listing text).
 
+### Changed
+- Repository layout: source under `src/` (background, lib, popup, options,
+  help, styles), icons under `assets/`, release script in `scripts/`.
+  `manifest.json` stays at the root. No functional change.
+
 ### Fixed
 - **Duplicate check was silently broken**: `/workTimes` rejects ISO
   timestamps (`Wrong date format`), and the old code swallowed the error and

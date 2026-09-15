@@ -1,5 +1,5 @@
 // popup.js
-import { loadConfig, todayStr } from "./clockodo-api.js";
+import { loadConfig, todayStr } from "../lib/clockodo-api.js";
 
 const $ = (id) => document.getElementById(id);
 

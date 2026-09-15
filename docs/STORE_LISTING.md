@@ -13,7 +13,7 @@ people with the link can find it.
 3. **Add item** → upload the zip.
 4. Fill in the listing (copy below), upload screenshots (1280×800 or 640×400
    PNG/JPEG — Options page, popup, Help page) and the 128×128 icon
-   (`icons/icon128.png`).
+   (`assets/icons/icon128.png`).
 5. **Privacy** tab:
    - Single purpose: *Books the user's own working time in their Clockodo
      account.*

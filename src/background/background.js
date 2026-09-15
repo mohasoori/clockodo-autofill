@@ -14,8 +14,8 @@ import {
   wallclockToUTC,
   DATE_RE,
   ON_EXISTING,
-} from "./clockodo-api.js";
-import { fetchLatestVersion, updateCheckConfigured } from "./updates.js";
+} from "../lib/clockodo-api.js";
+import { fetchLatestVersion, updateCheckConfigured } from "../lib/updates.js";
 
 const ALARM_NAME = "clockodo-daily-fill";
 const UPDATE_ALARM_NAME = "clockodo-update-check";
@@ -115,7 +115,7 @@ async function checkForUpdate() {
   if (info.available && updateInfo?.notifiedVersion !== info.latest) {
     chrome.notifications.create(UPDATE_NOTIFICATION_ID, {
       type: "basic",
-      iconUrl: "icons/icon128.png",
+      iconUrl: "assets/icons/icon128.png",
       title: `Clockodo Auto-Fill ${info.latest} is available`,
       message: `You have ${info.current}. Click to open the download page.`,
     });
@@ -148,7 +148,7 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
 });
 
 function notify(title, message) {
-  chrome.notifications.create({ type: "basic", iconUrl: "icons/icon128.png", title, message });
+  chrome.notifications.create({ type: "basic", iconUrl: "assets/icons/icon128.png", title, message });
 }
 
 // ---------------------------------------------------------------------------
