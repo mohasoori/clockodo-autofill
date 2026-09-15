@@ -196,9 +196,12 @@ Release checklist:
 1. Bump `version` in `manifest.json` (SemVer). It is displayed in Options and
    Help via `chrome.runtime.getManifest().version`.
 2. Add a section to `CHANGELOG.md` and update the "What's new" card in
-   `help.html` (plus the version mentions in `README.md` / `docs/USER_GUIDE.md`).
-3. Regenerate the PDF guide:
-   `chrome --headless --no-pdf-header-footer --print-to-pdf=docs/Clockodo-Auto-Fill-Guide.pdf file:///…/src/help/help.html`
+   `src/help/help.html` — including the three static `data-version` fallbacks
+   (they are what shows in the PDF and under `file://`, where `help.js` has
+   no `chrome.runtime`). Also bump `README.md` / `docs/USER_GUIDE.md`.
+3. Regenerate the PDF guide (Edge headless has been reliable; Chrome
+   headless sometimes exits without writing):
+   `msedge --headless --no-pdf-header-footer --print-to-pdf=docs/Clockodo-Auto-Fill-Guide.pdf file:///…/src/help/help.html`
 4. Build the zip (above), tag `vX.Y.Z`, attach the zip to the GitHub release.
 `.crx` packaging is deliberately not used: Chrome on Windows/macOS refuses
 non-Web-Store `.crx` installs, so the only working distribution channels are
