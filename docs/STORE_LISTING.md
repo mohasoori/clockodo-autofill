@@ -12,8 +12,12 @@ people with the link can find it.
    has the right `version`.
 3. **Add item** → upload the zip.
 4. Fill in the listing (copy below), upload screenshots (1280×800 or 640×400
-   PNG/JPEG — Options page, popup, Help page) and the 128×128 icon
-   (`assets/icons/icon128.png`).
+   PNG/JPEG) and the 128×128 icon (`assets/icons/icon128.png`).
+   Screenshots: `docs/store/screenshot-help-1280x800.png` is pre-rendered.
+   Take the Options and popup shots from the **installed** extension (they
+   need `chrome.*` APIs to render fully): open the page, DevTools →
+   `Ctrl+Shift+P` → "Capture screenshot" (popup: right-click → Inspect →
+   same command), then crop/resize to 1280×800 or 640×400.
 5. **Privacy** tab:
    - Single purpose: *Books the user's own working time in their Clockodo
      account.*
