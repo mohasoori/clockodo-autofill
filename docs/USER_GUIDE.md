@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.3.1 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.3.2 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Fill your daily Clockodo working times in one click, for a date range, or
 automatically every workday. Each person uses their **own** Clockodo API key;
@@ -96,7 +96,7 @@ DST-aware. Keep **Skip weekends** on unless you work weekends.
 | Control            | What it does                                                    |
 |--------------------|-----------------------------------------------------------------|
 | **Fill today**     | Books today. Shows *created*, *already filled*, or *skipped*.   |
-| **Fill range**     | Books every workday between From and To (max 92 days). The result starts with a summary line (e.g. `5 days: 4 replaced · 1 skipped`) followed by one line per day. |
+| **Fill range**     | Books every workday between From and To (max 92 days). Use **This week / Last week / This month** to set both dates at once. The status shows the exact range being booked, then a summary (e.g. `2026-09-14 → 2026-09-20, 7 days: 5 replaced · 2 skipped`) and one line per day. |
 | **If a day already has any time entry** | *Skip that day* (default) never touches existing bookings. *Replace* deletes all entries on those days and books your blocks — confirmation required; use it to clean up duplicates. |
 | **Auto-fill daily**| Enables/disables the schedule; shows next run.                  |
 | **Skip today**     | Marks today as a day that must never be filled.                 |

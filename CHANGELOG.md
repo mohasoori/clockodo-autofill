@@ -4,6 +4,15 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.3.2] — 2026-09-15
+
+### Added
+- Quick range buttons in the popup — **This week / Last week / This month**
+  — set both dates at once and show how many workdays that covers.
+- The range status now states the exact range being booked
+  (`Filling 2026-09-15 → 2026-09-19…`) and the summary repeats it, so a
+  date picker that didn't register is obvious.
+
 ## [1.3.1] — 2026-09-15
 
 ### Changed

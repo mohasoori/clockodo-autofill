@@ -1,9 +1,10 @@
 // popup.js
-import { loadConfig, todayStr } from "../lib/clockodo-api.js";
+import { loadConfig, todayStr, addDays, isWeekend } from "../lib/clockodo-api.js";
 
 const $ = (id) => document.getElementById(id);
 
 let mode = "entry";
+let timezone = "Europe/Berlin";
 
 function send(msg) {
   return chrome.runtime.sendMessage(msg);
@@ -115,9 +116,46 @@ async function run(btn, pending, fn) {
   }
 }
 
+// Monday-based week containing `dateStr`.
+function weekBounds(dateStr) {
+  const dow = new Date(dateStr + "T12:00:00Z").getUTCDay(); // 0 = Sun
+  const monday = addDays(dateStr, dow === 0 ? -6 : 1 - dow);
+  return [monday, addDays(monday, 6)];
+}
+
+function quickRange(kind) {
+  const today = todayStr(timezone);
+  if (kind === "thisWeek") return weekBounds(today);
+  if (kind === "lastWeek") return weekBounds(addDays(today, -7));
+  if (kind === "thisMonth") {
+    const first = today.slice(0, 8) + "01";
+    let last = first;
+    while (addDays(last, 1).slice(0, 7) === today.slice(0, 7)) last = addDays(last, 1);
+    return [first, last];
+  }
+  return [today, today];
+}
+
+for (const btn of document.querySelectorAll("[data-range]")) {
+  btn.addEventListener("click", () => {
+    const [from, to] = quickRange(btn.dataset.range);
+    $("fromDate").value = from;
+    $("toDate").value = to;
+    const workdays = countWorkdays(from, to);
+    setStatus(`Range set: ${from} → ${to} (${workdays} workday${workdays === 1 ? "" : "s"}). Click "Fill range" to book.`);
+  });
+}
+
+function countWorkdays(from, to) {
+  let n = 0;
+  for (let d = from; d <= to; d = addDays(d, 1)) if (!isWeekend(d, timezone)) n++;
+  return n;
+}
+
 async function init() {
   const cfg = await loadConfig();
   mode = cfg.mode;
+  timezone = cfg.timezone;
   $("autoDailyToggle").checked = !!cfg.autoDaily;
 
   let today;
@@ -161,7 +199,7 @@ $("fillRangeBtn").addEventListener("click", async () => {
   if (from > to) return setStatus("\"From\" must be before \"To\".", "bad");
   const onExisting = existingPolicy(`between ${from} and ${to}`);
   if (!onExisting) return;
-  const res = await run($("fillRangeBtn"), "Filling range…", () => send({ action: "fillRange", from, to, onExisting }));
+  const res = await run($("fillRangeBtn"), `Filling ${from} → ${to}…`, () => send({ action: "fillRange", from, to, onExisting }));
   if (res) setStatus(`${summarize(res.results)}\n${res.results.map(describe).join("\n")}`, kindOf(res.results));
 });
 
@@ -169,7 +207,10 @@ function summarize(results) {
   const counts = {};
   for (const r of results) counts[r.status] = (counts[r.status] || 0) + 1;
   const parts = Object.entries(counts).map(([status, n]) => `${n} ${status}`);
-  return `${results.length} day${results.length === 1 ? "" : "s"}: ${parts.join(" · ")}`;
+  const first = results[0]?.dateStr;
+  const last = results[results.length - 1]?.dateStr;
+  const span = first && last && first !== last ? `${first} → ${last}, ` : "";
+  return `${span}${results.length} day${results.length === 1 ? "" : "s"}: ${parts.join(" · ")}`;
 }
 
 $("onExisting").addEventListener("change", () => {
