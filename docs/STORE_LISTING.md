@@ -1,5 +1,9 @@
 # Chrome Web Store — publishing checklist & listing copy
 
+Item ID: `igjjblageocnhjonnhbgkldoojdijppp` ·
+Store URL: <https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp> ·
+Dashboard: <https://chrome.google.com/webstore/devconsole>
+
 Publishing gives colleagues one-click install and **real automatic updates**
 (load-unpacked never updates itself). You can publish **unlisted** so only
 people with the link can find it.

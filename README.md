@@ -30,7 +30,13 @@ Works wherever Google Chrome runs — **Windows, macOS, Linux, ChromeOS** — an
 in other Chromium browsers (Edge, Brave, Opera, Vivaldi) via the same
 *Load unpacked* steps. Not available for Firefox or Safari.
 
-## Install (load unpacked)
+## Install
+
+**Easiest — Chrome Web Store (auto-updates):**
+<https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp>
+*(listing pending review; the link goes live once approved)*
+
+**Manual — load unpacked:**
 
 1. Download the latest release zip from
    <https://github.com/mohasoori/clockodo-autofill/releases/latest> (or clone
