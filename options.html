@@ -50,6 +50,23 @@
     ul#skipList li:first-child { border-top: none; }
     ul#skipList .empty { color: var(--text-muted); font-size: 12.5px; }
 
+    .block-row {
+      display: grid;
+      grid-template-columns: 24px 1fr auto 1fr 32px;
+      align-items: center;
+      gap: 10px;
+      padding: 6px 0;
+    }
+    .block-row + .block-row { border-top: 1px solid var(--border); }
+    .block-row .idx { font-size: 12px; color: var(--text-muted); font-weight: 600; }
+    .block-row .sep { font-size: 12px; color: var(--text-muted); }
+    .block-row .remove {
+      width: 30px; height: 30px; padding: 0; border-radius: 8px;
+      font-size: 16px; line-height: 1; color: var(--text-muted);
+    }
+    .block-row .remove:hover { color: var(--danger); border-color: var(--danger); }
+    .block-row .remove:disabled { visibility: hidden; }
+
     #entryFields, #worktimeFields {
       display: none;
       margin-top: 14px;
@@ -75,7 +92,7 @@
         <div class="subtitle">Settings</div>
       </div>
       <div class="spacer"></div>
-      <a class="help-link" href="help.html" target="_blank">Help &amp; guide</a>
+      <a class="help-link" href="help.html" target="_blank" rel="noopener noreferrer">Help &amp; guide</a>
       <span id="saveResult" class="status-text"></span>
       <button class="primary" id="saveBtn">Save</button>
     </div>
@@ -96,7 +113,7 @@
         <label class="field-label" for="apiKey">Personal API key</label>
         <input type="password" id="apiKey" placeholder="Paste from My area → Edit self" autocomplete="off" />
         <div class="hint">
-          Get it at <a href="https://my.clockodo.com/en/users/editself" target="_blank">my.clockodo.com/en/users/editself</a>.
+          Get it at <a href="https://my.clockodo.com/en/users/editself" target="_blank" rel="noopener noreferrer">my.clockodo.com/en/users/editself</a>.
           Not your password — stored only in this browser, sent only to my.clockodo.com.
         </div>
       </div>
@@ -166,27 +183,18 @@
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
         Working hours
       </h2>
-      <div class="two-col field">
-        <div>
-          <label class="field-label" for="block1Start">Morning start</label>
-          <input type="time" id="block1Start" />
-        </div>
-        <div>
-          <label class="field-label" for="block1End">Morning end</label>
-          <input type="time" id="block1End" />
-        </div>
+      <div id="blocksList"></div>
+      <div class="action-row" style="margin-top:8px">
+        <button class="small" id="addBlockBtn">+ Add block</button>
+        <span id="blocksTotal" class="status-text"></span>
       </div>
-      <div class="two-col field">
-        <div>
-          <label class="field-label" for="block2Start">Afternoon start</label>
-          <input type="time" id="block2Start" />
-        </div>
-        <div>
-          <label class="field-label" for="block2End">Afternoon end</label>
-          <input type="time" id="block2End" />
-        </div>
+      <div class="hint">One block = one continuous stretch of work. Add a second block to model a break — the gap between blocks is unpaid time.</div>
+
+      <div class="field" style="margin-top:16px">
+        <label class="field-label" for="timezone">Timezone</label>
+        <select id="timezone"></select>
+        <div class="hint">Block times, the auto-fill time, "today" and weekend detection all use this zone.</div>
       </div>
-      <div class="hint">Times are Berlin wall-clock. The gap between morning end and afternoon start is your break.</div>
     </section>
 
     <section class="card">

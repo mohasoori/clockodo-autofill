@@ -10,27 +10,32 @@ import {
   getCustomers,
   getServices,
   todayStr,
+  wallclockToUTC,
 } from "./clockodo-api.js";
 
 const ALARM_NAME = "clockodo-daily-fill";
+const DAY_MS = 24 * 60 * 60 * 1000;
 
 // ---------------------------------------------------------------------------
-// Alarm scheduling
+// Alarm scheduling (all in cfg.timezone, not the machine's zone)
 // ---------------------------------------------------------------------------
-function nextFireTime(hhmm) {
-  const [h, m] = hhmm.split(":").map(Number);
-  const now = new Date();
-  const next = new Date(now);
-  next.setHours(h, m, 0, 0);
-  if (next <= now) next.setDate(next.getDate() + 1);
-  return next.getTime();
+function scheduledTodayMs(cfg) {
+  return Date.parse(wallclockToUTC(todayStr(cfg.timezone), cfg.autoTime, cfg.timezone));
+}
+
+function nextFireTime(cfg) {
+  const today = scheduledTodayMs(cfg);
+  if (today > Date.now()) return today;
+  const tomorrow = new Date(Date.parse(todayStr(cfg.timezone) + "T12:00:00Z") + DAY_MS)
+    .toISOString().slice(0, 10);
+  return Date.parse(wallclockToUTC(tomorrow, cfg.autoTime, cfg.timezone));
 }
 
 async function rescheduleAlarm() {
   await chrome.alarms.clear(ALARM_NAME);
   const cfg = await loadConfig();
   if (!cfg.autoDaily) return null;
-  const when = nextFireTime(cfg.autoTime);
+  const when = nextFireTime(cfg);
   chrome.alarms.create(ALARM_NAME, { when, periodInMinutes: 24 * 60 });
   return when;
 }
@@ -41,10 +46,7 @@ async function rescheduleAlarm() {
 async function catchUpIfMissed() {
   const cfg = await loadConfig();
   if (!cfg.autoDaily || !cfg.usersId) return;
-  const [h, m] = cfg.autoTime.split(":").map(Number);
-  const scheduled = new Date();
-  scheduled.setHours(h, m, 0, 0);
-  if (Date.now() < scheduled.getTime()) return;
+  if (Date.now() < scheduledTodayMs(cfg)) return;
   const { lastAutoRun } = await chrome.storage.local.get("lastAutoRun");
   if (lastAutoRun && lastAutoRun.dateStr === todayStr(cfg.timezone)) return;
   await runAutoFill();
@@ -98,10 +100,20 @@ function notify(title, message) {
 // ---------------------------------------------------------------------------
 // Message router (popup/options -> background)
 // ---------------------------------------------------------------------------
-chrome.runtime.onMessage.addListener((msg, _sender, sendResponse) => {
+chrome.runtime.onMessage.addListener((msg, sender, sendResponse) => {
+  if (sender.id !== chrome.runtime.id) return false;
   handle(msg).then(sendResponse, (e) => sendResponse({ error: e.message }));
   return true; // keep the channel open for the async response
 });
+
+const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+const MAX_RANGE_DAYS = 92;
+
+function assertDate(s, label) {
+  if (typeof s !== "string" || !DATE_RE.test(s) || Number.isNaN(Date.parse(s + "T12:00:00Z"))) {
+    throw new Error(`${label} must be a valid YYYY-MM-DD date.`);
+  }
+}
 
 async function handle(msg) {
   switch (msg.action) {
@@ -119,6 +131,11 @@ async function handle(msg) {
       return { ok: true, result };
     }
     case "fillRange": {
+      assertDate(msg.from, "From");
+      assertDate(msg.to, "To");
+      if (msg.from > msg.to) throw new Error("\"From\" must not be after \"To\".");
+      const days = Math.round((Date.parse(msg.to) - Date.parse(msg.from)) / 86400000) + 1;
+      if (days > MAX_RANGE_DAYS) throw new Error(`Range too large (max ${MAX_RANGE_DAYS} days).`);
       const cfg = await loadConfig();
       const results = await fillRange(cfg, msg.from, msg.to, {
         force: !!msg.force,

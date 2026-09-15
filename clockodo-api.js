@@ -45,14 +45,10 @@ export const DEFAULT_CONFIG = {
   mode: "entry",        // "worktime" (attendance) | "entry" (time entries)
   autoApprove: true,    // try to approve the change request immediately
 
-  // Configurable hours (local Berlin wall-clock, 24h "HH:MM")
-  block1Start: "08:30",
-  block1End: "13:00",
-  block2Start: "14:00",
-  block2End: "17:30",
-  // (The break is simply the gap between block1End and block2Start.)
-
-  timezone: "Europe/Berlin",
+  // Working blocks in the user's timezone, 24h "HH:MM". One block by default;
+  // users add more to model breaks (gaps between blocks).
+  blocks: [{ start: "09:00", end: "17:00" }],
+  timezone: "Europe/Berlin", // IANA zone used for blocks, autoTime, "today" and weekends
 
   // Behaviour
   skipWeekends: true,
@@ -68,7 +64,23 @@ export const DEFAULT_CONFIG = {
 
 export async function loadConfig() {
   const stored = await chrome.storage.local.get("config");
-  return { ...DEFAULT_CONFIG, ...(stored.config || {}) };
+  return migrateConfig({ ...DEFAULT_CONFIG, ...(stored.config || {}) });
+}
+
+// Older versions stored two fixed blocks as block1Start/End + block2Start/End.
+function migrateConfig(cfg) {
+  if (!Array.isArray(cfg.blocks) || cfg.blocks.length === 0) {
+    const legacy = [
+      [cfg.block1Start, cfg.block1End],
+      [cfg.block2Start, cfg.block2End],
+    ].filter(([s, e]) => s && e);
+    cfg.blocks = legacy.length
+      ? legacy.map(([start, end]) => ({ start, end }))
+      : DEFAULT_CONFIG.blocks.map((b) => ({ ...b }));
+  }
+  delete cfg.block1Start; delete cfg.block1End;
+  delete cfg.block2Start; delete cfg.block2End;
+  return cfg;
 }
 
 export async function saveConfig(patch) {
@@ -94,12 +106,27 @@ function headers(cfg) {
   };
 }
 
+const REQUEST_TIMEOUT_MS = 30000;
+
 async function request(cfg, method, path, body) {
-  const res = await fetch(BASE + path, {
-    method,
-    headers: headers(cfg),
-    body: body ? JSON.stringify(body) : undefined,
-  });
+  if (!cfg.apiUser || !cfg.apiKey) {
+    throw new Error("Not configured: enter your Clockodo email and API key in Options.");
+  }
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+  let res;
+  try {
+    res = await fetch(BASE + path, {
+      method,
+      headers: headers(cfg),
+      body: body ? JSON.stringify(body) : undefined,
+      signal: controller.signal,
+    });
+  } catch (e) {
+    throw new Error(e.name === "AbortError" ? "Clockodo request timed out." : `Network error: ${e.message}`);
+  } finally {
+    clearTimeout(timer);
+  }
   const text = await res.text();
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
@@ -131,8 +158,17 @@ function extractErrorMessage(data) {
 }
 
 // ---------------------------------------------------------------------------
-// Timezone: Berlin wall-clock -> UTC ISO (DST-safe, independent of machine tz)
+// Timezone: zone wall-clock -> UTC ISO (DST-safe, independent of machine tz)
 // ---------------------------------------------------------------------------
+export function isValidTimeZone(tz) {
+  try {
+    new Intl.DateTimeFormat("en-US", { timeZone: tz });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 export function wallclockToUTC(dateStr, hhmm, timeZone = "Europe/Berlin") {
   const [Y, M, D] = dateStr.split("-").map(Number);
   const [h, m] = hhmm.split(":").map(Number);
@@ -211,22 +247,50 @@ export function shouldSkip(cfg, dateStr) {
 // ---------------------------------------------------------------------------
 // Check whether a working time already exists for a date (avoid duplicates)
 // ---------------------------------------------------------------------------
+// Fails closed: if the check itself errors we abort instead of inserting,
+// otherwise a flaky network would produce duplicate bookings.
 export async function hasWorkTime(cfg, dateStr) {
-  try {
-    const path = `/api/v2/workTimes?users_id=${cfg.usersId}` +
-      `&date_since=${dateStr}T00:00:00Z&date_until=${dateStr}T23:59:59Z`;
-    const data = await request(cfg, "GET", path);
-    const days = data.work_time_days || data.workTimeDays || [];
-    return days.some((d) => (d.work_time_intervals || d.workTimeInterval || []).length > 0);
-  } catch {
-    return false; // if the check fails, let the insert proceed
-  }
+  const since = wallclockToUTC(dateStr, "00:00", cfg.timezone);
+  const until = wallclockToUTC(dateStr, "23:59", cfg.timezone);
+  const path = `/api/v2/workTimes?users_id=${encodeURIComponent(cfg.usersId)}` +
+    `&date_since=${encodeURIComponent(since)}&date_until=${encodeURIComponent(until)}`;
+  const data = await request(cfg, "GET", path);
+  const days = data.work_time_days || data.workTimeDays || [];
+  return days.some((d) => (d.work_time_intervals || d.workTimeInterval || []).length > 0);
 }
 
 // ---------------------------------------------------------------------------
 // Fill one day
 // ---------------------------------------------------------------------------
+export const HHMM_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+export const MAX_BLOCKS = 6;
+
+// Returns an error message, or null when the schedule is usable.
+export function validateSchedule(cfg) {
+  if (!isValidTimeZone(cfg.timezone)) return `Unknown timezone "${cfg.timezone}".`;
+  const blocks = cfg.blocks;
+  if (!Array.isArray(blocks) || blocks.length === 0) return "Add at least one working block.";
+  if (blocks.length > MAX_BLOCKS) return `At most ${MAX_BLOCKS} blocks per day.`;
+  for (let i = 0; i < blocks.length; i++) {
+    const { start, end } = blocks[i] || {};
+    if (!HHMM_RE.test(start || "") || !HHMM_RE.test(end || "")) {
+      return `Block ${i + 1}: times must be HH:MM.`;
+    }
+    if (start >= end) return `Block ${i + 1}: start must be before end.`;
+    if (i > 0 && blocks[i - 1].end > start) {
+      return `Block ${i + 1} overlaps block ${i}. Blocks must be in order and not overlap.`;
+    }
+  }
+  return null;
+}
+
 export async function fillDay(cfg, dateStr, { force = false } = {}) {
+  if (!Number.isInteger(cfg.usersId)) {
+    throw new Error("User not resolved yet — run \"Test connection\" in Options.");
+  }
+  const scheduleError = validateSchedule(cfg);
+  if (scheduleError) throw new Error(scheduleError);
+
   const skip = shouldSkip(cfg, dateStr);
   if (skip && !force) return { dateStr, status: "skipped", reason: skip };
 
@@ -240,18 +304,11 @@ export async function fillDay(cfg, dateStr, { force = false } = {}) {
 
 async function fillDayAsWorkTime(cfg, dateStr) {
   const tz = cfg.timezone;
-  const changes = [
-    {
-      type: INTERVAL_ADD,
-      time_since: wallclockToUTC(dateStr, cfg.block1Start, tz),
-      time_until: wallclockToUTC(dateStr, cfg.block1End, tz),
-    },
-    {
-      type: INTERVAL_ADD,
-      time_since: wallclockToUTC(dateStr, cfg.block2Start, tz),
-      time_until: wallclockToUTC(dateStr, cfg.block2End, tz),
-    },
-  ];
+  const changes = cfg.blocks.map(({ start, end }) => ({
+    type: INTERVAL_ADD,
+    time_since: wallclockToUTC(dateStr, start, tz),
+    time_until: wallclockToUTC(dateStr, end, tz),
+  }));
 
   const created = await request(cfg, "POST", EP.changeRequestCreate, {
     date: dateStr,
@@ -294,12 +351,8 @@ async function fillDayAsEntries(cfg, dateStr) {
     );
   }
   const tz = cfg.timezone;
-  const blocks = [
-    [cfg.block1Start, cfg.block1End],
-    [cfg.block2Start, cfg.block2End],
-  ];
   const ids = [];
-  for (const [start, end] of blocks) {
+  for (const { start, end } of cfg.blocks) {
     const created = await request(cfg, "POST", EP.entries, {
       customers_id: cfg.customersId,
       services_id: cfg.servicesId,
