@@ -21,7 +21,7 @@ with their **own** personal Clockodo API key, stored only in their browser.
   in any IANA timezone, DST-safe.
 - **Duplicate-safe** — never books a day that already has a time entry
   (*Skip*), or optionally *Replace* that day's entries with your blocks.
-- Light/dark theme, in-app illustrated guide (`help.html`).
+- Light/dark theme, in-app illustrated guide (popup → Help).
 
 ## Compatibility
 
