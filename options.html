@@ -1,0 +1,141 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Clockodo Auto-Fill — Options</title>
+  <style>
+    body {
+      font: 14px/1.5 -apple-system, Segoe UI, Arial, sans-serif;
+      max-width: 560px;
+      margin: 24px auto;
+      color: #1b1b1b;
+      padding: 0 16px;
+    }
+    h1 { font-size: 18px; }
+    h2 { font-size: 14px; margin-top: 28px; border-bottom: 1px solid #eee; padding-bottom: 4px; }
+    label { display: block; font-size: 12px; color: #555; margin: 10px 0 3px; }
+    input[type="text"], input[type="password"], input[type="time"], input[type="date"], select {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 6px 8px;
+      font-size: 13px;
+    }
+    .two-col { display: flex; gap: 12px; }
+    .two-col > div { flex: 1; }
+    .row-inline { display: flex; align-items: center; gap: 8px; margin: 10px 0; }
+    button {
+      padding: 7px 14px;
+      font-size: 13px;
+      cursor: pointer;
+      border: 1px solid #ccc;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+    button.primary { background: #2d6cdf; color: #fff; border-color: #2d6cdf; }
+    button.danger { background: #fbeaea; border-color: #e0a0a0; }
+    #testResult, #saveResult { font-size: 12px; margin-left: 8px; }
+    ul#skipList { list-style: none; padding: 0; font-size: 13px; }
+    ul#skipList li { display: flex; justify-content: space-between; align-items: center; padding: 3px 0; border-bottom: 1px solid #f2f2f2; }
+    ul#skipList li button { padding: 2px 8px; }
+    .hint { font-size: 11px; color: #888; margin-top: 2px; }
+    #entryFields { display: none; }
+  </style>
+</head>
+<body>
+  <h1>Clockodo Auto-Fill — Options</h1>
+
+  <h2>Account</h2>
+  <label for="apiUser">Clockodo login email (X-ClockodoApiUser)</label>
+  <input type="text" id="apiUser" placeholder="you@company.com" />
+
+  <label for="apiKey">Personal API key (X-ClockodoApiKey)</label>
+  <input type="password" id="apiKey" placeholder="from My area → Edit self" />
+  <div class="hint">
+    Get it at <a href="https://my.clockodo.com/en/users/editself" target="_blank">my.clockodo.com/en/users/editself</a>.
+    This is not your password — it stays only in your browser's local storage.
+  </div>
+
+  <div class="row-inline">
+    <button id="testBtn">Test connection</button>
+    <span id="testResult"></span>
+  </div>
+
+  <h2>Fill mode</h2>
+  <label for="mode">Mode</label>
+  <select id="mode">
+    <option value="worktime">Working times (attendance change request)</option>
+    <option value="entry">Time entries (project booking)</option>
+  </select>
+  <div class="hint">
+    If "Working times" gives 404s, verify the real endpoint via DevTools (see README) or switch to "Time entries".
+  </div>
+
+  <div id="entryFields">
+    <div class="two-col">
+      <div>
+        <label for="customersId">Customer ID</label>
+        <input type="text" id="customersId" />
+      </div>
+      <div>
+        <label for="servicesId">Service ID</label>
+        <input type="text" id="servicesId" />
+      </div>
+    </div>
+    <label class="row-inline"><input type="checkbox" id="billable" /> Billable</label>
+  </div>
+
+  <div class="row-inline">
+    <input type="checkbox" id="autoApprove" />
+    <label style="margin:0" for="autoApprove">Auto-approve working-time change requests</label>
+  </div>
+
+  <h2>Hours</h2>
+  <div class="two-col">
+    <div>
+      <label for="block1Start">Block 1 start</label>
+      <input type="time" id="block1Start" />
+    </div>
+    <div>
+      <label for="block1End">Block 1 end</label>
+      <input type="time" id="block1End" />
+    </div>
+  </div>
+  <div class="two-col">
+    <div>
+      <label for="block2Start">Block 2 start</label>
+      <input type="time" id="block2Start" />
+    </div>
+    <div>
+      <label for="block2End">Block 2 end</label>
+      <input type="time" id="block2End" />
+    </div>
+  </div>
+  <div class="hint">Break = gap between block 1 end and block 2 start.</div>
+
+  <h2>Schedule</h2>
+  <div class="row-inline">
+    <input type="checkbox" id="skipWeekends" />
+    <label style="margin:0" for="skipWeekends">Skip weekends</label>
+  </div>
+  <div class="row-inline">
+    <input type="checkbox" id="autoDaily" />
+    <label style="margin:0" for="autoDaily">Auto-fill every workday at</label>
+    <input type="time" id="autoTime" style="width:110px" />
+  </div>
+
+  <h2>Opt-out dates</h2>
+  <div class="row-inline">
+    <input type="date" id="skipDateInput" />
+    <button id="addSkipBtn">Add</button>
+  </div>
+  <ul id="skipList"></ul>
+
+  <h2></h2>
+  <div class="row-inline">
+    <button class="primary" id="saveBtn">Save</button>
+    <span id="saveResult"></span>
+  </div>
+
+  <script src="options.js" type="module"></script>
+</body>
+</html>
