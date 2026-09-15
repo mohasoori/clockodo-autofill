@@ -1,96 +1,90 @@
 # Clockodo Auto-Fill
 
-Chrome extension (Manifest V3) that fills your daily Clockodo working times —
-one click, a date range, or automatically every workday. Uses each user's own
-personal Clockodo API key; no password ever stored or shared.
+A small Chrome extension (Manifest V3) that fills your daily working times in
+[Clockodo](https://my.clockodo.com) — in one click, for a whole date range, or
+automatically every workday.
+
+Built for teams where everyone has to log the same standard day and nobody
+enjoys doing it by hand. No server, no shared credentials: each user connects
+with their **own** personal Clockodo API key, stored only in their browser.
+
+## Features
+
+- **Fill today** — one click from the popup.
+- **Fill a date range** — e.g. after vacation; skips weekends and opted-out days.
+- **Auto-fill every workday** — runs at a time you choose while Chrome is open,
+  and catches up on next launch if that time already passed.
+- **Skip days** — quick "Skip today" toggle plus a managed list of dates to never fill.
+- **Configurable hours** — two blocks per day (default 08:30–13:00 and
+  14:00–17:30 = 8 h), Berlin wall-clock, DST-safe.
+- **Duplicate-safe** — never books a day that already has working time.
+- Light/dark theme, in-app illustrated guide (`help.html`).
 
 ## Install (load unpacked)
 
-1. Unzip `clockodo-autofill.zip` (or clone this folder) somewhere permanent —
-   Chrome loads it from disk, don't delete it afterwards.
-2. Go to `chrome://extensions`.
-3. Enable **Developer mode** (top-right toggle).
-4. Click **Load unpacked**, select this folder.
-5. Pin the extension (puzzle-piece icon → pin) for easy access.
+1. Download the latest release zip (or clone this repo) and unzip it to a
+   folder you will keep.
+2. Open `chrome://extensions`.
+3. Enable **Developer mode** (top right).
+4. Click **Load unpacked** and select the folder.
+5. Pin the icon from the puzzle-piece menu.
 
-## First-time setup (each user does this once)
+## Setup (once per user)
 
-1. Open Clockodo → **My area → Edit self**
-   (https://my.clockodo.com/en/users/editself) and copy your **personal API key**.
-   This is *not* your login password.
-2. Click the extension icon → **Options…**.
-3. Enter your Clockodo login email and the API key.
-4. Click **Test connection** — should show a green check with your name.
-5. Set your work hours (block 1 / break / block 2), weekend-skip, and — if you
-   want it automatic — enable **Auto-fill every workday at HH:MM**.
-6. Click **Save**.
+1. In Clockodo, open **My area → Edit self**
+   (<https://my.clockodo.com/en/users/editself>) and copy your **API key**.
+   This is not your password.
+2. Click the extension icon → **Options**.
+3. Enter your login email + API key → **Test connection** → green check.
+4. Under **What to book**, click **Load customers & services** and pick the
+   customer/service your team uses for regular work.
+5. Adjust hours and schedule if needed → **Save**.
 
-## Using it
+The full illustrated walkthrough is in the extension itself: popup → **Help**.
 
-- **Popup → Fill today**: fills today, unless already filled or opted out.
-- **Popup → Fill range**: pick from/to dates, fills every workday in between
-  (skips weekends and opt-out dates automatically).
-- **Skip today** toggle: adds/removes today from the opt-out list.
-- **Auto-fill daily** toggle: schedules a `chrome.alarms` job. It only fires
-  while Chrome is running — if your laptop was off at the scheduled time, it
-  fires next time Chrome starts. Not real cron; acceptable for this use case.
-- **Options → Opt-out dates**: add/remove specific dates that should never be
-  auto-filled (holidays, sick days, etc).
+## How it works
 
-## ⚠️ Verify the API endpoint before relying on this
+Clockodo's public REST API is called directly from the extension using header
+auth (`X-ClockodoApiUser`, `X-ClockodoApiKey`, `X-Clockodo-External-Application`).
 
-The public Clockodo docs describe attendance edits as a **work-times change
-request** (`POST /api/v2/workTimes/changeRequests`, then
-`POST .../{id}/approve`), which is what `clockodo-api.js` calls by default.
-The exact path is **not 100% confirmed** from public docs alone. Before
-trusting the daily auto-fill:
+Attendance in Clockodo is derived from **time entries**, so the extension
+creates two entries per day (`POST /api/v2/entries`) with your chosen customer
+and service. A legacy "working-time change request" mode is kept as an option
+for accounts that have a standalone timetable.
 
-1. Open Clockodo's Timetable page in a normal browser tab.
-2. Open DevTools → **Network**, filter to `Fetch/XHR`.
-3. Manually add one working-time block for a day with no entries yet.
-4. Look at the request that fires: note its **URL** and **JSON body shape**.
-5. If it differs from `EP.changeRequestCreate` / `EP.changeRequestApprove` in
-   [clockodo-api.js](clockodo-api.js), update those two constants and the
-   `changes` payload field names in `fillDayAsWorkTime()` to match exactly.
-6. If your organization actually uses plain time entries (Zeiterfassung)
-   instead of a timetable/attendance concept, switch **Options → Mode** to
-   "Time entries" and fill in your Customer ID / Service ID — that path
-   (`POST /api/v2/entries`) is fully documented and needs no approval step.
+Everything runs client-side. Requests go from your browser to
+`https://my.clockodo.com` and nowhere else.
 
-Do this once; after that the same shape is stable for everyone using the
-extension.
+## Sharing with your team
 
-## How auth works
+- **Zip:** send the folder as a zip; each person loads it unpacked and enters
+  their own API key.
+- **Chrome Web Store (unlisted):** one-time developer registration, upload as
+  an unlisted item, share the link — colleagues get automatic updates.
+- **Managed Chrome:** IT can force-install via Google Admin if your org allows it.
 
-- `X-ClockodoApiUser`: your login email
-- `X-ClockodoApiKey`: your personal API key (from step 1 above)
-- `X-Clockodo-External-Application`: `"ClockodoAutoFill;you@company.com"`
-- All requests go straight from your browser to `https://my.clockodo.com` —
-  nothing is sent anywhere else. The key lives only in `chrome.storage.local`
-  on your machine.
-
-## Distributing to colleagues
-
-- **Simplest:** zip this folder (exclude `PROMPT.md`) as `clockodo-autofill.zip`,
-  send it. Each person unzips and does **Load unpacked** as above, then enters
-  their *own* email + API key.
-- **Chrome Web Store (unlisted):** pay the one-time $5 developer registration,
-  upload as an **unlisted** item, share the store link — colleagues install
-  normally, updates auto-push.
-- **Google Workspace admin (force-install):** if your org's Chrome policy
-  allows it, IT can push the extension to everyone automatically via the
-  Google Admin console.
-
-No matter the distribution method, no shared secrets are involved — everyone
-authenticates with their own Clockodo API key.
-
-## File layout
+## Project layout
 
 ```
-manifest.json       MV3 manifest
-clockodo-api.js      API client, config store, timezone/date helpers
-background.js        service worker: alarm scheduling + message router
-popup.html/js        one-click today / range fill / toggles
-options.html/js      account setup, hours, schedule, opt-out dates
-icons/               16/48/128 px icons
+manifest.json      MV3 manifest
+clockodo-api.js    API client, config store, timezone/date helpers
+background.js      service worker: daily alarm, catch-up, message router
+popup.html/js      one-click today, range fill, toggles
+options.html/js    account, booking target, hours, schedule, skip days
+help.html          illustrated setup guide
+theme.css          shared design tokens (light/dark)
+icons/             16/48/128 px icons
 ```
+
+No build step, no dependencies — plain HTML/CSS/JS.
+
+## License
+
+MIT — see [LICENSE](LICENSE). Free to use, modify and share.
+
+## Author
+
+**Mohammad Soori** — <https://msoori.com> · <contact@msoori.com>
+
+Clockodo is a trademark of its respective owner. This is an independent,
+unofficial tool and is not affiliated with Clockodo.

@@ -3,130 +3,19 @@
 <head>
   <meta charset="utf-8" />
   <title>Clockodo Auto-Fill</title>
+  <link rel="stylesheet" href="theme.css" />
   <style>
-    :root {
-      --bg: #f4f5f7;
-      --card: #ffffff;
-      --text: #1b1d22;
-      --text-muted: #6b7280;
-      --border: #e5e7eb;
-      --accent: #2d6cdf;
-      --accent-text: #ffffff;
-      --danger: #d64545;
-      --ok: #1fa15a;
-      --input-bg: #ffffff;
-      --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
-    }
-    @media (prefers-color-scheme: dark) {
-      :root {
-        --bg: #16181d;
-        --card: #1e2127;
-        --text: #eaecef;
-        --text-muted: #9aa1ab;
-        --border: #2c303a;
-        --accent: #5b8def;
-        --accent-text: #0b0d10;
-        --input-bg: #14161a;
-        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
-      }
-    }
-    * { box-sizing: border-box; }
-    body {
-      width: 320px;
-      margin: 0;
-      padding: 14px;
-      background: var(--bg);
-      color: var(--text);
-      font: 13px/1.45 -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
-    }
-
-    .header {
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      margin-bottom: 12px;
-    }
+    body { width: 320px; padding: 14px; }
+    .header { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
     .header img { width: 30px; height: 30px; border-radius: 8px; }
     .header .title { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
-    .header .sub {
-      display: flex; align-items: center; gap: 6px;
-      font-size: 11.5px; color: var(--text-muted);
-    }
-    .dot { width: 8px; height: 8px; border-radius: 50%; background: #b0b5bd; flex: none; }
-    .dot.ok { background: var(--ok); }
-    .dot.bad { background: var(--danger); }
-
-    .card {
-      background: var(--card);
-      border: 1px solid var(--border);
-      border-radius: 12px;
-      box-shadow: var(--shadow);
-      padding: 12px;
-      margin-bottom: 10px;
-    }
-
-    button {
-      appearance: none;
-      width: 100%;
-      border: 1px solid var(--border);
-      background: var(--input-bg);
-      color: var(--text);
-      border-radius: 9px;
-      padding: 9px 12px;
-      font-size: 13px;
-      font-weight: 550;
-      font-family: inherit;
-      cursor: pointer;
-      transition: border-color 0.15s, filter 0.15s;
-    }
-    button:hover { border-color: var(--accent); }
-    button:disabled { opacity: 0.6; cursor: default; }
-    button.primary {
-      background: var(--accent);
-      color: var(--accent-text);
-      border-color: var(--accent);
-      font-size: 14px;
-      padding: 11px 12px;
-    }
-    button.primary:hover { filter: brightness(1.08); }
-
+    .header .sub { display: flex; align-items: center; gap: 6px; font-size: 11.5px; color: var(--text-muted); }
+    .card { padding: 12px; margin-bottom: 10px; }
+    button.primary.block { font-size: 14px; padding: 11px 12px; }
     .range-row { display: flex; gap: 8px; margin-bottom: 8px; }
     .range-row > div { flex: 1; min-width: 0; }
-    label.small { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
-    input[type="date"] {
-      width: 100%;
-      background: var(--input-bg);
-      color: var(--text);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 6px 8px;
-      font-size: 12px;
-      font-family: inherit;
-      outline: none;
-    }
-    input[type="date"]:focus { border-color: var(--accent); }
-
-    .switch-row {
-      display: flex; align-items: center; justify-content: space-between;
-      gap: 10px; padding: 8px 0;
-    }
-    .switch-row + .switch-row { border-top: 1px solid var(--border); }
-    .switch-row .lbl { font-size: 13px; }
-    .switch-row .sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
-    .switch { position: relative; display: inline-block; width: 36px; height: 21px; flex: none; }
-    .switch input { opacity: 0; width: 0; height: 0; }
-    .switch .track {
-      position: absolute; inset: 0; background: var(--border);
-      border-radius: 999px; transition: background 0.15s; cursor: pointer;
-    }
-    .switch .track::before {
-      content: ""; position: absolute; width: 17px; height: 17px; left: 2px; top: 2px;
-      background: #fff; border-radius: 50%; transition: transform 0.15s;
-      box-shadow: 0 1px 2px rgba(0,0,0,0.25);
-    }
-    .switch input:checked + .track { background: var(--accent); }
-    .switch input:checked + .track::before { transform: translateX(15px); }
-
+    .range-row .field-label { font-size: 11px; margin-bottom: 3px; }
+    .switch-row { padding: 8px 0; }
     #status {
       font-size: 11.5px;
       color: var(--text-muted);
@@ -143,13 +32,11 @@
     #status.show { display: block; }
     #status.ok { color: var(--ok); }
     #status.bad { color: var(--danger); }
-
     .footer {
       display: flex; justify-content: space-between; align-items: center;
       font-size: 11.5px; color: var(--text-muted); padding: 0 2px;
     }
-    .footer a { color: var(--accent); text-decoration: none; }
-    .footer a:hover { text-decoration: underline; }
+    .footer .links { display: flex; gap: 10px; }
   </style>
 </head>
 <body>
@@ -162,22 +49,22 @@
   </div>
 
   <div class="card">
-    <button class="primary" id="fillTodayBtn">Fill today</button>
+    <button class="primary block" id="fillTodayBtn">Fill today</button>
     <div id="status"></div>
   </div>
 
   <div class="card">
     <div class="range-row">
       <div>
-        <label class="small" for="fromDate">From</label>
+        <label class="field-label" for="fromDate">From</label>
         <input type="date" id="fromDate" />
       </div>
       <div>
-        <label class="small" for="toDate">To</label>
+        <label class="field-label" for="toDate">To</label>
         <input type="date" id="toDate" />
       </div>
     </div>
-    <button id="fillRangeBtn">Fill range</button>
+    <button class="block" id="fillRangeBtn">Fill range</button>
   </div>
 
   <div class="card">
@@ -202,7 +89,10 @@
 
   <div class="footer">
     <span id="lastRun"></span>
-    <a href="#" id="optionsLink">Options</a>
+    <span class="links">
+      <a href="help.html" target="_blank">Help</a>
+      <a href="#" id="optionsLink">Options</a>
+    </span>
   </div>
 
   <script src="popup.js" type="module"></script>

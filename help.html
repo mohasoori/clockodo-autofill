@@ -1,0 +1,390 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <title>Clockodo Auto-Fill — Guide</title>
+  <link rel="stylesheet" href="theme.css" />
+  <style>
+    body { padding: 0 20px 70px; }
+    .page { max-width: 760px; margin: 0 auto; }
+
+    .hero {
+      display: flex; align-items: center; gap: 14px;
+      padding: 32px 0 20px;
+    }
+    .hero img { width: 48px; height: 48px; border-radius: 12px; }
+    .hero h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
+    .hero p { margin: 2px 0 0; color: var(--text-muted); font-size: 13px; }
+
+    .toc {
+      display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px;
+    }
+    .toc a {
+      font-size: 12px; padding: 5px 11px; border-radius: 999px;
+      border: 1px solid var(--border); background: var(--card); color: var(--text);
+    }
+    .toc a:hover { border-color: var(--accent); text-decoration: none; }
+
+    .step {
+      display: grid;
+      grid-template-columns: 1fr 300px;
+      gap: 22px;
+      align-items: start;
+      margin-bottom: 18px;
+      scroll-margin-top: 20px;
+    }
+    @media (max-width: 720px) { .step { grid-template-columns: 1fr; } }
+
+    .step .num {
+      display: inline-flex; align-items: center; justify-content: center;
+      width: 24px; height: 24px; border-radius: 50%;
+      background: var(--accent); color: var(--accent-text);
+      font-size: 12px; font-weight: 700; margin-right: 8px; vertical-align: middle;
+    }
+    .step h2 { font-size: 16px; margin: 0 0 10px; display: flex; align-items: center; }
+    .step ol, .step ul { margin: 6px 0 0; padding-left: 20px; }
+    .step li { margin-bottom: 5px; }
+    .step p { margin: 0 0 8px; }
+    .step code {
+      font: 12px ui-monospace, SFMono-Regular, Consolas, monospace;
+      background: var(--accent-soft); color: var(--text);
+      padding: 1px 6px; border-radius: 5px;
+    }
+
+    .figure {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 10px;
+    }
+    .figure svg { width: 100%; height: auto; display: block; }
+    .figure .cap { font-size: 11px; color: var(--text-muted); text-align: center; margin-top: 6px; }
+
+    .callout {
+      border-left: 3px solid var(--accent);
+      background: var(--accent-soft);
+      padding: 10px 14px;
+      border-radius: 0 10px 10px 0;
+      font-size: 13px;
+      margin-top: 10px;
+    }
+    .callout.warn { border-color: #d9962b; background: rgba(217, 150, 43, 0.12); }
+
+    .faq details { border-top: 1px solid var(--border); padding: 10px 0; }
+    .faq details:first-of-type { border-top: none; }
+    .faq summary { cursor: pointer; font-weight: 600; font-size: 13.5px; }
+    .faq details p { margin: 8px 0 0; color: var(--text-muted); font-size: 13px; }
+
+    .foot { text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 30px; }
+
+    /* SVG mock palette (theme-aware via currentColor / CSS vars) */
+    .mock-win { fill: var(--card); stroke: var(--border); }
+    .mock-bar { fill: var(--border); }
+    .mock-txt { fill: var(--text); font: 11px -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+    .mock-muted { fill: var(--text-muted); font: 10px -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+    .mock-field { fill: var(--input-bg); stroke: var(--border); }
+    .mock-accent { fill: var(--accent); }
+    .mock-accent-txt { fill: var(--accent-text); font: 600 11px -apple-system, "Segoe UI", Roboto, Arial, sans-serif; }
+    .mock-hl { fill: none; stroke: #e0553f; stroke-width: 2; stroke-dasharray: 4 3; }
+    .mock-ok { fill: var(--ok); }
+    .mock-block { fill: var(--accent); opacity: 0.85; }
+    .mock-break { fill: var(--border); }
+  </style>
+</head>
+<body>
+<div class="page">
+
+  <div class="hero">
+    <img src="icons/icon48.png" alt="" />
+    <div>
+      <h1>Clockodo Auto-Fill — Guide</h1>
+      <p>Fill your daily Clockodo times in one click, for a date range, or automatically every workday.</p>
+    </div>
+  </div>
+
+  <nav class="toc">
+    <a href="#install">Install</a>
+    <a href="#apikey">Get API key</a>
+    <a href="#connect">Connect</a>
+    <a href="#booking">Customer &amp; service</a>
+    <a href="#hours">Hours</a>
+    <a href="#auto">Auto-fill</a>
+    <a href="#popup">Daily use</a>
+    <a href="#faq">FAQ</a>
+  </nav>
+
+  <!-- 1 Install -->
+  <section class="step card" id="install">
+    <div>
+      <h2><span class="num">1</span>Install the extension</h2>
+      <ol>
+        <li>Unzip the download (or clone the repo) to a folder you will keep.</li>
+        <li>Open <code>chrome://extensions</code>.</li>
+        <li>Turn on <strong>Developer mode</strong> (top right).</li>
+        <li>Click <strong>Load unpacked</strong> and pick the folder.</li>
+        <li>Pin the icon from the puzzle-piece menu.</li>
+      </ol>
+      <div class="callout">Don't delete or move the folder afterwards — Chrome loads the extension from there.</div>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
+        <rect x="1" y="1" width="298" height="24" rx="8" class="mock-bar"/>
+        <text x="12" y="17" class="mock-txt">chrome://extensions</text>
+        <text x="200" y="17" class="mock-muted">Developer mode</text>
+        <rect x="262" y="8" width="28" height="12" rx="6" class="mock-accent"/>
+        <circle cx="284" cy="14" r="5" fill="#fff"/>
+        <rect x="12" y="38" width="96" height="22" rx="6" class="mock-accent"/>
+        <text x="21" y="53" class="mock-accent-txt">Load unpacked</text>
+        <rect x="8" y="34" width="104" height="30" rx="8" class="mock-hl"/>
+        <rect x="12" y="76" width="276" height="80" rx="8" class="mock-field"/>
+        <rect x="22" y="88" width="26" height="26" rx="7" class="mock-accent"/>
+        <circle cx="35" cy="101" r="7" fill="none" stroke="#fff" stroke-width="2"/>
+        <text x="58" y="98" class="mock-txt">Clockodo Auto-Fill</text>
+        <text x="58" y="112" class="mock-muted">1.0.0 · Loaded from folder</text>
+        <text x="22" y="145" class="mock-muted">Details   Remove</text>
+        <rect x="248" y="130" width="28" height="12" rx="6" class="mock-accent"/>
+        <circle cx="270" cy="136" r="5" fill="#fff"/>
+      </svg>
+      <div class="cap">Developer mode on → Load unpacked → pick the folder</div>
+    </div>
+  </section>
+
+  <!-- 2 API key -->
+  <section class="step card" id="apikey">
+    <div>
+      <h2><span class="num">2</span>Get your personal API key</h2>
+      <ol>
+        <li>Sign in to Clockodo and open <a href="https://my.clockodo.com/en/users/editself" target="_blank">My area → Edit self</a>.</li>
+        <li>Find the <strong>API key</strong> section.</li>
+        <li>Copy the key (generate one if the field is empty).</li>
+      </ol>
+      <div class="callout">This is <strong>not</strong> your password. The key stays in your browser's local storage and is sent only to <code>my.clockodo.com</code>. Every colleague uses their own key — nothing is shared.</div>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
+        <rect x="1" y="1" width="298" height="24" rx="8" class="mock-bar"/>
+        <text x="12" y="17" class="mock-txt">my.clockodo.com/en/users/editself</text>
+        <text x="14" y="48" class="mock-txt" font-weight="600">Edit self</text>
+        <text x="14" y="70" class="mock-muted">Name</text>
+        <rect x="14" y="76" width="272" height="18" rx="5" class="mock-field"/>
+        <text x="14" y="112" class="mock-muted">API key</text>
+        <rect x="14" y="118" width="210" height="20" rx="5" class="mock-field"/>
+        <text x="22" y="132" class="mock-txt">a1f9•••••••••••••••••••••••c4e</text>
+        <rect x="230" y="118" width="56" height="20" rx="5" class="mock-accent"/>
+        <text x="245" y="132" class="mock-accent-txt">Copy</text>
+        <rect x="9" y="104" width="282" height="40" rx="8" class="mock-hl"/>
+      </svg>
+      <div class="cap">My area → Edit self → API key → Copy</div>
+    </div>
+  </section>
+
+  <!-- 3 Connect -->
+  <section class="step card" id="connect">
+    <div>
+      <h2><span class="num">3</span>Connect the extension</h2>
+      <ol>
+        <li>Click the extension icon → <strong>Options</strong>.</li>
+        <li>Enter your Clockodo login email and paste the API key.</li>
+        <li>Click <strong>Test connection</strong> — you should see your name with a green check.</li>
+        <li>Press <strong>Save</strong> in the top bar.</li>
+      </ol>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
+        <text x="14" y="26" class="mock-txt" font-weight="600">ACCOUNT</text>
+        <text x="14" y="48" class="mock-muted">Clockodo login email</text>
+        <rect x="14" y="54" width="272" height="20" rx="5" class="mock-field"/>
+        <text x="22" y="68" class="mock-txt">you@company.com</text>
+        <text x="14" y="94" class="mock-muted">Personal API key</text>
+        <rect x="14" y="100" width="272" height="20" rx="5" class="mock-field"/>
+        <text x="22" y="114" class="mock-txt">••••••••••••••••••••••••••••</text>
+        <rect x="14" y="134" width="92" height="22" rx="6" class="mock-field"/>
+        <text x="24" y="149" class="mock-txt">Test connection</text>
+        <circle cx="122" cy="145" r="6" class="mock-ok"/>
+        <path d="M119 145l2 2 4-4" fill="none" stroke="#fff" stroke-width="1.6"/>
+        <text x="133" y="149" class="mock-txt">Connected as Your Name</text>
+      </svg>
+      <div class="cap">Green check = the key works</div>
+    </div>
+  </section>
+
+  <!-- 4 Customer & service -->
+  <section class="step card" id="booking">
+    <div>
+      <h2><span class="num">4</span>Choose customer &amp; service</h2>
+      <p>Clockodo books your attendance as <strong>time entries</strong>, so each entry needs a customer and a service (e.g. your internal company customer and a generic "Work" service).</p>
+      <ol>
+        <li>In <strong>What to book</strong>, keep mode = <em>Time entries</em>.</li>
+        <li>Click <strong>Load customers &amp; services</strong>.</li>
+        <li>Pick the customer and service your team uses for regular work.</li>
+        <li>Leave "billable" off unless told otherwise. <strong>Save</strong>.</li>
+      </ol>
+      <div class="callout warn">Not sure which to pick? Open any existing entry in Clockodo and use the same customer/service shown there.</div>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
+        <text x="14" y="26" class="mock-txt" font-weight="600">WHAT TO BOOK</text>
+        <text x="14" y="48" class="mock-muted">Mode</text>
+        <rect x="14" y="54" width="272" height="20" rx="5" class="mock-field"/>
+        <text x="22" y="68" class="mock-txt">Time entries (recommended)</text>
+        <text x="14" y="94" class="mock-muted">Customer</text>
+        <rect x="14" y="100" width="130" height="20" rx="5" class="mock-field"/>
+        <text x="22" y="114" class="mock-txt">Internal (#1042)</text>
+        <text x="156" y="94" class="mock-muted">Service</text>
+        <rect x="156" y="100" width="130" height="20" rx="5" class="mock-field"/>
+        <text x="164" y="114" class="mock-txt">Work (#88)</text>
+        <rect x="14" y="134" width="150" height="20" rx="6" class="mock-field"/>
+        <text x="22" y="148" class="mock-txt">Load customers &amp; services</text>
+        <rect x="9" y="129" width="160" height="30" rx="8" class="mock-hl"/>
+      </svg>
+      <div class="cap">Load once, then pick from the dropdowns</div>
+    </div>
+  </section>
+
+  <!-- 5 Hours -->
+  <section class="step card" id="hours">
+    <div>
+      <h2><span class="num">5</span>Set your working hours</h2>
+      <p>Two blocks per day; the gap between them is your break. Default is <code>08:30–13:00</code> and <code>14:00–17:30</code> = 8 h work + 1 h break.</p>
+      <ul>
+        <li>Times are Berlin wall-clock and DST-aware — enter what you'd write on paper.</li>
+        <li>Keep <strong>Skip weekends</strong> on unless you actually work weekends.</li>
+      </ul>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 300 120" xmlns="http://www.w3.org/2000/svg">
+        <text x="10" y="20" class="mock-muted">08:00</text>
+        <text x="132" y="20" class="mock-muted">13:00</text>
+        <text x="162" y="20" class="mock-muted">14:00</text>
+        <text x="262" y="20" class="mock-muted">18:00</text>
+        <rect x="10" y="30" width="280" height="26" rx="6" class="mock-break"/>
+        <rect x="24" y="30" width="114" height="26" rx="6" class="mock-block"/>
+        <rect x="166" y="30" width="98" height="26" rx="6" class="mock-block"/>
+        <text x="46" y="48" class="mock-accent-txt">08:30 – 13:00</text>
+        <text x="176" y="48" class="mock-accent-txt">14:00 – 17:30</text>
+        <text x="138" y="48" class="mock-muted" font-size="9">break</text>
+        <text x="10" y="86" class="mock-txt">Morning 4.5 h  +  break 1 h  +  afternoon 3.5 h</text>
+        <text x="10" y="104" class="mock-txt" font-weight="600">= 8 h attendance per workday</text>
+      </svg>
+      <div class="cap">Two blocks, one break</div>
+    </div>
+  </section>
+
+  <!-- 6 Auto-fill -->
+  <section class="step card" id="auto">
+    <div>
+      <h2><span class="num">6</span>Turn on automatic daily fill</h2>
+      <ol>
+        <li>In <strong>Schedule</strong>, set the time (default 09:15) and switch on <strong>Auto-fill every workday</strong>. Save.</li>
+        <li>Or toggle <strong>Auto-fill daily</strong> right from the popup.</li>
+      </ol>
+      <p>How it behaves:</p>
+      <ul>
+        <li>At the set time, while Chrome is running, it fills today — unless it's a weekend, an opted-out day, or already filled.</li>
+        <li>If Chrome was closed at that time, it <strong>catches up</strong> the next time Chrome starts (once per day).</li>
+        <li>You get a notification only when something was created or failed. Silence = nothing to do.</li>
+      </ul>
+      <div class="callout">The popup shows <em>Next run</em> and the result of the last automatic run.</div>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+        <circle cx="60" cy="60" r="36" fill="none" stroke="var(--accent)" stroke-width="4"/>
+        <path d="M60 60V38M60 60l14 8" stroke="var(--accent)" stroke-width="4" stroke-linecap="round"/>
+        <text x="60" y="118" text-anchor="middle" class="mock-txt">09:15 · alarm</text>
+        <path d="M108 60h44" stroke="var(--text-muted)" stroke-width="2" marker-end="url(#arr)"/>
+        <defs><marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto"><path d="M0 0L8 4L0 8z" fill="var(--text-muted)"/></marker></defs>
+        <rect x="160" y="30" width="128" height="60" rx="10" class="mock-field"/>
+        <text x="224" y="52" text-anchor="middle" class="mock-txt">Weekend?  Skipped?</text>
+        <text x="224" y="70" text-anchor="middle" class="mock-txt">Already filled?</text>
+        <text x="224" y="118" text-anchor="middle" class="mock-txt">no → create entries</text>
+        <circle cx="224" cy="146" r="9" class="mock-ok"/>
+        <path d="M219.5 146l3 3 6-6" fill="none" stroke="#fff" stroke-width="2"/>
+        <text x="60" y="150" text-anchor="middle" class="mock-muted">Chrome closed? runs on next launch</text>
+      </svg>
+      <div class="cap">Checks first, books only when needed</div>
+    </div>
+  </section>
+
+  <!-- 7 Popup -->
+  <section class="step card" id="popup">
+    <div>
+      <h2><span class="num">7</span>Day-to-day use</h2>
+      <ul>
+        <li><strong>Fill today</strong> — one click. Shows <em>created</em>, <em>already filled</em>, or <em>skipped</em>.</li>
+        <li><strong>Fill range</strong> — pick From/To, fills every workday in between (great after vacation or a missed week).</li>
+        <li><strong>Skip today</strong> — mark today as a day that must not be filled (sick day, holiday). Manage the full list in Options.</li>
+        <li>The dot next to your name is green when the API key works.</li>
+      </ul>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 300 200" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="298" height="198" rx="10" class="mock-win"/>
+        <rect x="12" y="12" width="26" height="26" rx="7" class="mock-accent"/>
+        <circle cx="25" cy="25" r="7" fill="none" stroke="#fff" stroke-width="2"/>
+        <text x="46" y="22" class="mock-txt" font-weight="600">Clockodo Auto-Fill</text>
+        <circle cx="50" cy="34" r="3.5" class="mock-ok"/>
+        <text x="58" y="37" class="mock-muted">Your Name</text>
+        <rect x="12" y="50" width="276" height="28" rx="8" class="mock-accent"/>
+        <text x="150" y="68" text-anchor="middle" class="mock-accent-txt">Fill today</text>
+        <rect x="12" y="88" width="134" height="20" rx="5" class="mock-field"/>
+        <rect x="154" y="88" width="134" height="20" rx="5" class="mock-field"/>
+        <text x="20" y="102" class="mock-muted">From 2026-09-15</text>
+        <text x="162" y="102" class="mock-muted">To 2026-09-19</text>
+        <rect x="12" y="114" width="276" height="22" rx="6" class="mock-field"/>
+        <text x="150" y="129" text-anchor="middle" class="mock-txt">Fill range</text>
+        <text x="20" y="158" class="mock-txt">Auto-fill daily</text>
+        <text x="20" y="170" class="mock-muted">Next run: Tue 09:15</text>
+        <rect x="256" y="152" width="30" height="16" rx="8" class="mock-accent"/>
+        <circle cx="278" cy="160" r="6" fill="#fff"/>
+        <text x="20" y="190" class="mock-txt">Skip today</text>
+        <rect x="256" y="178" width="30" height="16" rx="8" class="mock-bar"/>
+        <circle cx="264" cy="186" r="6" fill="#fff"/>
+      </svg>
+      <div class="cap">Everything you need is in the popup</div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="card faq" id="faq">
+    <h2 class="card-title" style="margin-bottom:8px">FAQ &amp; troubleshooting</h2>
+    <details>
+      <summary>"Not configured — open Options" in the popup</summary>
+      <p>Email or API key missing. Do steps 2–3.</p>
+    </details>
+    <details>
+      <summary>"Entry mode needs a customer and a service"</summary>
+      <p>Do step 4: Load customers &amp; services, select both, Save.</p>
+    </details>
+    <details>
+      <summary>"Work times must match the day's entries"</summary>
+      <p>You're in change-request mode, but this Clockodo derives attendance from time entries. Switch mode to <em>Time entries</em>.</p>
+    </details>
+    <details>
+      <summary>"already filled" but I see nothing in Clockodo</summary>
+      <p>The extension found an existing working time for that date. Check the day in Clockodo's timetable / entries list — possibly an entry booked another way.</p>
+    </details>
+    <details>
+      <summary>Auto-fill didn't run at the set time</summary>
+      <p>Chrome must be running. If it was closed, it catches up the next time Chrome starts. Toggling the switch off and on also triggers an immediate catch-up when the time has passed.</p>
+    </details>
+    <details>
+      <summary>Can I change the hours later?</summary>
+      <p>Yes — Options → Working hours → Save. Future fills use the new times; existing entries are not changed.</p>
+    </details>
+    <details>
+      <summary>Is anything sent anywhere besides Clockodo?</summary>
+      <p>No. Requests go from your browser straight to <code>my.clockodo.com</code> using your own API key. There is no server, analytics, or shared storage.</p>
+    </details>
+  </section>
+
+  <p class="foot">
+    Clockodo Auto-Fill · Made by <a href="https://msoori.com" target="_blank">Mohammad Soori</a> ·
+    <a href="mailto:contact@msoori.com">contact@msoori.com</a> · MIT License
+  </p>
+</div>
+</body>
+</html>

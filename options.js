@@ -38,7 +38,9 @@ function renderSkipList() {
 }
 
 function toggleEntryFields() {
-  $("entryFields").style.display = $("mode").value === "entry" ? "block" : "none";
+  const entry = $("mode").value === "entry";
+  $("entryFields").style.display = entry ? "block" : "none";
+  $("worktimeFields").style.display = entry ? "none" : "block";
 }
 
 let savedCustomersId = null;
