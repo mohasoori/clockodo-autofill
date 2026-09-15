@@ -1,0 +1,30 @@
+{
+  "manifest_version": 3,
+  "name": "Clockodo Auto-Fill",
+  "version": "1.0.0",
+  "description": "Fills your daily Clockodo working times automatically: one-click, date-range, or scheduled daily. Configurable hours, per-day opt-out.",
+  "default_locale": "en",
+  "permissions": ["storage", "alarms", "notifications"],
+  "host_permissions": [
+    "https://my.clockodo.com/*"
+  ],
+  "background": {
+    "service_worker": "background.js",
+    "type": "module"
+  },
+  "action": {
+    "default_popup": "popup.html",
+    "default_title": "Clockodo Auto-Fill",
+    "default_icon": {
+      "16": "icons/icon16.png",
+      "48": "icons/icon48.png",
+      "128": "icons/icon128.png"
+    }
+  },
+  "options_page": "options.html",
+  "icons": {
+    "16": "icons/icon16.png",
+    "48": "icons/icon48.png",
+    "128": "icons/icon128.png"
+  }
+}
