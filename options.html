@@ -50,22 +50,75 @@
     ul#skipList li:first-child { border-top: none; }
     ul#skipList .empty { color: var(--text-muted); font-size: 12.5px; }
 
+    /* Day timeline */
+    .timeline { margin: 2px 0 16px; }
+    .timeline-bar {
+      position: relative; height: 30px; border-radius: 8px;
+      background: var(--bg); border: 1px solid var(--border); overflow: hidden;
+    }
+    .timeline-bar .seg {
+      position: absolute; top: 4px; bottom: 4px; border-radius: 6px;
+      background: var(--accent); color: var(--accent-text);
+      font-size: 10.5px; font-weight: 600; line-height: 22px; text-align: center;
+      overflow: hidden; white-space: nowrap; text-overflow: ellipsis; padding: 0 4px;
+    }
+    .timeline-bar .seg.gap {
+      background: repeating-linear-gradient(135deg, var(--border) 0 4px, transparent 4px 8px);
+      color: var(--text-muted); font-weight: 500;
+    }
+    .timeline-axis {
+      display: flex; justify-content: space-between;
+      font-size: 10.5px; color: var(--text-muted); margin-top: 4px; padding: 0 2px;
+    }
+
+    /* Block rows */
     .block-row {
       display: grid;
-      grid-template-columns: 24px 1fr auto 1fr 32px;
-      align-items: center;
+      grid-template-columns: 28px 1fr 1fr 72px 32px;
+      align-items: end;
       gap: 10px;
-      padding: 6px 0;
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: var(--bg);
     }
-    .block-row + .block-row { border-top: 1px solid var(--border); }
-    .block-row .idx { font-size: 12px; color: var(--text-muted); font-weight: 600; }
-    .block-row .sep { font-size: 12px; color: var(--text-muted); }
+    .block-row .idx {
+      width: 24px; height: 24px; border-radius: 50%; margin-bottom: 6px;
+      background: var(--accent-soft); color: var(--accent);
+      font-size: 12px; font-weight: 700;
+      display: inline-flex; align-items: center; justify-content: center;
+    }
+    .block-row .field-label { font-size: 11px; margin-bottom: 4px; }
+    .block-row .dur {
+      font-size: 12px; color: var(--text-muted); text-align: right; padding-bottom: 9px;
+      font-variant-numeric: tabular-nums;
+    }
+    .block-row .dur.bad { color: var(--danger); }
     .block-row .remove {
-      width: 30px; height: 30px; padding: 0; border-radius: 8px;
+      width: 32px; height: 34px; padding: 0; border-radius: 8px;
       font-size: 16px; line-height: 1; color: var(--text-muted);
     }
     .block-row .remove:hover { color: var(--danger); border-color: var(--danger); }
     .block-row .remove:disabled { visibility: hidden; }
+
+    .gap-chip {
+      display: flex; align-items: center; gap: 8px; margin: 4px 0;
+      font-size: 11px; color: var(--text-muted);
+    }
+    .gap-chip::before, .gap-chip::after {
+      content: ""; flex: 1; border-top: 1px dashed var(--border);
+    }
+    .gap-chip.bad { color: var(--danger); }
+
+    .blocks-footer {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-top: 12px; gap: 10px; flex-wrap: wrap;
+    }
+    .total-badge {
+      font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px;
+      background: var(--ok-soft); color: var(--ok);
+    }
+    .total-badge.warn { background: rgba(217, 150, 43, 0.14); color: #b8791a; }
 
     #entryFields, #worktimeFields {
       display: none;
@@ -89,7 +142,7 @@
       <img src="icons/icon48.png" alt="" />
       <div>
         <div class="title">Clockodo Auto-Fill</div>
-        <div class="subtitle">Settings</div>
+        <div class="subtitle">Settings · <span id="appVersion"></span></div>
       </div>
       <div class="spacer"></div>
       <a class="help-link" href="help.html" target="_blank" rel="noopener noreferrer">Help &amp; guide</a>
@@ -183,10 +236,14 @@
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
         Working hours
       </h2>
+      <div class="timeline">
+        <div class="timeline-bar" id="timelineBar"></div>
+        <div class="timeline-axis" id="timelineAxis"></div>
+      </div>
       <div id="blocksList"></div>
-      <div class="action-row" style="margin-top:8px">
+      <div class="blocks-footer">
         <button class="small" id="addBlockBtn">+ Add block</button>
-        <span id="blocksTotal" class="status-text"></span>
+        <span id="blocksTotal" class="total-badge"></span>
       </div>
       <div class="hint">One block = one continuous stretch of work. Add a second block to model a break — the gap between blocks is unpaid time.</div>
 

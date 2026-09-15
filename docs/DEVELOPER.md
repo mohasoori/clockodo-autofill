@@ -14,10 +14,11 @@ clockodo-api.js    API client + config store + date/timezone helpers (pure modul
 background.js      service worker: daily alarm, catch-up, message router
 popup.html/js      action popup
 options.html/js    settings page
-help.html          illustrated end-user guide (static)
+help.html/js       illustrated end-user guide + what's new (help.js only injects the version)
 theme.css          shared design tokens, light/dark
 icons/             16/48/128 px
 docs/              this file, USER_GUIDE.md, PDF guide
+CHANGELOG.md       release notes (keep in sync with manifest version)
 ```
 
 ## Architecture
@@ -146,7 +147,15 @@ Options page lists zones via `Intl.supportedValuesOf("timeZone")`.
 Compress-Archive -Path manifest.json,clockodo-api.js,background.js,popup.html,popup.js,options.html,options.js,help.html,theme.css,README.md,LICENSE,icons -DestinationPath clockodo-autofill.zip -Force
 ```
 
-Bump `version` in `manifest.json`, tag, attach the zip to the GitHub release.
+Release checklist:
+
+1. Bump `version` in `manifest.json` (SemVer). It is displayed in Options and
+   Help via `chrome.runtime.getManifest().version`.
+2. Add a section to `CHANGELOG.md` and update the "What's new" card in
+   `help.html` (plus the version mentions in `README.md` / `docs/USER_GUIDE.md`).
+3. Regenerate the PDF guide:
+   `chrome --headless --print-to-pdf=docs/Clockodo-Auto-Fill-Guide.pdf file:///…/help.html`
+4. Build the zip (above), tag `vX.Y.Z`, attach the zip to the GitHub release.
 `.crx` packaging is deliberately not used: Chrome on Windows/macOS refuses
 non-Web-Store `.crx` installs, so the only working distribution channels are
 load-unpacked zips or the Chrome Web Store.

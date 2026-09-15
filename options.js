@@ -39,12 +39,106 @@ function minutes(hhmm) {
   return h * 60 + m;
 }
 
+const fmtDuration = (mins) => {
+  const h = Math.floor(mins / 60);
+  const m = mins % 60;
+  return h && m ? `${h}h ${m}m` : h ? `${h}h` : `${m}m`;
+};
+const isValidBlock = (b) => HHMM_RE.test(b.start) && HHMM_RE.test(b.end) && b.start < b.end;
+
+function timeInput(block, key, label, onChange) {
+  const wrap = document.createElement("div");
+  const lbl = document.createElement("label");
+  lbl.className = "field-label";
+  lbl.textContent = label;
+  const input = document.createElement("input");
+  input.type = "time";
+  input.value = block[key];
+  input.setAttribute("aria-label", label);
+  input.addEventListener("input", () => { block[key] = input.value; onChange(); });
+  wrap.append(lbl, input);
+  return wrap;
+}
+
+function renderTimeline() {
+  const bar = $("timelineBar");
+  const axis = $("timelineAxis");
+  bar.innerHTML = "";
+  axis.innerHTML = "";
+  const valid = blocks.filter(isValidBlock);
+  if (!valid.length) return;
+
+  // Fit the axis to the day with 1 h padding, snapped to whole hours.
+  const first = Math.min(...valid.map((b) => minutes(b.start)));
+  const last = Math.max(...valid.map((b) => minutes(b.end)));
+  const from = Math.max(0, Math.floor(first / 60) * 60 - 60);
+  const to = Math.min(24 * 60, Math.ceil(last / 60) * 60 + 60);
+  const span = to - from || 1;
+  const pct = (m) => ((m - from) / span) * 100;
+
+  const sorted = [...valid].sort((a, b) => a.start.localeCompare(b.start));
+  sorted.forEach((b, i) => {
+    const seg = document.createElement("div");
+    seg.className = "seg";
+    seg.style.left = `${pct(minutes(b.start))}%`;
+    seg.style.width = `${pct(minutes(b.end)) - pct(minutes(b.start))}%`;
+    seg.textContent = fmtDuration(minutes(b.end) - minutes(b.start));
+    seg.title = `${b.start} – ${b.end}`;
+    bar.appendChild(seg);
+
+    const next = sorted[i + 1];
+    if (next && next.start > b.end) {
+      const gap = document.createElement("div");
+      gap.className = "seg gap";
+      gap.style.left = `${pct(minutes(b.end))}%`;
+      gap.style.width = `${pct(minutes(next.start)) - pct(minutes(b.end))}%`;
+      gap.textContent = "break";
+      gap.title = `Break ${fmtDuration(minutes(next.start) - minutes(b.end))}`;
+      bar.appendChild(gap);
+    }
+  });
+
+  const ticks = Math.min(6, span / 60);
+  for (let i = 0; i <= ticks; i++) {
+    const t = document.createElement("span");
+    const m = from + Math.round((span * i) / ticks / 60) * 60;
+    t.textContent = `${String(Math.floor(m / 60)).padStart(2, "0")}:00`;
+    axis.appendChild(t);
+  }
+}
+
 function renderBlocksTotal() {
-  const valid = blocks.filter((b) => HHMM_RE.test(b.start) && HHMM_RE.test(b.end) && b.start < b.end);
-  const total = valid.reduce((sum, b) => sum + minutes(b.end) - minutes(b.start), 0);
-  const h = Math.floor(total / 60);
-  const m = total % 60;
-  setStatus($("blocksTotal"), total ? `Total ${h}h${m ? ` ${m}m` : ""} / day` : "");
+  const total = blocks.filter(isValidBlock)
+    .reduce((sum, b) => sum + minutes(b.end) - minutes(b.start), 0);
+  const el = $("blocksTotal");
+  el.textContent = total ? `${fmtDuration(total)} / day` : "—";
+  el.classList.toggle("warn", total > 10 * 60);
+}
+
+function refreshBlockDerived() {
+  blocks.forEach((b, i) => {
+    const dur = $("blocksList").children[i * 2]?.querySelector(".dur");
+    if (!dur) return;
+    const ok = isValidBlock(b);
+    dur.textContent = ok ? fmtDuration(minutes(b.end) - minutes(b.start)) : "invalid";
+    dur.classList.toggle("bad", !ok);
+  });
+  renderGapChips();
+  renderTimeline();
+  renderBlocksTotal();
+}
+
+function renderGapChips() {
+  const list = $("blocksList");
+  blocks.forEach((b, i) => {
+    const chip = list.children[i * 2 + 1];
+    if (!chip || !chip.classList.contains("gap-chip")) return;
+    const next = blocks[i + 1];
+    if (!next || !isValidBlock(b) || !HHMM_RE.test(next.start)) { chip.textContent = ""; return; }
+    const gap = minutes(next.start) - minutes(b.end);
+    chip.classList.toggle("bad", gap < 0);
+    chip.textContent = gap < 0 ? "overlaps next block" : gap === 0 ? "no break" : `break ${fmtDuration(gap)}`;
+  });
 }
 
 function renderBlocks() {
@@ -58,21 +152,8 @@ function renderBlocks() {
     idx.className = "idx";
     idx.textContent = String(i + 1);
 
-    const start = document.createElement("input");
-    start.type = "time";
-    start.value = block.start;
-    start.setAttribute("aria-label", `Block ${i + 1} start`);
-    start.addEventListener("input", () => { block.start = start.value; renderBlocksTotal(); });
-
-    const sep = document.createElement("span");
-    sep.className = "sep";
-    sep.textContent = "→";
-
-    const end = document.createElement("input");
-    end.type = "time";
-    end.value = block.end;
-    end.setAttribute("aria-label", `Block ${i + 1} end`);
-    end.addEventListener("input", () => { block.end = end.value; renderBlocksTotal(); });
+    const dur = document.createElement("span");
+    dur.className = "dur";
 
     const remove = document.createElement("button");
     remove.type = "button";
@@ -85,11 +166,22 @@ function renderBlocks() {
       renderBlocks();
     });
 
-    row.append(idx, start, sep, end, remove);
+    row.append(
+      idx,
+      timeInput(block, "start", "Start", refreshBlockDerived),
+      timeInput(block, "end", "End", refreshBlockDerived),
+      dur,
+      remove
+    );
     list.appendChild(row);
+
+    const chip = document.createElement("div");
+    chip.className = "gap-chip";
+    list.appendChild(chip);
   });
+  list.lastElementChild?.remove(); // no gap chip after the final block
   $("addBlockBtn").disabled = blocks.length >= MAX_BLOCKS;
-  renderBlocksTotal();
+  refreshBlockDerived();
 }
 
 $("addBlockBtn").addEventListener("click", () => {
@@ -261,6 +353,7 @@ $("saveBtn").addEventListener("click", async () => {
 // Init
 // ---------------------------------------------------------------------------
 async function init() {
+  $("appVersion").textContent = `v${chrome.runtime.getManifest().version}`;
   const cfg = await loadConfig();
   for (const f of TEXT_FIELDS) $(f).value = cfg[f] ?? "";
   for (const c of CHECKBOXES) $(c).checked = !!cfg[c];
