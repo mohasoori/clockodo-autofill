@@ -7,6 +7,8 @@ import {
   fillDay,
   fillRange,
   testConnectionAndResolveUser,
+  getCustomers,
+  getServices,
   todayStr,
 } from "./clockodo-api.js";
 
@@ -117,6 +119,14 @@ async function handle(msg) {
     case "rescheduleAlarm": {
       await rescheduleAlarm();
       return { ok: true };
+    }
+    case "listCustomers": {
+      const cfg = await loadConfig();
+      return { ok: true, customers: await getCustomers(cfg) };
+    }
+    case "listServices": {
+      const cfg = await loadConfig();
+      return { ok: true, services: await getServices(cfg) };
     }
     default:
       throw new Error(`Unknown action: ${msg.action}`);
