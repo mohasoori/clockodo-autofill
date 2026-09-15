@@ -218,6 +218,8 @@ async function handle(msg) {
         ok: true,
         nextRun: alarm ? alarm.scheduledTime : null,
         lastAutoRun: lastAutoRun || null,
+        version: chrome.runtime.getManifest().version,
+        updateInfo: cfg.checkUpdates ? updateInfo || null : null,
         update: cfg.checkUpdates && updateInfo?.available ? updateInfo : null,
       };
     }
