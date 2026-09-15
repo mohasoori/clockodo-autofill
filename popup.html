@@ -4,101 +4,206 @@
   <meta charset="utf-8" />
   <title>Clockodo Auto-Fill</title>
   <style>
-    body {
-      width: 300px;
-      font: 13px/1.4 -apple-system, Segoe UI, Arial, sans-serif;
-      margin: 0;
-      padding: 12px;
-      color: #1b1b1b;
+    :root {
+      --bg: #f4f5f7;
+      --card: #ffffff;
+      --text: #1b1d22;
+      --text-muted: #6b7280;
+      --border: #e5e7eb;
+      --accent: #2d6cdf;
+      --accent-text: #ffffff;
+      --danger: #d64545;
+      --ok: #1fa15a;
+      --input-bg: #ffffff;
+      --shadow: 0 1px 2px rgba(16, 24, 40, 0.04), 0 1px 3px rgba(16, 24, 40, 0.06);
     }
-    h1 {
-      font-size: 14px;
-      margin: 0 0 8px;
+    @media (prefers-color-scheme: dark) {
+      :root {
+        --bg: #16181d;
+        --card: #1e2127;
+        --text: #eaecef;
+        --text-muted: #9aa1ab;
+        --border: #2c303a;
+        --accent: #5b8def;
+        --accent-text: #0b0d10;
+        --input-bg: #14161a;
+        --shadow: 0 1px 2px rgba(0, 0, 0, 0.4);
+      }
+    }
+    * { box-sizing: border-box; }
+    body {
+      width: 320px;
+      margin: 0;
+      padding: 14px;
+      background: var(--bg);
+      color: var(--text);
+      font: 13px/1.45 -apple-system, "Segoe UI", Roboto, Arial, sans-serif;
+    }
+
+    .header {
       display: flex;
       align-items: center;
-      gap: 6px;
+      gap: 10px;
+      margin-bottom: 12px;
     }
-    .dot {
-      width: 9px;
-      height: 9px;
-      border-radius: 50%;
-      background: #bbb;
-      display: inline-block;
-      flex: none;
+    .header img { width: 30px; height: 30px; border-radius: 8px; }
+    .header .title { font-size: 14px; font-weight: 650; letter-spacing: -0.01em; }
+    .header .sub {
+      display: flex; align-items: center; gap: 6px;
+      font-size: 11.5px; color: var(--text-muted);
     }
-    .dot.ok { background: #2ecc71; }
-    .dot.bad { background: #e74c3c; }
-    .row { margin-bottom: 10px; }
-    label { display: block; font-size: 12px; color: #555; margin-bottom: 3px; }
-    input[type="date"], input[type="text"] {
-      width: 100%;
-      box-sizing: border-box;
-      padding: 4px 6px;
-      font-size: 12px;
+    .dot { width: 8px; height: 8px; border-radius: 50%; background: #b0b5bd; flex: none; }
+    .dot.ok { background: var(--ok); }
+    .dot.bad { background: var(--danger); }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      box-shadow: var(--shadow);
+      padding: 12px;
+      margin-bottom: 10px;
     }
-    .two-col { display: flex; gap: 6px; }
-    .two-col > div { flex: 1; }
+
     button {
+      appearance: none;
       width: 100%;
-      padding: 7px;
-      margin-bottom: 6px;
-      font-size: 12px;
+      border: 1px solid var(--border);
+      background: var(--input-bg);
+      color: var(--text);
+      border-radius: 9px;
+      padding: 9px 12px;
+      font-size: 13px;
+      font-weight: 550;
+      font-family: inherit;
       cursor: pointer;
-      border: 1px solid #ccc;
-      background: #f5f5f5;
-      border-radius: 4px;
+      transition: border-color 0.15s, filter 0.15s;
     }
-    button.primary { background: #2d6cdf; color: #fff; border-color: #2d6cdf; }
-    button.primary:hover { background: #255bbd; }
-    button:hover { background: #eaeaea; }
-    .toggle-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; font-size: 12px; }
+    button:hover { border-color: var(--accent); }
+    button:disabled { opacity: 0.6; cursor: default; }
+    button.primary {
+      background: var(--accent);
+      color: var(--accent-text);
+      border-color: var(--accent);
+      font-size: 14px;
+      padding: 11px 12px;
+    }
+    button.primary:hover { filter: brightness(1.08); }
+
+    .range-row { display: flex; gap: 8px; margin-bottom: 8px; }
+    .range-row > div { flex: 1; min-width: 0; }
+    label.small { display: block; font-size: 11px; color: var(--text-muted); margin-bottom: 3px; }
+    input[type="date"] {
+      width: 100%;
+      background: var(--input-bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 6px 8px;
+      font-size: 12px;
+      font-family: inherit;
+      outline: none;
+    }
+    input[type="date"]:focus { border-color: var(--accent); }
+
+    .switch-row {
+      display: flex; align-items: center; justify-content: space-between;
+      gap: 10px; padding: 8px 0;
+    }
+    .switch-row + .switch-row { border-top: 1px solid var(--border); }
+    .switch-row .lbl { font-size: 13px; }
+    .switch-row .sub { font-size: 11px; color: var(--text-muted); margin-top: 1px; }
+    .switch { position: relative; display: inline-block; width: 36px; height: 21px; flex: none; }
+    .switch input { opacity: 0; width: 0; height: 0; }
+    .switch .track {
+      position: absolute; inset: 0; background: var(--border);
+      border-radius: 999px; transition: background 0.15s; cursor: pointer;
+    }
+    .switch .track::before {
+      content: ""; position: absolute; width: 17px; height: 17px; left: 2px; top: 2px;
+      background: #fff; border-radius: 50%; transition: transform 0.15s;
+      box-shadow: 0 1px 2px rgba(0,0,0,0.25);
+    }
+    .switch input:checked + .track { background: var(--accent); }
+    .switch input:checked + .track::before { transform: translateX(15px); }
+
     #status {
-      font-size: 11px;
-      color: #444;
+      font-size: 11.5px;
+      color: var(--text-muted);
       white-space: pre-wrap;
-      max-height: 120px;
+      max-height: 110px;
       overflow-y: auto;
-      background: #f8f8f8;
-      border-radius: 4px;
-      padding: 6px;
-      margin-top: 4px;
+      padding: 8px 10px;
+      border-radius: 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      margin-top: 8px;
+      display: none;
     }
-    hr { border: none; border-top: 1px solid #eee; margin: 10px 0; }
-    a { font-size: 12px; }
+    #status.show { display: block; }
+    #status.ok { color: var(--ok); }
+    #status.bad { color: var(--danger); }
+
+    .footer {
+      display: flex; justify-content: space-between; align-items: center;
+      font-size: 11.5px; color: var(--text-muted); padding: 0 2px;
+    }
+    .footer a { color: var(--accent); text-decoration: none; }
+    .footer a:hover { text-decoration: underline; }
   </style>
 </head>
 <body>
-  <h1><span class="dot" id="connDot"></span><span id="connLabel">Checking connection…</span></h1>
-
-  <button class="primary" id="fillTodayBtn">Fill today</button>
-
-  <div class="row two-col">
+  <div class="header">
+    <img src="icons/icon48.png" alt="" />
     <div>
-      <label for="fromDate">From</label>
-      <input type="date" id="fromDate" />
-    </div>
-    <div>
-      <label for="toDate">To</label>
-      <input type="date" id="toDate" />
+      <div class="title">Clockodo Auto-Fill</div>
+      <div class="sub"><span class="dot" id="connDot"></span><span id="connLabel">Checking connection…</span></div>
     </div>
   </div>
-  <button id="fillRangeBtn">Fill range</button>
 
-  <hr />
-
-  <div class="toggle-row">
-    <span>Auto-fill daily</span>
-    <input type="checkbox" id="autoDailyToggle" />
-  </div>
-  <div class="toggle-row">
-    <span>Skip today</span>
-    <input type="checkbox" id="skipTodayToggle" />
+  <div class="card">
+    <button class="primary" id="fillTodayBtn">Fill today</button>
+    <div id="status"></div>
   </div>
 
-  <div id="status"></div>
+  <div class="card">
+    <div class="range-row">
+      <div>
+        <label class="small" for="fromDate">From</label>
+        <input type="date" id="fromDate" />
+      </div>
+      <div>
+        <label class="small" for="toDate">To</label>
+        <input type="date" id="toDate" />
+      </div>
+    </div>
+    <button id="fillRangeBtn">Fill range</button>
+  </div>
 
-  <hr />
-  <a href="#" id="optionsLink">Options…</a>
+  <div class="card">
+    <div class="switch-row">
+      <div>
+        <div class="lbl">Auto-fill daily</div>
+        <div class="sub" id="nextRun">Off</div>
+      </div>
+      <label class="switch">
+        <input type="checkbox" id="autoDailyToggle" />
+        <span class="track"></span>
+      </label>
+    </div>
+    <div class="switch-row">
+      <div class="lbl">Skip today</div>
+      <label class="switch">
+        <input type="checkbox" id="skipTodayToggle" />
+        <span class="track"></span>
+      </label>
+    </div>
+  </div>
+
+  <div class="footer">
+    <span id="lastRun"></span>
+    <a href="#" id="optionsLink">Options</a>
+  </div>
 
   <script src="popup.js" type="module"></script>
 </body>

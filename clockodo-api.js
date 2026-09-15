@@ -287,6 +287,12 @@ async function fillDayAsWorkTime(cfg, dateStr) {
 }
 
 async function fillDayAsEntries(cfg, dateStr) {
+  if (!Number.isInteger(cfg.customersId) || !Number.isInteger(cfg.servicesId)) {
+    throw new Error(
+      "Entry mode needs a customer and a service. Open Options → Fill mode → " +
+        "\"Load customers & services\", pick both, then Save."
+    );
+  }
   const tz = cfg.timezone;
   const blocks = [
     [cfg.block1Start, cfg.block1End],
