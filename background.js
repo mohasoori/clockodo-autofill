@@ -13,6 +13,7 @@ import {
   addDays,
   wallclockToUTC,
   DATE_RE,
+  ON_EXISTING,
 } from "./clockodo-api.js";
 import { fetchLatestVersion, updateCheckConfigured } from "./updates.js";
 
@@ -165,6 +166,12 @@ function assertDate(s, label) {
   }
 }
 
+function fillOptions(msg) {
+  const onExisting = msg.onExisting ?? "skip";
+  if (!ON_EXISTING.includes(onExisting)) throw new Error(`Invalid onExisting: ${onExisting}`);
+  return { force: !!msg.force, onExisting };
+}
+
 async function handle(msg) {
   const cfg = await loadConfig();
   switch (msg.action) {
@@ -174,7 +181,7 @@ async function handle(msg) {
       return { ok: true, usersId, name };
     }
     case "fillToday": {
-      const result = await fillDay(cfg, todayStr(cfg.timezone), { force: !!msg.force });
+      const result = await fillDay(cfg, todayStr(cfg.timezone), fillOptions(msg));
       return { ok: true, result };
     }
     case "fillRange": {
@@ -183,7 +190,7 @@ async function handle(msg) {
       if (msg.from > msg.to) throw new Error("\"From\" must not be after \"To\".");
       const days = Math.round((Date.parse(msg.to) - Date.parse(msg.from)) / 86400000) + 1;
       if (days > MAX_RANGE_DAYS) throw new Error(`Range too large (max ${MAX_RANGE_DAYS} days).`);
-      const results = await fillRange(cfg, msg.from, msg.to, { force: !!msg.force });
+      const results = await fillRange(cfg, msg.from, msg.to, fillOptions(msg));
       return { ok: true, results };
     }
     case "toggleSkipToday": {

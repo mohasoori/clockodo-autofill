@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.1.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.2.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Fill your daily Clockodo working times in one click, for a date range, or
 automatically every workday. Each person uses their **own** Clockodo API key;
@@ -84,6 +84,7 @@ Keep **Skip weekends** on unless you work weekends.
 |--------------------|-----------------------------------------------------------------|
 | **Fill today**     | Books today. Shows *created*, *already filled*, or *skipped*.   |
 | **Fill range**     | Books every workday between From and To (max 92 days).          |
+| **If a day already has any time entry** | *Skip that day* (default) never touches existing bookings. *Replace* deletes all entries on those days and books your blocks — confirmation required; use it to clean up duplicates. |
 | **Auto-fill daily**| Enables/disables the schedule; shows next run.                  |
 | **Skip today**     | Marks today as a day that must never be filled.                 |
 | Green/red dot      | Whether the API key currently works.                            |
@@ -138,8 +139,14 @@ You are in *Working-time change request* mode, but your Clockodo derives
 attendance from entries. Switch mode to *Time entries*.
 
 **"already filled" but I see nothing in Clockodo**
-The extension found existing working time for that date. Check the day in
-Clockodo — an entry may have been booked another way.
+The extension found an existing time entry for that date (any entry counts,
+even a different customer or a short one). Check the day in Clockodo; if it
+should be your standard day, run again with *Replace*.
+
+**I ended up with duplicate entries**
+Select From/To covering those days, set "If a day already has any time entry"
+to *Replace*, click **Fill range**, confirm. Each day is cleared and booked
+exactly once.
 
 **Auto-fill didn't run at the set time**
 Chrome must be running. It catches up on next launch; toggling the switch also

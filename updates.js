@@ -4,7 +4,7 @@
 // sends no data, and can be switched off in Options.
 
 // Set to "owner/repo" of the GitHub repository. Leave as is to disable the check.
-export const GITHUB_REPO = "OWNER/REPO";
+export const GITHUB_REPO = "mohasoori/clockodo-autofill";
 export const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
 const MANIFEST_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/manifest.json`;
 

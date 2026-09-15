@@ -52,8 +52,9 @@ CHANGELOG.md       release notes (keep in sync with manifest version)
   | action               | payload             | returns                          |
   |----------------------|---------------------|----------------------------------|
   | `testConnection`     | —                   | `usersId`, `name` (also saved)   |
-  | `fillToday`          | `force?`            | `result`                         |
-  | `fillRange`          | `from`, `to`, `force?` | `results[]` (≤ 92 days)      |
+  | `fillToday`          | `onExisting?` (`skip`\|`replace`), `force?` | `result`      |
+  | `fillRange`          | `from`, `to`, `onExisting?`, `force?` | `results[]` (≤ 92 days) |
+  | `checkForUpdate`     | —                   | `update` `{latest,current,available,url}` |
   | `toggleSkipToday`    | —                   | `skippedToday`                   |
   | `setAutoDaily`       | `enabled`           | `nextRun` (ms epoch)             |
   | `rescheduleAlarm`    | —                   | `nextRun`                        |
@@ -131,10 +132,13 @@ Options page lists zones via `Intl.supportedValuesOf("timeZone")`.
 
 ## Safety properties worth keeping
 
-- Duplicate protection: `fillDay()` checks existing working time first
-  (`getFilledDays()` — one request for a whole range, `hasWorkTime()` for a
-  single day) and **fails closed** — on any error or unexpected response
-  shape nothing is inserted.
+- Duplicate protection: `fillDay()` first asks `getExisting()` — in entry
+  mode `GET /api/v2/entries?time_since&time_until&filter[users_id]` grouped
+  by local date (the exact resource we create), in worktime mode
+  `GET /api/v2/workTimes?date_since&date_until` (plain `YYYY-MM-DD`). One
+  request covers a whole range. It **fails closed**: any error or unexpected
+  shape aborts instead of booking. `onExisting: "replace"` deletes that
+  day's entry ids first (entry mode only); the popup asks for confirmation.
 - Entry mode is transactional per day: if a later block's POST fails, the
   entries already created for that day are deleted again
   (`rollbackEntries`), so a day is never left half-booked.
