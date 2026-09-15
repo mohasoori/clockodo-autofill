@@ -134,6 +134,12 @@ button.primary {
   border-color: var(--accent);
 }
 button.primary:hover { filter: brightness(1.08); }
+button.secondary {
+  background: var(--accent-soft);
+  color: var(--accent);
+  border-color: transparent;
+}
+button.secondary:hover { border-color: var(--accent); }
 button.small { padding: 5px 10px; font-size: 12px; }
 button.block { width: 100%; }
 
