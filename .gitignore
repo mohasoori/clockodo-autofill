@@ -1,3 +1,18 @@
+# build output
 clockodo-autofill.zip
+*.zip
+*.crx
+*.pem
+
+# local notes / scratch
+PROMPT.md
+*.original.md
+notes/
+scratch/
 *.log
+
+# IDE / OS
 .idea/
+.vscode/
+.DS_Store
+Thumbs.db
