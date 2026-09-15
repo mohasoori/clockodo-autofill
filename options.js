@@ -55,6 +55,13 @@ async function init() {
   skipDates = [...(cfg.skipDates || [])];
   renderSkipList();
   toggleEntryFields();
+
+  const { pickLists } = await chrome.storage.local.get("pickLists");
+  if (pickLists) {
+    fillSelect($("customersId"), pickLists.customers, savedCustomersId);
+    fillSelect($("servicesId"), pickLists.services, savedServicesId);
+    $("loadCustomersServicesBtn").textContent = "Reload customers & services";
+  }
 }
 
 function fillSelect(select, items, savedId) {
@@ -85,6 +92,10 @@ $("loadCustomersServicesBtn").addEventListener("click", async () => {
     if (!servicesRes.ok) throw new Error(servicesRes.error);
     fillSelect($("customersId"), customersRes.customers, savedCustomersId);
     fillSelect($("servicesId"), servicesRes.services, savedServicesId);
+    await chrome.storage.local.set({
+      pickLists: { customers: customersRes.customers, services: servicesRes.services },
+    });
+    $("loadCustomersServicesBtn").textContent = "Reload customers & services";
     el.className = "ok";
     el.textContent = `Loaded ${customersRes.customers.length} customers, ${servicesRes.services.length} services.`;
   } catch (e) {
