@@ -74,6 +74,19 @@ async function refreshSchedule() {
     const when = new Date(res.lastAutoRun.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
     $("lastRun").textContent = `Last auto: ${when} · ${res.lastAutoRun.status}`;
   }
+  const versionEl = $("versionInfo");
+  versionEl.className = "";
+  if (res.update) {
+    versionEl.textContent = `v${res.version} · update ${res.update.latest} available`;
+    versionEl.className = "warn";
+  } else if (res.updateInfo?.checkedAt) {
+    const checked = new Date(res.updateInfo.checkedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    versionEl.textContent = `v${res.version} · up to date (checked ${checked})`;
+    versionEl.className = "ok";
+  } else {
+    versionEl.textContent = `v${res.version}`;
+  }
+
   const banner = $("updateBanner");
   if (res.update) {
     $("updateText").textContent = `Version ${res.update.latest} is available (you have ${res.update.current}).`;

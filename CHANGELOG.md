@@ -4,6 +4,12 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.2.1] — 2026-09-15
+
+### Added
+- Popup footer shows the installed version and the result of the last update
+  check ("up to date (checked Sep 15)" or "update X.Y.Z available").
+
 ## [1.2.0] — 2026-09-15
 
 ### Added

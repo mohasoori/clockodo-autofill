@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.2.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.2.1 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Fill your daily Clockodo working times in one click, for a date range, or
 automatically every workday. Each person uses their **own** Clockodo API key;
@@ -88,6 +88,7 @@ Keep **Skip weekends** on unless you work weekends.
 | **Auto-fill daily**| Enables/disables the schedule; shows next run.                  |
 | **Skip today**     | Marks today as a day that must never be filled.                 |
 | Green/red dot      | Whether the API key currently works.                            |
+| Footer             | Installed version + last update check ("up to date" / "update available"), and the last automatic run. |
 
 Manage the full list of skipped dates (holidays, sick days) in
 **Options → Days to never fill**.
