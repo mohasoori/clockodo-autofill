@@ -120,6 +120,41 @@
     }
     .total-badge.warn { background: var(--warn-soft); color: var(--warn); }
 
+    .segmented {
+      display: inline-flex; padding: 3px; gap: 3px;
+      background: var(--bg); border: 1px solid var(--border); border-radius: 10px;
+      margin-bottom: 14px;
+    }
+    .segmented label { position: relative; }
+    .segmented input { position: absolute; opacity: 0; width: 0; height: 0; }
+    .segmented span {
+      display: inline-block; padding: 6px 12px; border-radius: 8px;
+      font-size: 12.5px; font-weight: 550; cursor: pointer; color: var(--text-muted);
+    }
+    .segmented input:checked + span { background: var(--card); color: var(--text); box-shadow: var(--shadow); }
+    .segmented input:focus-visible + span { outline: 2px solid var(--accent); }
+
+    #fixedFields, #randomFields { display: none; }
+
+    .duration { display: flex; align-items: center; gap: 6px; }
+    .duration input[type="number"] { width: 72px; }
+    .duration span { font-size: 12px; color: var(--text-muted); }
+    input[type="number"] {
+      background: var(--input-bg); color: var(--text); border: 1px solid var(--border);
+      border-radius: 9px; padding: 8px 10px; font-size: 13px; font-family: inherit; outline: none;
+      width: 100%;
+    }
+    input[type="number"]:focus { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
+
+    .preview-list { list-style: none; padding: 0; margin: 10px 0 0; font-size: 12.5px; }
+    .preview-list li {
+      display: flex; justify-content: space-between; gap: 10px;
+      padding: 6px 0; border-top: 1px solid var(--border);
+      font-variant-numeric: tabular-nums;
+    }
+    .preview-list li:first-child { border-top: none; }
+    .preview-list .day { color: var(--text-muted); }
+
     #entryFields, #worktimeFields {
       display: none;
       margin-top: 14px;
@@ -236,16 +271,55 @@
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
         Working hours
       </h2>
-      <div class="timeline">
-        <div class="timeline-bar" id="timelineBar"></div>
-        <div class="timeline-axis" id="timelineAxis"></div>
+      <div class="segmented" role="radiogroup" aria-label="Schedule mode">
+        <label><input type="radio" name="scheduleMode" value="fixed" /><span>Fixed blocks</span></label>
+        <label><input type="radio" name="scheduleMode" value="random" /><span>Random start, fixed duration</span></label>
       </div>
-      <div id="blocksList"></div>
-      <div class="blocks-footer">
-        <button class="small" id="addBlockBtn">+ Add block</button>
-        <span id="blocksTotal" class="total-badge"></span>
+
+      <div id="fixedFields">
+        <div class="timeline">
+          <div class="timeline-bar" id="timelineBar"></div>
+          <div class="timeline-axis" id="timelineAxis"></div>
+        </div>
+        <div id="blocksList"></div>
+        <div class="blocks-footer">
+          <button class="small" id="addBlockBtn">+ Add block</button>
+          <span id="blocksTotal" class="total-badge"></span>
+        </div>
+        <div class="hint">Same times every day. One block = one continuous stretch of work; add a second block to model a break.</div>
       </div>
-      <div class="hint">One block = one continuous stretch of work. Add a second block to model a break — the gap between blocks is unpaid time.</div>
+
+      <div id="randomFields">
+        <div class="two-col field">
+          <div>
+            <label class="field-label">Total work time per day</label>
+            <div class="duration">
+              <input type="number" id="randomTotalH" min="0" max="16" step="1" aria-label="Hours" /><span>h</span>
+              <input type="number" id="randomTotalM" min="0" max="59" step="1" aria-label="Minutes" /><span>min</span>
+            </div>
+          </div>
+          <div>
+            <label class="field-label" for="randomBreakMinutes">Break (minutes, 0 = single block)</label>
+            <input type="number" id="randomBreakMinutes" min="0" max="240" step="5" />
+          </div>
+        </div>
+        <div class="two-col field">
+          <div>
+            <label class="field-label" for="randomEarliestStart">Start no earlier than</label>
+            <input type="time" id="randomEarliestStart" />
+          </div>
+          <div>
+            <label class="field-label" for="randomLatestStart">Start no later than</label>
+            <input type="time" id="randomLatestStart" />
+          </div>
+        </div>
+        <div class="action-row" style="margin-top:4px">
+          <button class="small" id="previewRandomBtn">Preview next days</button>
+          <span id="randomTotalBadge" class="total-badge"></span>
+        </div>
+        <ul id="randomPreview" class="preview-list"></ul>
+        <div class="hint">Each day gets a different start time inside the window; the end follows from the exact duration. The same day always produces the same times, so retries and "Replace" stay consistent.</div>
+      </div>
 
       <div class="field" style="margin-top:16px">
         <label class="field-label" for="timezone">Timezone</label>

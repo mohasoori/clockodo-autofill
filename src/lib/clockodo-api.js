@@ -43,8 +43,17 @@ export const DEFAULT_CONFIG = {
   mode: "entry",        // "entry" (time entries) | "worktime" (change request)
   autoApprove: true,    // worktime mode: try to approve the change request immediately
 
-  // Working blocks in the user's timezone, 24h "HH:MM". Gaps between blocks are breaks.
-  blocks: [{ start: "09:00", end: "17:00" }],
+  // "fixed": book `blocks` as configured. "random": per day, pick a start time
+  // inside [randomEarliestStart, randomLatestStart] and book exactly
+  // randomTotalMinutes of work, split around a break of randomBreakMinutes
+  // (0 = one block). Times are derived deterministically from the date + user,
+  // so retries and "replace" produce the same day.
+  scheduleMode: "fixed",
+  blocks: [{ start: "09:00", end: "17:00" }], // fixed mode, user's timezone, 24h "HH:MM"
+  randomTotalMinutes: 480,
+  randomBreakMinutes: 60,
+  randomEarliestStart: "08:00",
+  randomLatestStart: "09:30",
   timezone: "Europe/Berlin", // IANA zone used for blocks, autoTime, "today" and weekends
 
   skipWeekends: true,
@@ -220,11 +229,46 @@ export function shouldSkip(cfg, dateStr) {
 }
 
 export const MAX_BLOCKS = 6;
+export const SCHEDULE_MODES = ["fixed", "random"];
+const MAX_TOTAL_MINUTES = 16 * 60;
+const MAX_BREAK_MINUTES = 4 * 60;
+
+export const toMinutes = (hhmm) => {
+  const [h, m] = hhmm.split(":").map(Number);
+  return h * 60 + m;
+};
+export const toHHMM = (mins) =>
+  `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
 
 // Returns an error message, or null when the schedule is usable.
 export function validateSchedule(cfg) {
   if (!isValidTimeZone(cfg.timezone)) return `Unknown timezone "${cfg.timezone}".`;
-  const blocks = cfg.blocks;
+  if (!SCHEDULE_MODES.includes(cfg.scheduleMode)) return `Unknown schedule mode "${cfg.scheduleMode}".`;
+  return cfg.scheduleMode === "random" ? validateRandomSchedule(cfg) : validateFixedBlocks(cfg.blocks);
+}
+
+function validateRandomSchedule(cfg) {
+  const total = cfg.randomTotalMinutes;
+  const brk = cfg.randomBreakMinutes;
+  if (!Number.isInteger(total) || total < 1 || total > MAX_TOTAL_MINUTES) {
+    return `Total work time must be between 1 minute and ${MAX_TOTAL_MINUTES / 60} hours.`;
+  }
+  if (!Number.isInteger(brk) || brk < 0 || brk > MAX_BREAK_MINUTES) {
+    return `Break must be between 0 and ${MAX_BREAK_MINUTES / 60} hours.`;
+  }
+  if (!HHMM_RE.test(cfg.randomEarliestStart || "") || !HHMM_RE.test(cfg.randomLatestStart || "")) {
+    return "Start window times must be HH:MM.";
+  }
+  const earliest = toMinutes(cfg.randomEarliestStart);
+  const latest = toMinutes(cfg.randomLatestStart);
+  if (earliest > latest) return "Earliest start must not be after latest start.";
+  if (latest + total + brk > 24 * 60) {
+    return `Latest start ${cfg.randomLatestStart} + ${toHHMM(total + brk)} of work and break runs past midnight.`;
+  }
+  return null;
+}
+
+function validateFixedBlocks(blocks) {
   if (!Array.isArray(blocks) || blocks.length === 0) return "Add at least one working block.";
   if (blocks.length > MAX_BLOCKS) return `At most ${MAX_BLOCKS} blocks per day.`;
   for (let i = 0; i < blocks.length; i++) {
@@ -236,6 +280,51 @@ export function validateSchedule(cfg) {
     }
   }
   return null;
+}
+
+// ---------------------------------------------------------------------------
+// Blocks for a given day (fixed, or generated for random mode)
+// ---------------------------------------------------------------------------
+// Small deterministic PRNG (mulberry32) seeded from a string, so the same
+// user + date always yields the same "random" day.
+function seededRandom(seedStr) {
+  let h = 1779033703 ^ seedStr.length;
+  for (let i = 0; i < seedStr.length; i++) {
+    h = Math.imul(h ^ seedStr.charCodeAt(i), 3432918353);
+    h = (h << 13) | (h >>> 19);
+  }
+  let a = h >>> 0;
+  return () => {
+    a = (a + 0x6d2b79f5) >>> 0;
+    let t = a;
+    t = Math.imul(t ^ (t >>> 15), t | 1);
+    t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
+    return ((t ^ (t >>> 14)) >>> 0) / 4294967296;
+  };
+}
+
+export function randomBlocksFor(cfg, dateStr, seed = `${cfg.usersId}|${dateStr}`) {
+  const rand = seededRandom(seed);
+  const earliest = toMinutes(cfg.randomEarliestStart);
+  const latest = toMinutes(cfg.randomLatestStart);
+  const total = cfg.randomTotalMinutes;
+  const brk = cfg.randomBreakMinutes;
+
+  const start = earliest + Math.floor(rand() * (latest - earliest + 1));
+  if (brk === 0 || total < 2) {
+    return [{ start: toHHMM(start), end: toHHMM(start + total) }];
+  }
+  // Morning share 45–60 % of the total, at least one minute on each side.
+  const morning = Math.min(total - 1, Math.max(1, Math.round(total * (0.45 + rand() * 0.15))));
+  const afternoonStart = start + morning + brk;
+  return [
+    { start: toHHMM(start), end: toHHMM(start + morning) },
+    { start: toHHMM(afternoonStart), end: toHHMM(afternoonStart + (total - morning)) },
+  ];
+}
+
+export function blocksForDay(cfg, dateStr) {
+  return cfg.scheduleMode === "random" ? randomBlocksFor(cfg, dateStr) : cfg.blocks;
 }
 
 // ---------------------------------------------------------------------------
@@ -386,12 +475,16 @@ export async function fillDay(cfg, dateStr, { force = false, onExisting = "skip"
     }
   }
 
-  const result = cfg.mode === "entry" ? await fillDayAsEntries(cfg, dateStr) : await fillDayAsWorkTime(cfg, dateStr);
+  const blocks = blocksForDay(cfg, dateStr);
+  const result = cfg.mode === "entry"
+    ? await fillDayAsEntries(cfg, dateStr, blocks)
+    : await fillDayAsWorkTime(cfg, dateStr, blocks);
+  result.blocks = blocks;
   return replaced ? { ...result, status: "replaced", replaced } : result;
 }
 
-async function fillDayAsWorkTime(cfg, dateStr) {
-  const changes = cfg.blocks.map(({ start, end }) => ({
+async function fillDayAsWorkTime(cfg, dateStr, blocks) {
+  const changes = blocks.map(({ start, end }) => ({
     type: INTERVAL_ADD,
     time_since: wallclockToUTC(dateStr, start, cfg.timezone),
     time_until: wallclockToUTC(dateStr, end, cfg.timezone),
@@ -425,10 +518,10 @@ async function fillDayAsWorkTime(cfg, dateStr) {
 // Creates one entry per block. If a later block fails, already-created entries
 // are deleted again so the day is never left half-booked (which the duplicate
 // check would otherwise report as "already filled").
-async function fillDayAsEntries(cfg, dateStr) {
+async function fillDayAsEntries(cfg, dateStr, blocks) {
   const ids = [];
   try {
-    for (const { start, end } of cfg.blocks) {
+    for (const { start, end } of blocks) {
       const created = await request(cfg, "POST", EP.entries, {
         customers_id: cfg.customersId,
         services_id: cfg.servicesId,

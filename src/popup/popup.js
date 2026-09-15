@@ -22,12 +22,14 @@ function setConnection(kind, label) {
   $("connLabel").textContent = label;
 }
 
+const blocksText = (blocks) => (blocks || []).map((b) => `${b.start}–${b.end}`).join(", ");
+
 function describe(result) {
   switch (result.status) {
     case "replaced":
-      return `${result.dateStr}: replaced (${result.replaced} old entr${result.replaced === 1 ? "y" : "ies"} removed)`;
+      return `${result.dateStr}: replaced (${result.replaced} old entr${result.replaced === 1 ? "y" : "ies"} removed) — ${blocksText(result.blocks)}`;
     case "created":
-      if (mode === "entry") return `${result.dateStr}: time entries created`;
+      if (mode === "entry") return `${result.dateStr}: booked ${blocksText(result.blocks)}`;
       return result.approved
         ? `${result.dateStr}: created & approved`
         : `${result.dateStr}: created (pending approval${result.approveError ? " — " + result.approveError : ""})`;

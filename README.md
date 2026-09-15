@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill
 
-**Version 1.2.2** · [What's new](CHANGELOG.md) · MIT
+**Version 1.3.0** · [What's new](CHANGELOG.md) · MIT
 
 A small Chrome extension (Manifest V3) that fills your daily working times in
 [Clockodo](https://my.clockodo.com) — in one click, for a whole date range, or
@@ -17,8 +17,9 @@ with their **own** personal Clockodo API key, stored only in their browser.
 - **Auto-fill every workday** — runs at a time you choose while Chrome is open,
   and catches up on next launch if that time already passed.
 - **Skip days** — quick "Skip today" toggle plus a managed list of dates to never fill.
-- **Configurable hours** — one or more working blocks per day (gaps = breaks),
-  in any IANA timezone, DST-safe.
+- **Configurable hours** — fixed blocks (gaps = breaks), or *random start
+  with a fixed duration* (e.g. exactly 8 h 23 min starting somewhere between
+  07:30 and 09:30, different each day). Any IANA timezone, DST-safe.
 - **Duplicate-safe** — never books a day that already has a time entry
   (*Skip*), or optionally *Replace* that day's entries with your blocks.
 - Light/dark theme, in-app illustrated guide (popup → Help).
