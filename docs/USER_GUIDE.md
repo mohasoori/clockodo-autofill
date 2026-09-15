@@ -1,5 +1,7 @@
 # Clockodo Auto-Fill — User Guide
 
+*For version 1.1.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+
 Fill your daily Clockodo working times in one click, for a date range, or
 automatically every workday. Each person uses their **own** Clockodo API key;
 nothing is shared and nothing leaves your browser except requests to

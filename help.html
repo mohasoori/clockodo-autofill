@@ -73,6 +73,7 @@
     .faq details { border-top: 1px solid var(--border); padding: 10px 0; }
     .faq details:first-of-type { border-top: none; }
     .faq summary { cursor: pointer; font-weight: 600; font-size: 13.5px; }
+    @media print { .faq summary { list-style: none; } .faq summary::-webkit-details-marker { display: none; } }
     .faq details p { margin: 8px 0 0; color: var(--text-muted); font-size: 13px; }
 
     .foot { text-align: center; color: var(--text-muted); font-size: 12px; margin-top: 30px; }
@@ -97,12 +98,13 @@
   <div class="hero">
     <img src="icons/icon48.png" alt="" />
     <div>
-      <h1>Clockodo Auto-Fill — Guide</h1>
+      <h1>Clockodo Auto-Fill — Guide <span class="badge" id="appVersion">v1.1.0</span></h1>
       <p>Fill your daily Clockodo times in one click, for a date range, or automatically every workday.</p>
     </div>
   </div>
 
   <nav class="toc">
+    <a href="#whatsnew">What's new</a>
     <a href="#install">Install</a>
     <a href="#apikey">Get API key</a>
     <a href="#connect">Connect</a>
@@ -112,6 +114,20 @@
     <a href="#popup">Daily use</a>
     <a href="#faq">FAQ</a>
   </nav>
+
+  <!-- What's new -->
+  <section class="card" id="whatsnew" style="margin-bottom:18px">
+    <h2 class="card-title" style="margin-bottom:8px">What's new in 1.1.0</h2>
+    <ul style="margin:0; padding-left:20px; font-size:13px; line-height:1.6">
+      <li><strong>Flexible working blocks</strong> — start with one, add up to six; gaps are breaks. Live day timeline and daily total.</li>
+      <li><strong>Your timezone</strong> — pick any zone; every time in the extension follows it.</li>
+      <li><strong>Auto-fill catch-up</strong> — missed the scheduled time because Chrome was closed? It runs on next launch.</li>
+      <li><strong>Customer &amp; service picker</strong> — choose from real lists instead of typing IDs.</li>
+      <li>Redesigned Options and popup, colour-coded status messages, dark mode, this guide + PDF.</li>
+      <li>Fixes for retired Clockodo API endpoints and timestamp format.</li>
+    </ul>
+    <div class="hint" style="margin-top:10px">Full history: <code>CHANGELOG.md</code> in the repository.</div>
+  </section>
 
   <!-- 1 Install -->
   <section class="step card" id="install">
@@ -141,7 +157,7 @@
         <rect x="22" y="88" width="26" height="26" rx="7" class="mock-accent"/>
         <circle cx="35" cy="101" r="7" fill="none" stroke="#fff" stroke-width="2"/>
         <text x="58" y="98" class="mock-txt">Clockodo Auto-Fill</text>
-        <text x="58" y="112" class="mock-muted">1.0.0 · Loaded from folder</text>
+        <text x="58" y="112" class="mock-muted">1.1.0 · Loaded from folder</text>
         <text x="22" y="145" class="mock-muted">Details   Remove</text>
         <rect x="248" y="130" width="28" height="12" rx="6" class="mock-accent"/>
         <circle cx="270" cy="136" r="5" fill="#fff"/>
@@ -352,31 +368,31 @@
   <!-- FAQ -->
   <section class="card faq" id="faq">
     <h2 class="card-title" style="margin-bottom:8px">FAQ &amp; troubleshooting</h2>
-    <details>
+    <details open>
       <summary>"Not configured — open Options" in the popup</summary>
       <p>Email or API key missing. Do steps 2–3.</p>
     </details>
-    <details>
+    <details open>
       <summary>"Entry mode needs a customer and a service"</summary>
       <p>Do step 4: Load customers &amp; services, select both, Save.</p>
     </details>
-    <details>
+    <details open>
       <summary>"Work times must match the day's entries"</summary>
       <p>You're in change-request mode, but this Clockodo derives attendance from time entries. Switch mode to <em>Time entries</em>.</p>
     </details>
-    <details>
+    <details open>
       <summary>"already filled" but I see nothing in Clockodo</summary>
       <p>The extension found an existing working time for that date. Check the day in Clockodo's timetable / entries list — possibly an entry booked another way.</p>
     </details>
-    <details>
+    <details open>
       <summary>Auto-fill didn't run at the set time</summary>
       <p>Chrome must be running. If it was closed, it catches up the next time Chrome starts. Toggling the switch off and on also triggers an immediate catch-up when the time has passed.</p>
     </details>
-    <details>
+    <details open>
       <summary>Can I change the hours later?</summary>
       <p>Yes — Options → Working hours → Save. Future fills use the new times; existing entries are not changed.</p>
     </details>
-    <details>
+    <details open>
       <summary>Is anything sent anywhere besides Clockodo?</summary>
       <p>No. Requests go from your browser straight to <code>my.clockodo.com</code> using your own API key. There is no server, analytics, or shared storage.</p>
     </details>
@@ -387,5 +403,6 @@
     <a href="mailto:contact@msoori.com">contact@msoori.com</a> · MIT License
   </p>
 </div>
+<script src="help.js"></script>
 </body>
 </html>

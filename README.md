@@ -1,5 +1,7 @@
 # Clockodo Auto-Fill
 
+**Version 1.1.0** · [What's new](CHANGELOG.md) · MIT
+
 A small Chrome extension (Manifest V3) that fills your daily working times in
 [Clockodo](https://my.clockodo.com) — in one click, for a whole date range, or
 automatically every workday.
@@ -19,6 +21,12 @@ with their **own** personal Clockodo API key, stored only in their browser.
   in any IANA timezone, DST-safe.
 - **Duplicate-safe** — never books a day that already has working time.
 - Light/dark theme, in-app illustrated guide (`help.html`).
+
+## Compatibility
+
+Works wherever Google Chrome runs — **Windows, macOS, Linux, ChromeOS** — and
+in other Chromium browsers (Edge, Brave, Opera, Vivaldi) via the same
+*Load unpacked* steps. Not available for Firefox or Safari.
 
 ## Install (load unpacked)
 
@@ -74,9 +82,11 @@ clockodo-api.js    API client, config store, timezone/date helpers
 background.js      service worker: daily alarm, catch-up, message router
 popup.html/js      one-click today, range fill, toggles
 options.html/js    account, booking target, hours, schedule, skip days
-help.html          illustrated setup guide
+help.html/js       illustrated setup guide + what's new
 theme.css          shared design tokens (light/dark)
 icons/             16/48/128 px icons
+docs/              user guide (md + pdf), developer guide
+CHANGELOG.md       release notes
 ```
 
 No build step, no dependencies — plain HTML/CSS/JS.
