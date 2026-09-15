@@ -1,28 +1,24 @@
 // popup.js
 import { loadConfig, todayStr } from "./clockodo-api.js";
 
-const connDot = document.getElementById("connDot");
-const connLabel = document.getElementById("connLabel");
-const fromDate = document.getElementById("fromDate");
-const toDate = document.getElementById("toDate");
-const fillTodayBtn = document.getElementById("fillTodayBtn");
-const fillRangeBtn = document.getElementById("fillRangeBtn");
-const autoDailyToggle = document.getElementById("autoDailyToggle");
-const skipTodayToggle = document.getElementById("skipTodayToggle");
-const statusEl = document.getElementById("status");
-const optionsLink = document.getElementById("optionsLink");
+const $ = (id) => document.getElementById(id);
 
-function log(text) {
-  statusEl.textContent = text;
-}
+let mode = "entry";
 
 function send(msg) {
   return chrome.runtime.sendMessage(msg);
 }
 
+function setStatus(text, kind = "") {
+  const el = $("status");
+  el.textContent = text;
+  el.className = text ? `show ${kind}` : "";
+}
+
 function describe(result) {
   switch (result.status) {
     case "created":
+      if (mode === "entry") return `${result.dateStr}: time entries created`;
       return result.approved
         ? `${result.dateStr}: created & approved`
         : `${result.dateStr}: created (pending approval${result.approveError ? " — " + result.approveError : ""})`;
@@ -37,83 +33,104 @@ function describe(result) {
   }
 }
 
-async function init() {
-  const cfg = await loadConfig();
-  const today = todayStr(cfg.timezone);
-  fromDate.value = today;
-  toDate.value = today;
-  autoDailyToggle.checked = !!cfg.autoDaily;
-  skipTodayToggle.checked = (cfg.skipDates || []).includes(today);
+function kindOf(results) {
+  if (results.some((r) => r.status === "error")) return "bad";
+  if (results.some((r) => r.status === "created")) return "ok";
+  return "";
+}
 
-  if (!cfg.apiUser || !cfg.apiKey) {
-    connDot.className = "dot bad";
-    connLabel.textContent = "Not configured — open Options";
-    return;
-  }
+function fmtTime(ts) {
+  return new Date(ts).toLocaleString(undefined, {
+    weekday: "short", hour: "2-digit", minute: "2-digit",
+  });
+}
 
-  try {
-    const res = await send({ action: "testConnection" });
-    if (res.ok) {
-      connDot.className = "dot ok";
-      connLabel.textContent = res.name || cfg.apiUser;
-    } else {
-      connDot.className = "dot bad";
-      connLabel.textContent = res.error || "Connection failed";
-    }
-  } catch (e) {
-    connDot.className = "dot bad";
-    connLabel.textContent = e.message;
+async function refreshSchedule() {
+  const res = await send({ action: "getStatus" });
+  if (!res.ok) return;
+  $("nextRun").textContent = res.nextRun ? `Next run: ${fmtTime(res.nextRun)}` : "Off";
+  if (res.lastAutoRun) {
+    const r = res.lastAutoRun;
+    const when = new Date(r.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
+    $("lastRun").textContent = `Last auto: ${when} · ${r.status}`;
   }
 }
 
-fillTodayBtn.addEventListener("click", async () => {
-  fillTodayBtn.disabled = true;
-  log("Filling today…");
-  try {
-    const res = await send({ action: "fillToday" });
-    log(res.ok ? describe(res.result) : `Error: ${res.error}`);
-  } catch (e) {
-    log(`Error: ${e.message}`);
-  } finally {
-    fillTodayBtn.disabled = false;
-  }
-});
+async function init() {
+  const cfg = await loadConfig();
+  mode = cfg.mode;
+  const today = todayStr(cfg.timezone);
+  $("fromDate").value = today;
+  $("toDate").value = today;
+  $("autoDailyToggle").checked = !!cfg.autoDaily;
+  $("skipTodayToggle").checked = (cfg.skipDates || []).includes(today);
+  refreshSchedule();
 
-fillRangeBtn.addEventListener("click", async () => {
-  if (!fromDate.value || !toDate.value) {
-    log("Pick both dates first.");
+  if (!cfg.apiUser || !cfg.apiKey) {
+    $("connDot").className = "dot bad";
+    $("connLabel").textContent = "Not configured — open Options";
     return;
   }
-  fillRangeBtn.disabled = true;
-  log("Filling range…");
   try {
-    const res = await send({
-      action: "fillRange",
-      from: fromDate.value,
-      to: toDate.value,
-    });
-    log(res.ok ? res.results.map(describe).join("\n") : `Error: ${res.error}`);
+    const res = await send({ action: "testConnection" });
+    $("connDot").className = res.ok ? "dot ok" : "dot bad";
+    $("connLabel").textContent = res.ok ? (res.name || cfg.apiUser) : (res.error || "Connection failed");
   } catch (e) {
-    log(`Error: ${e.message}`);
+    $("connDot").className = "dot bad";
+    $("connLabel").textContent = e.message;
+  }
+}
+
+$("fillTodayBtn").addEventListener("click", async () => {
+  const btn = $("fillTodayBtn");
+  btn.disabled = true;
+  setStatus("Filling today…");
+  try {
+    const res = await send({ action: "fillToday" });
+    if (res.ok) setStatus(describe(res.result), kindOf([res.result]));
+    else setStatus(`Error: ${res.error}`, "bad");
+  } catch (e) {
+    setStatus(`Error: ${e.message}`, "bad");
   } finally {
-    fillRangeBtn.disabled = false;
+    btn.disabled = false;
   }
 });
 
-autoDailyToggle.addEventListener("change", async () => {
-  await send({ action: "setAutoDaily", enabled: autoDailyToggle.checked });
-  log(autoDailyToggle.checked ? "Auto-fill enabled." : "Auto-fill disabled.");
+$("fillRangeBtn").addEventListener("click", async () => {
+  const from = $("fromDate").value;
+  const to = $("toDate").value;
+  if (!from || !to) return setStatus("Pick both dates first.", "bad");
+  if (from > to) return setStatus("\"From\" must be before \"To\".", "bad");
+  const btn = $("fillRangeBtn");
+  btn.disabled = true;
+  setStatus("Filling range…");
+  try {
+    const res = await send({ action: "fillRange", from, to });
+    if (res.ok) setStatus(res.results.map(describe).join("\n"), kindOf(res.results));
+    else setStatus(`Error: ${res.error}`, "bad");
+  } catch (e) {
+    setStatus(`Error: ${e.message}`, "bad");
+  } finally {
+    btn.disabled = false;
+  }
 });
 
-skipTodayToggle.addEventListener("change", async () => {
+$("autoDailyToggle").addEventListener("change", async () => {
+  const enabled = $("autoDailyToggle").checked;
+  await send({ action: "setAutoDaily", enabled });
+  await refreshSchedule();
+  setStatus(enabled ? "Auto-fill enabled. Runs at the scheduled time while Chrome is open; catches up on launch if missed." : "Auto-fill disabled.");
+});
+
+$("skipTodayToggle").addEventListener("change", async () => {
   const res = await send({ action: "toggleSkipToday" });
   if (res.ok) {
-    skipTodayToggle.checked = res.skippedToday;
-    log(res.skippedToday ? "Today marked as skip." : "Today un-skipped.");
+    $("skipTodayToggle").checked = res.skippedToday;
+    setStatus(res.skippedToday ? "Today marked as skip." : "Today un-skipped.");
   }
 });
 
-optionsLink.addEventListener("click", (e) => {
+$("optionsLink").addEventListener("click", (e) => {
   e.preventDefault();
   chrome.runtime.openOptionsPage();
 });

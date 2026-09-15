@@ -29,37 +29,61 @@ function nextFireTime(hhmm) {
 async function rescheduleAlarm() {
   await chrome.alarms.clear(ALARM_NAME);
   const cfg = await loadConfig();
-  if (!cfg.autoDaily) return;
-  chrome.alarms.create(ALARM_NAME, {
-    when: nextFireTime(cfg.autoTime),
-    periodInMinutes: 24 * 60,
-  });
+  if (!cfg.autoDaily) return null;
+  const when = nextFireTime(cfg.autoTime);
+  chrome.alarms.create(ALARM_NAME, { when, periodInMinutes: 24 * 60 });
+  return when;
 }
 
-chrome.runtime.onInstalled.addListener(rescheduleAlarm);
-chrome.runtime.onStartup.addListener(rescheduleAlarm);
-
-chrome.alarms.onAlarm.addListener(async (alarm) => {
-  if (alarm.name !== ALARM_NAME) return;
+// Alarms only fire while Chrome is running. If today's scheduled time already
+// passed (Chrome was closed, or auto-fill was just enabled late in the day),
+// run once now so the day doesn't get missed. fillDay's dup check keeps this safe.
+async function catchUpIfMissed() {
   const cfg = await loadConfig();
   if (!cfg.autoDaily || !cfg.usersId) return;
+  const [h, m] = cfg.autoTime.split(":").map(Number);
+  const scheduled = new Date();
+  scheduled.setHours(h, m, 0, 0);
+  if (Date.now() < scheduled.getTime()) return;
+  const { lastAutoRun } = await chrome.storage.local.get("lastAutoRun");
+  if (lastAutoRun && lastAutoRun.dateStr === todayStr(cfg.timezone)) return;
+  await runAutoFill();
+}
 
+async function runAutoFill() {
+  const cfg = await loadConfig();
+  if (!cfg.autoDaily || !cfg.usersId) return;
+  const dateStr = todayStr(cfg.timezone);
+  let result;
   try {
-    const result = await fillDay(cfg, todayStr(cfg.timezone), { force: false });
-    if (result.status === "created") {
-      notify(
-        "Clockodo filled",
-        result.approved
-          ? `Today (${result.dateStr}) filled and approved.`
-          : `Today (${result.dateStr}) filled — pending approval.`
-      );
-    } else if (result.status === "error") {
-      notify("Clockodo auto-fill failed", result.error || "Unknown error");
-    }
-    // "skipped" / "exists" -> silent, nothing to report.
+    result = await fillDay(cfg, dateStr, { force: false });
   } catch (e) {
-    notify("Clockodo auto-fill failed", e.message);
+    result = { dateStr, status: "error", error: e.message };
   }
+  await chrome.storage.local.set({ lastAutoRun: { ...result, at: Date.now() } });
+
+  if (result.status === "created") {
+    const detail =
+      cfg.mode === "entry" ? "time entries created." :
+      result.approved ? "working time approved." : "change request pending approval.";
+    notify("Clockodo filled", `Today (${dateStr}): ${detail}`);
+  } else if (result.status === "error") {
+    notify("Clockodo auto-fill failed", result.error || "Unknown error");
+  }
+  // "skipped" / "exists" -> silent, nothing to report.
+}
+
+chrome.runtime.onInstalled.addListener(async () => {
+  await rescheduleAlarm();
+  await catchUpIfMissed();
+});
+chrome.runtime.onStartup.addListener(async () => {
+  await rescheduleAlarm();
+  await catchUpIfMissed();
+});
+
+chrome.alarms.onAlarm.addListener((alarm) => {
+  if (alarm.name === ALARM_NAME) runAutoFill();
 });
 
 function notify(title, message) {
@@ -113,12 +137,22 @@ async function handle(msg) {
     }
     case "setAutoDaily": {
       await saveConfig({ autoDaily: !!msg.enabled });
-      await rescheduleAlarm();
-      return { ok: true };
+      const nextRun = await rescheduleAlarm();
+      if (msg.enabled) await catchUpIfMissed();
+      return { ok: true, nextRun };
     }
     case "rescheduleAlarm": {
-      await rescheduleAlarm();
-      return { ok: true };
+      const nextRun = await rescheduleAlarm();
+      return { ok: true, nextRun };
+    }
+    case "getStatus": {
+      const alarm = await chrome.alarms.get(ALARM_NAME);
+      const { lastAutoRun } = await chrome.storage.local.get("lastAutoRun");
+      return {
+        ok: true,
+        nextRun: alarm ? alarm.scheduledTime : null,
+        lastAutoRun: lastAutoRun || null,
+      };
     }
     case "listCustomers": {
       const cfg = await loadConfig();
