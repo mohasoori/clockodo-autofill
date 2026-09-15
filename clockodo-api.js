@@ -99,14 +99,30 @@ async function request(cfg, method, path, body) {
   let data = null;
   try { data = text ? JSON.parse(text) : null; } catch { data = { raw: text }; }
   if (!res.ok) {
-    const msg = (data && (data.error || data.message)) || res.statusText;
-    const err = new Error(`Clockodo ${res.status}: ${msg}`);
+    const msg = extractErrorMessage(data) || res.statusText;
+    const err = new Error(`Clockodo ${res.status} on ${method} ${path}: ${msg}`);
     err.status = res.status;
     err.data = data;
     err.path = path;
     throw err;
   }
   return data;
+}
+
+// Clockodo error bodies vary by endpoint: {error: "..."},
+// {error: {message: "..."}}, {message: "..."}, or {errors: [{message}, ...]}.
+function extractErrorMessage(data) {
+  if (!data) return null;
+  if (typeof data.error === "string") return data.error;
+  if (data.error && typeof data.error === "object") {
+    return data.error.message || JSON.stringify(data.error);
+  }
+  if (typeof data.message === "string") return data.message;
+  if (Array.isArray(data.errors)) {
+    return data.errors.map((e) => e.message || JSON.stringify(e)).join("; ");
+  }
+  if (data.raw) return data.raw.slice(0, 300);
+  return JSON.stringify(data);
 }
 
 // ---------------------------------------------------------------------------
@@ -125,7 +141,8 @@ export function wallclockToUTC(dateStr, hhmm, timeZone = "Europe/Berlin") {
   const hh = map.hour === "24" ? 0 : Number(map.hour);
   const tzAsUTC = Date.UTC(+map.year, +map.month - 1, +map.day, hh, +map.minute, +map.second);
   const offset = tzAsUTC - asUTC; // how far the zone is ahead of UTC (ms)
-  return new Date(asUTC - offset).toISOString();
+  // Clockodo wants "Y-m-d\TH:i:s\Z" — no milliseconds.
+  return new Date(asUTC - offset).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
 // ---------------------------------------------------------------------------
