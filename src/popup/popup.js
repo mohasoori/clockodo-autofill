@@ -89,7 +89,7 @@ async function refreshSchedule() {
 
   const banner = $("updateBanner");
   if (res.update) {
-    $("updateText").textContent = `Version ${res.update.latest} is available (you have ${res.update.current}).`;
+    $("updateText").textContent = `Version ${res.update.latest} is available (you have ${res.version}).`;
     banner.href = res.update.url;
     banner.hidden = false;
   } else {

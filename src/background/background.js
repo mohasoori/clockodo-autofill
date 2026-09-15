@@ -15,7 +15,7 @@ import {
   DATE_RE,
   ON_EXISTING,
 } from "../lib/clockodo-api.js";
-import { fetchLatestVersion, updateCheckConfigured } from "../lib/updates.js";
+import { fetchLatestVersion, updateCheckConfigured, compareVersions } from "../lib/updates.js";
 
 const ALARM_NAME = "clockodo-daily-fill";
 const UPDATE_ALARM_NAME = "clockodo-update-check";
@@ -214,13 +214,19 @@ async function handle(msg) {
     case "getStatus": {
       const alarm = await chrome.alarms.get(ALARM_NAME);
       const { lastAutoRun, updateInfo } = await chrome.storage.local.get(["lastAutoRun", "updateInfo"]);
+      const version = chrome.runtime.getManifest().version;
+      // Re-evaluate against the running version: the stored result may predate
+      // an update of this very extension.
+      const info = cfg.checkUpdates && updateInfo?.latest
+        ? { ...updateInfo, current: version, available: compareVersions(updateInfo.latest, version) > 0 }
+        : null;
       return {
         ok: true,
         nextRun: alarm ? alarm.scheduledTime : null,
         lastAutoRun: lastAutoRun || null,
-        version: chrome.runtime.getManifest().version,
-        updateInfo: cfg.checkUpdates ? updateInfo || null : null,
-        update: cfg.checkUpdates && updateInfo?.available ? updateInfo : null,
+        version,
+        updateInfo: info,
+        update: info?.available ? info : null,
       };
     }
     case "checkForUpdate": {
