@@ -24,6 +24,8 @@ function setConnection(kind, label) {
 
 function describe(result) {
   switch (result.status) {
+    case "replaced":
+      return `${result.dateStr}: replaced (${result.replaced} old entr${result.replaced === 1 ? "y" : "ies"} removed)`;
     case "created":
       if (mode === "entry") return `${result.dateStr}: time entries created`;
       return result.approved
@@ -42,8 +44,22 @@ function describe(result) {
 
 function kindOf(results) {
   if (results.some((r) => r.status === "error")) return "bad";
-  if (results.some((r) => r.status === "created")) return "ok";
+  if (results.some((r) => r.status === "created" || r.status === "replaced")) return "ok";
   return "";
+}
+
+// Returns the chosen existing-day policy, or null if the user cancelled the
+// destructive confirmation.
+function existingPolicy(scopeText) {
+  const onExisting = $("onExisting").value;
+  if (onExisting === "replace") {
+    const ok = window.confirm(
+      `Replace mode deletes ALL of your existing time entries on every already-filled day ${scopeText} ` +
+      "and books your configured blocks instead.\n\nThis cannot be undone. Continue?"
+    );
+    if (!ok) return null;
+  }
+  return onExisting;
 }
 
 function fmtTime(ts) {
@@ -117,7 +133,9 @@ async function init() {
 }
 
 $("fillTodayBtn").addEventListener("click", async () => {
-  const res = await run($("fillTodayBtn"), "Filling today…", () => send({ action: "fillToday" }));
+  const onExisting = existingPolicy("(today)");
+  if (!onExisting) return;
+  const res = await run($("fillTodayBtn"), "Filling today…", () => send({ action: "fillToday", onExisting }));
   if (res) setStatus(describe(res.result), kindOf([res.result]));
 });
 
@@ -126,8 +144,14 @@ $("fillRangeBtn").addEventListener("click", async () => {
   const to = $("toDate").value;
   if (!from || !to) return setStatus("Pick both dates first.", "bad");
   if (from > to) return setStatus("\"From\" must be before \"To\".", "bad");
-  const res = await run($("fillRangeBtn"), "Filling range…", () => send({ action: "fillRange", from, to }));
+  const onExisting = existingPolicy(`between ${from} and ${to}`);
+  if (!onExisting) return;
+  const res = await run($("fillRangeBtn"), "Filling range…", () => send({ action: "fillRange", from, to, onExisting }));
   if (res) setStatus(res.results.map(describe).join("\n"), kindOf(res.results));
+});
+
+$("onExisting").addEventListener("change", () => {
+  $("onExisting").classList.toggle("danger", $("onExisting").value === "replace");
 });
 
 $("autoDailyToggle").addEventListener("change", async () => {

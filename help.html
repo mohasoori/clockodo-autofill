@@ -120,12 +120,12 @@
   <section class="card" id="whatsnew" style="margin-bottom:18px">
     <h2 class="card-title" style="margin-bottom:8px">What's new in <span data-version>1.1.0</span></h2>
     <ul style="margin:0; padding-left:20px; font-size:13px; line-height:1.6">
-      <li><strong>Flexible working blocks</strong> — start with one, add up to six; gaps are breaks. Live day timeline and daily total.</li>
-      <li><strong>Your timezone</strong> — pick any zone; every time in the extension follows it.</li>
-      <li><strong>Auto-fill catch-up</strong> — missed the scheduled time because Chrome was closed? It runs on next launch.</li>
-      <li><strong>Customer &amp; service picker</strong> — choose from real lists instead of typing IDs.</li>
-      <li>Redesigned Options and popup, colour-coded status messages, dark mode, this guide + PDF.</li>
-      <li>Fixes for retired Clockodo API endpoints and timestamp format.</li>
+      <li><strong>Conflict handling</strong> — choose what happens when a day already has time entries: <em>Skip</em> (default) or <em>Replace</em> (delete that day's entries and book your blocks). Handy for cleaning up duplicates.</li>
+      <li><strong>Update notice</strong> — a banner and notification tell you when a newer version is available (opt-out in Options → Updates).</li>
+      <li><strong>Reliable duplicate check</strong> — it now inspects your actual time entries for the day and never books when the check fails.</li>
+      <li><strong>Security &amp; privacy</strong> section (below) and a published privacy policy.</li>
+      <li>Fixes: legacy hours migration, DST-safe daily alarm, transactional multi-block booking, timezone edge cases.</li>
+      <li>From 1.1.0: flexible working blocks with day timeline, your own timezone, auto-fill catch-up, customer &amp; service picker, redesigned UI, this guide.</li>
     </ul>
     <div class="hint" style="margin-top:10px">Full history: <code>CHANGELOG.md</code> in the repository.</div>
   </section>
@@ -334,6 +334,7 @@
       <ul>
         <li><strong>Fill today</strong> — one click. Shows <em>created</em>, <em>already filled</em>, or <em>skipped</em>.</li>
         <li><strong>Fill range</strong> — pick From/To, fills every workday in between (great after vacation or a missed week).</li>
+        <li><strong>If a day already has any time entry</strong> — <em>Skip that day</em> (default, never touches existing bookings) or <em>Replace</em> (deletes all entries on those days and books your blocks — asks for confirmation; use it to clean up duplicates).</li>
         <li><strong>Skip today</strong> — mark today as a day that must not be filled (sick day, holiday). Manage the full list in Options.</li>
         <li>The dot next to your name is green when the API key works.</li>
       </ul>

@@ -278,21 +278,48 @@ export async function getServices(cfg) {
 }
 
 // ---------------------------------------------------------------------------
-// Duplicate protection
+// Existing bookings (duplicate protection / replace)
 // ---------------------------------------------------------------------------
-// Returns the set of dates in [fromStr, toStr] that already have working time.
-// Throws (fails closed) on any error or unexpected shape — better to abort
-// than to double-book.
-export async function getFilledDays(cfg, fromStr, toStr) {
+// All of these throw (fail closed) on any error or unexpected shape — better
+// to abort than to double-book.
+
+// Local calendar date of an ISO timestamp, in cfg.timezone.
+function localDateOf(iso, timeZone) {
+  return new Intl.DateTimeFormat("en-CA", { timeZone, year: "numeric", month: "2-digit", day: "2-digit" })
+    .format(new Date(iso));
+}
+
+// Entry mode: the user's time entries in [fromStr, toStr] → Map<date, entryId[]>.
+export async function getExistingEntries(cfg, fromStr, toStr) {
+  const since = wallclockToUTC(fromStr, "00:00", cfg.timezone);
+  const until = wallclockToUTC(toStr, "23:59", cfg.timezone);
+  const path = `${EP.entries}?time_since=${encodeURIComponent(since)}&time_until=${encodeURIComponent(until)}` +
+    `&filter[users_id]=${encodeURIComponent(cfg.usersId)}`;
+  const byDate = new Map();
+  for (let page = 1; ; page++) {
+    const data = await request(cfg, "GET", `${path}&page=${page}`);
+    if (!Array.isArray(data.entries)) throw new Error("Unexpected response from entries: no entries list.");
+    for (const e of data.entries) {
+      if (!e.time_since) continue;
+      const day = localDateOf(e.time_since, cfg.timezone);
+      if (!byDate.has(day)) byDate.set(day, []);
+      byDate.get(day).push(e.id);
+    }
+    const pages = data.paging && data.paging.count_pages;
+    if (!pages || page >= pages) return byDate;
+  }
+}
+
+// Worktime mode: dates in [fromStr, toStr] that already have working time.
+async function getFilledWorkTimeDays(cfg, fromStr, toStr) {
   // workTimes takes plain calendar dates (YYYY-MM-DD), not timestamps.
   const path = `${EP.workTimes}?users_id=${encodeURIComponent(cfg.usersId)}` +
     `&date_since=${fromStr}&date_until=${toStr}`;
   const filled = new Set();
   for (let page = 1; ; page++) {
     const data = await request(cfg, "GET", `${path}&page=${page}`);
-    const days = data.work_time_days;
-    if (!Array.isArray(days)) throw new Error("Unexpected response from workTimes: no work_time_days.");
-    for (const d of days) {
+    if (!Array.isArray(data.work_time_days)) throw new Error("Unexpected response from workTimes: no work_time_days.");
+    for (const d of data.work_time_days) {
       if (Array.isArray(d.work_time_intervals) && d.work_time_intervals.length > 0) filled.add(d.date);
     }
     const pages = data.paging && data.paging.count_pages;
@@ -300,8 +327,20 @@ export async function getFilledDays(cfg, fromStr, toStr) {
   }
 }
 
+// Map<date, entryId[]> of what already exists. In worktime mode the id lists
+// are empty (nothing we could delete), only the keys matter.
+export async function getExisting(cfg, fromStr, toStr) {
+  if (cfg.mode === "entry") return getExistingEntries(cfg, fromStr, toStr);
+  const filled = await getFilledWorkTimeDays(cfg, fromStr, toStr);
+  return new Map([...filled].map((d) => [d, []]));
+}
+
 export async function hasWorkTime(cfg, dateStr) {
-  return (await getFilledDays(cfg, dateStr, dateStr)).has(dateStr);
+  return (await getExisting(cfg, dateStr, dateStr)).has(dateStr);
+}
+
+async function deleteEntries(cfg, ids) {
+  for (const id of ids) await request(cfg, "DELETE", EP.entry(id));
 }
 
 // ---------------------------------------------------------------------------
@@ -321,19 +360,34 @@ export function assertFillable(cfg) {
   }
 }
 
-// opts.knownFilled: optional Set of dates already checked by the caller (range fills).
-export async function fillDay(cfg, dateStr, { force = false, knownFilled = null } = {}) {
+export const ON_EXISTING = ["skip", "replace"];
+
+// opts.onExisting: "skip" (default) → report "exists"; "replace" → delete that
+//   day's existing time entries (entry mode only) and book again.
+// opts.force: ignore weekend/opt-out rules and the existing check entirely.
+// opts.existing: optional Map<date, entryId[]> already fetched by the caller (range fills).
+export async function fillDay(cfg, dateStr, { force = false, onExisting = "skip", existing = null } = {}) {
   assertFillable(cfg);
 
   const skip = shouldSkip(cfg, dateStr);
   if (skip && !force) return { dateStr, status: "skipped", reason: skip };
 
+  let replaced = 0;
   if (!force) {
-    const exists = knownFilled ? knownFilled.has(dateStr) : await hasWorkTime(cfg, dateStr);
-    if (exists) return { dateStr, status: "exists" };
+    const found = existing || (await getExisting(cfg, dateStr, dateStr));
+    if (found.has(dateStr)) {
+      const ids = found.get(dateStr);
+      if (onExisting !== "replace") return { dateStr, status: "exists" };
+      if (cfg.mode !== "entry") {
+        throw new Error("Replace is only available in time-entry mode; working-time change requests cannot be removed here.");
+      }
+      await deleteEntries(cfg, ids);
+      replaced = ids.length;
+    }
   }
 
-  return cfg.mode === "entry" ? fillDayAsEntries(cfg, dateStr) : fillDayAsWorkTime(cfg, dateStr);
+  const result = cfg.mode === "entry" ? await fillDayAsEntries(cfg, dateStr) : await fillDayAsWorkTime(cfg, dateStr);
+  return replaced ? { ...result, status: "replaced", replaced } : result;
 }
 
 async function fillDayAsWorkTime(cfg, dateStr) {
@@ -409,14 +463,14 @@ async function rollbackEntries(cfg, ids) {
 // ---------------------------------------------------------------------------
 // Range fill
 // ---------------------------------------------------------------------------
-export async function fillRange(cfg, fromStr, toStr, { force = false } = {}) {
+export async function fillRange(cfg, fromStr, toStr, { force = false, onExisting = "skip" } = {}) {
   assertFillable(cfg);
   const dates = eachDate(fromStr, toStr);
-  const knownFilled = force ? null : await getFilledDays(cfg, fromStr, toStr);
+  const existing = force ? null : await getExisting(cfg, fromStr, toStr);
   const results = [];
   for (const dateStr of dates) {
     try {
-      results.push(await fillDay(cfg, dateStr, { force, knownFilled }));
+      results.push(await fillDay(cfg, dateStr, { force, onExisting, existing }));
     } catch (e) {
       results.push({ dateStr, status: "error", error: e.message });
     }

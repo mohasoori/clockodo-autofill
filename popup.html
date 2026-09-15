@@ -16,6 +16,10 @@
     .range-row > div { flex: 1; min-width: 0; }
     .range-row .field-label { font-size: 11px; margin-bottom: 3px; }
     .switch-row { padding: 8px 0; }
+    .existing-row { margin-top: 10px; }
+    .existing-row .field-label { font-size: 11px; margin-bottom: 3px; }
+    .existing-row select { font-size: 12px; padding: 6px 8px; }
+    .existing-row select.danger { border-color: var(--danger); }
     #status {
       font-size: 11.5px;
       white-space: pre-wrap;
@@ -72,6 +76,13 @@
       </div>
     </div>
     <button class="block" id="fillRangeBtn">Fill range</button>
+    <div class="existing-row">
+      <label class="field-label" for="onExisting">If a day already has any time entry</label>
+      <select id="onExisting">
+        <option value="skip">Skip that day (default)</option>
+        <option value="replace">Replace — delete all of that day's entries, book my blocks</option>
+      </select>
+    </div>
   </div>
 
   <div class="card">
