@@ -286,13 +286,17 @@
       <div id="entryFields">
         <div class="two-col">
           <div class="field">
-            <label class="field-label" for="customersId">Customer ID</label>
-            <input type="text" id="customersId" />
+            <label class="field-label" for="customersId">Customer</label>
+            <select id="customersId"><option value="">Load customers…</option></select>
           </div>
           <div class="field">
-            <label class="field-label" for="servicesId">Service ID</label>
-            <input type="text" id="servicesId" />
+            <label class="field-label" for="servicesId">Service</label>
+            <select id="servicesId"><option value="">Load services…</option></select>
           </div>
+        </div>
+        <div class="action-row" style="margin-top:0">
+          <button class="small" id="loadCustomersServicesBtn">Load customers &amp; services</button>
+          <span id="loadResult"></span>
         </div>
         <div class="switch-row">
           <div class="switch-label">Billable</div>

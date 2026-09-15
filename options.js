@@ -41,14 +41,55 @@ function toggleEntryFields() {
   $("entryFields").style.display = $("mode").value === "entry" ? "block" : "none";
 }
 
+let savedCustomersId = null;
+let savedServicesId = null;
+
 async function init() {
   const cfg = await loadConfig();
   for (const f of fields) $(f).value = cfg[f] ?? "";
   for (const c of checkboxes) $(c).checked = !!cfg[c];
+  savedCustomersId = cfg.customersId;
+  savedServicesId = cfg.servicesId;
   skipDates = [...(cfg.skipDates || [])];
   renderSkipList();
   toggleEntryFields();
 }
+
+function fillSelect(select, items, savedId) {
+  select.innerHTML = "";
+  const placeholder = document.createElement("option");
+  placeholder.value = "";
+  placeholder.textContent = items.length ? "Select…" : "No items found";
+  select.appendChild(placeholder);
+  for (const item of items) {
+    const opt = document.createElement("option");
+    opt.value = item.id;
+    opt.textContent = `${item.name} (#${item.id})`;
+    select.appendChild(opt);
+  }
+  if (savedId != null) select.value = String(savedId);
+}
+
+$("loadCustomersServicesBtn").addEventListener("click", async () => {
+  const el = $("loadResult");
+  el.className = "";
+  el.textContent = "Loading…";
+  try {
+    const [customersRes, servicesRes] = await Promise.all([
+      chrome.runtime.sendMessage({ action: "listCustomers" }),
+      chrome.runtime.sendMessage({ action: "listServices" }),
+    ]);
+    if (!customersRes.ok) throw new Error(customersRes.error);
+    if (!servicesRes.ok) throw new Error(servicesRes.error);
+    fillSelect($("customersId"), customersRes.customers, savedCustomersId);
+    fillSelect($("servicesId"), servicesRes.services, savedServicesId);
+    el.className = "ok";
+    el.textContent = `Loaded ${customersRes.customers.length} customers, ${servicesRes.services.length} services.`;
+  } catch (e) {
+    el.className = "bad";
+    el.textContent = `✗ ${e.message}`;
+  }
+});
 
 $("mode").addEventListener("change", toggleEntryFields);
 

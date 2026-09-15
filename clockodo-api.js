@@ -23,6 +23,8 @@ const EP = {
   // Fallback mode: plain time entries (Zeiterfassung). Well documented, needs
   // no approval. Used when config.mode === "entry".
   entries: "/api/v2/entries",
+  customers: "/api/v3/customers",
+  services: "/api/v4/services",
 };
 
 // Interval type sent in a working-times change request.
@@ -37,7 +39,10 @@ export const DEFAULT_CONFIG = {
   apiKey: "",           // personal API key from My area
   appName: "ClockodoAutoFill", // for X-Clockodo-External-Application
   usersId: null,        // resolved automatically from apiUser
-  mode: "worktime",     // "worktime" (attendance) | "entry" (time entries)
+  // "entry" is the default: this org rejects standalone working-time change
+  // requests ("Work times must match the day's entries") — attendance is
+  // derived from time entries, so entries must be created directly.
+  mode: "entry",        // "worktime" (attendance) | "entry" (time entries)
   autoApprove: true,    // try to approve the change request immediately
 
   // Configurable hours (local Berlin wall-clock, 24h "HH:MM")
@@ -158,6 +163,37 @@ export async function testConnectionAndResolveUser(cfg) {
 }
 
 // ---------------------------------------------------------------------------
+// Customers / services (for "entry" mode picker in Options)
+// ---------------------------------------------------------------------------
+async function requestAllPages(cfg, path) {
+  const out = [];
+  let page = 1;
+  for (;;) {
+    const data = await request(cfg, "GET", `${path}?page=${page}`);
+    const items = data.data || data.customers || data.services || [];
+    out.push(...items);
+    const paging = data.paging || {};
+    if (!paging.count_pages || page >= paging.count_pages) break;
+    page += 1;
+  }
+  return out;
+}
+
+export async function getCustomers(cfg) {
+  const customers = await requestAllPages(cfg, EP.customers);
+  return customers
+    .filter((c) => c.active !== false)
+    .map((c) => ({ id: c.id, name: c.name }));
+}
+
+export async function getServices(cfg) {
+  const services = await requestAllPages(cfg, EP.services);
+  return services
+    .filter((s) => s.active !== false)
+    .map((s) => ({ id: s.id, name: s.name }));
+}
+
+// ---------------------------------------------------------------------------
 // Non-business day helpers
 // ---------------------------------------------------------------------------
 export function isWeekend(dateStr, timeZone = "Europe/Berlin") {
@@ -231,16 +267,23 @@ async function fillDayAsWorkTime(cfg, dateStr) {
     null;
 
   let approved = false;
-  if (cfg.autoApprove && id != null) {
-    try {
-      await request(cfg, "POST", EP.changeRequestApprove(id), {});
-      approved = true;
-    } catch (e) {
-      // No approval rights -> request stays pending. Not fatal.
-      approved = false;
+  let approveError = null;
+  if (cfg.autoApprove) {
+    if (id == null) {
+      approveError = `couldn't read change-request id from response: ${JSON.stringify(created)}`;
+      console.warn("[Clockodo Auto-Fill]", approveError);
+    } else {
+      try {
+        await request(cfg, "POST", EP.changeRequestApprove(id), {});
+        approved = true;
+      } catch (e) {
+        // No approval rights -> request stays pending. Not fatal.
+        approveError = e.message;
+        console.warn("[Clockodo Auto-Fill] approve failed:", e.message);
+      }
     }
   }
-  return { dateStr, status: "created", approved, id };
+  return { dateStr, status: "created", approved, id, approveError };
 }
 
 async function fillDayAsEntries(cfg, dateStr) {

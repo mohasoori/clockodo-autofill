@@ -25,7 +25,7 @@ function describe(result) {
     case "created":
       return result.approved
         ? `${result.dateStr}: created & approved`
-        : `${result.dateStr}: created (pending approval)`;
+        : `${result.dateStr}: created (pending approval${result.approveError ? " — " + result.approveError : ""})`;
     case "exists":
       return `${result.dateStr}: already filled`;
     case "skipped":
