@@ -104,17 +104,19 @@ Everything runs client-side. Requests go from your browser to
 ## Project layout
 
 ```
-manifest.json      MV3 manifest
-clockodo-api.js    API client, config store, timezone/date helpers
-background.js      service worker: daily alarm, catch-up, message router
-popup.html/js      one-click today, range fill, toggles
-options.html/js    account, booking target, hours, schedule, skip days
-help.html/js       illustrated setup guide + what's new
-updates.js         daily new-version check against the GitHub repo
-theme.css          shared design tokens (light/dark)
-icons/             16/48/128 px icons
-docs/              user guide (md + pdf), developer guide, privacy policy, store listing
-CHANGELOG.md       release notes
+manifest.json                 MV3 manifest (must stay at the root)
+src/
+  background/background.js    service worker: daily alarm, catch-up, message router
+  lib/clockodo-api.js         API client, config store, timezone/date helpers
+  lib/updates.js              daily new-version check against this repo
+  popup/                      one-click today, range fill, toggles
+  options/                    account, booking target, hours, schedule, skip days
+  help/                       illustrated setup guide + what's new
+  styles/theme.css            shared design tokens (light/dark)
+assets/icons/                 16/48/128 px icons
+docs/                         user guide (md + pdf), developer guide, privacy policy, store listing
+scripts/build-zip.ps1         builds clockodo-autofill.zip
+CHANGELOG.md                  release notes
 ```
 
 No build step, no dependencies — plain HTML/CSS/JS.

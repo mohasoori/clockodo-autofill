@@ -8,19 +8,30 @@ no dependencies. Clone → `chrome://extensions` → Load unpacked → hack.
 ## Layout
 
 ```
-manifest.json      MV3 manifest (permissions: storage, alarms, notifications;
-                   host_permissions: https://my.clockodo.com/*)
-clockodo-api.js    API client + config store + date/timezone helpers (pure module)
-background.js      service worker: daily alarm, catch-up, message router
-popup.html/js      action popup
-options.html/js    settings page
-updates.js         new-version check (GITHUB_REPO constant; disabled until set)
-help.html/js       illustrated end-user guide + what's new (help.js only injects the version)
-theme.css          shared design tokens, light/dark
-icons/             16/48/128 px
-docs/              this file, USER_GUIDE.md, PDF guide
-CHANGELOG.md       release notes (keep in sync with manifest version)
+manifest.json                 MV3 manifest — must stay at the repo root (Chrome
+                              loads the folder that contains it). Permissions:
+                              storage, alarms, notifications; host: my.clockodo.com
+src/
+  background/background.js    service worker: daily alarm, catch-up, update check,
+                              message router
+  lib/clockodo-api.js         API client + config store + date/timezone helpers
+                              (pure module, no DOM)
+  lib/updates.js              new-version check (GITHUB_REPO constant)
+  popup/popup.html|js         action popup
+  options/options.html|js     settings page
+  help/help.html|js           illustrated end-user guide + what's new
+                              (help.js only injects the version)
+  styles/theme.css            shared design tokens, light/dark
+assets/icons/                 16/48/128 px
+docs/                         this file, USER_GUIDE.md, PDF guide, PRIVACY.md,
+                              STORE_LISTING.md
+scripts/build-zip.ps1         release zip builder
+CHANGELOG.md                  release notes (keep in sync with manifest version)
 ```
+
+Paths inside `src/**` are relative (`../lib/clockodo-api.js`,
+`../styles/theme.css`, `../../assets/icons/…`); paths in `manifest.json` and
+in `chrome.notifications` `iconUrl` are relative to the extension root.
 
 ## Architecture
 
@@ -177,7 +188,7 @@ auto-updates and don't need this.
 ## Release
 
 ```powershell
-Compress-Archive -Path manifest.json,clockodo-api.js,background.js,popup.html,popup.js,options.html,options.js,help.html,theme.css,README.md,LICENSE,icons -DestinationPath clockodo-autofill.zip -Force
+pwsh scripts/build-zip.ps1
 ```
 
 Release checklist:
@@ -187,7 +198,7 @@ Release checklist:
 2. Add a section to `CHANGELOG.md` and update the "What's new" card in
    `help.html` (plus the version mentions in `README.md` / `docs/USER_GUIDE.md`).
 3. Regenerate the PDF guide:
-   `chrome --headless --print-to-pdf=docs/Clockodo-Auto-Fill-Guide.pdf file:///…/help.html`
+   `chrome --headless --no-pdf-header-footer --print-to-pdf=docs/Clockodo-Auto-Fill-Guide.pdf file:///…/src/help/help.html`
 4. Build the zip (above), tag `vX.Y.Z`, attach the zip to the GitHub release.
 `.crx` packaging is deliberately not used: Chrome on Windows/macOS refuses
 non-Web-Store `.crx` installs, so the only working distribution channels are
