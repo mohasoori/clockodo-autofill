@@ -15,8 +15,8 @@ with their **own** personal Clockodo API key, stored only in their browser.
 - **Auto-fill every workday** — runs at a time you choose while Chrome is open,
   and catches up on next launch if that time already passed.
 - **Skip days** — quick "Skip today" toggle plus a managed list of dates to never fill.
-- **Configurable hours** — two blocks per day (default 08:30–13:00 and
-  14:00–17:30 = 8 h), Berlin wall-clock, DST-safe.
+- **Configurable hours** — one or more working blocks per day (gaps = breaks),
+  in any IANA timezone, DST-safe.
 - **Duplicate-safe** — never books a day that already has working time.
 - Light/dark theme, in-app illustrated guide (`help.html`).
 
@@ -41,6 +41,9 @@ with their **own** personal Clockodo API key, stored only in their browser.
 5. Adjust hours and schedule if needed → **Save**.
 
 The full illustrated walkthrough is in the extension itself: popup → **Help**.
+Also available as [docs/USER_GUIDE.md](docs/USER_GUIDE.md) and a printable
+[PDF](docs/Clockodo-Auto-Fill-Guide.pdf). Developers: see
+[docs/DEVELOPER.md](docs/DEVELOPER.md).
 
 ## How it works
 
