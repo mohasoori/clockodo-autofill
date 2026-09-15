@@ -4,6 +4,12 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.3.3] — 2026-09-15
+
+### Changed
+- Popup: *Fill range* uses a secondary (soft accent) button style so it is
+  visually distinct from *Fill today*.
+
 ## [1.3.2] — 2026-09-15
 
 ### Added
