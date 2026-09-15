@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.3.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.3.1 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Fill your daily Clockodo working times in one click, for a date range, or
 automatically every workday. Each person uses their **own** Clockodo API key;
@@ -67,12 +67,14 @@ The total per day is shown under the list.
 **Prefer varying times?** Switch to **Random start, fixed duration**:
 
 - **Total work time per day** — exact, e.g. 8 h 23 min.
-- **Break** — minutes between the two blocks (0 = one continuous block).
+- **Break ± variation** — minutes between the two blocks and how much it may
+  vary per day (e.g. 60 ± 10 → 50–70 min). Break 0 = one continuous block.
 - **Start no earlier / no later than** — the window for the day's start.
 
-Each day gets a different start inside the window; the end follows from the
-duration. The same date always produces the same times, so a retry or
-*Replace* never shifts a day. **Preview next days** shows what will be booked.
+Every fill draws fresh values: the start inside the window, the break length,
+and the morning/afternoon split (35–65 %). The total is always exact and the
+end follows from it. Running *Replace* on a day re-rolls it.
+**Preview next days** shows sample results.
 
 Choose your **Timezone** below — all times are wall-clock in that zone and
 DST-aware. Keep **Skip weekends** on unless you work weekends.
@@ -94,7 +96,7 @@ DST-aware. Keep **Skip weekends** on unless you work weekends.
 | Control            | What it does                                                    |
 |--------------------|-----------------------------------------------------------------|
 | **Fill today**     | Books today. Shows *created*, *already filled*, or *skipped*.   |
-| **Fill range**     | Books every workday between From and To (max 92 days).          |
+| **Fill range**     | Books every workday between From and To (max 92 days). The result starts with a summary line (e.g. `5 days: 4 replaced · 1 skipped`) followed by one line per day. |
 | **If a day already has any time entry** | *Skip that day* (default) never touches existing bookings. *Replace* deletes all entries on those days and books your blocks — confirmation required; use it to clean up duplicates. |
 | **Auto-fill daily**| Enables/disables the schedule; shows next run.                  |
 | **Skip today**     | Marks today as a day that must never be filled.                 |

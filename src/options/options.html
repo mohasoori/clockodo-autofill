@@ -299,8 +299,11 @@
             </div>
           </div>
           <div>
-            <label class="field-label" for="randomBreakMinutes">Break (minutes, 0 = single block)</label>
-            <input type="number" id="randomBreakMinutes" min="0" max="240" step="5" />
+            <label class="field-label">Break (minutes, 0 = single block)</label>
+            <div class="duration">
+              <input type="number" id="randomBreakMinutes" min="0" max="240" step="5" aria-label="Break minutes" /><span>±</span>
+              <input type="number" id="randomBreakJitter" min="0" max="120" step="5" aria-label="Break variation minutes" /><span>min</span>
+            </div>
           </div>
         </div>
         <div class="two-col field">
@@ -318,7 +321,7 @@
           <span id="randomTotalBadge" class="total-badge"></span>
         </div>
         <ul id="randomPreview" class="preview-list"></ul>
-        <div class="hint">Each day gets a different start time inside the window; the end follows from the exact duration. The same day always produces the same times, so retries and "Replace" stay consistent.</div>
+        <div class="hint">Every fill draws fresh values: a start inside the window, the break ± its variation, and a 35–65 % morning/afternoon split. The total is always exact; the end follows from it. Running "Replace" again re-rolls the day.</div>
       </div>
 
       <div class="field" style="margin-top:16px">
