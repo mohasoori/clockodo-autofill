@@ -4,6 +4,12 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.3.4] — 2026-09-15
+
+### Fixed
+- Manifest description shortened to fit the Chrome Web Store's 132-character
+  limit (upload was rejected).
+
 ## [1.3.3] — 2026-09-15
 
 ### Changed
