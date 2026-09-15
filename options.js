@@ -3,6 +3,12 @@ import { loadConfig, saveConfig } from "./clockodo-api.js";
 
 const $ = (id) => document.getElementById(id);
 
+function setStatus(el, text, kind = "") {
+  el.textContent = text;
+  el.classList.remove("ok", "bad");
+  if (kind) el.classList.add(kind);
+}
+
 const fields = [
   "apiUser", "apiKey", "mode", "customersId", "servicesId",
   "block1Start", "block1End", "block2Start", "block2End", "autoTime",
@@ -81,8 +87,7 @@ function fillSelect(select, items, savedId) {
 
 $("loadCustomersServicesBtn").addEventListener("click", async () => {
   const el = $("loadResult");
-  el.className = "";
-  el.textContent = "Loading…";
+  setStatus(el, "Loading…");
   try {
     const [customersRes, servicesRes] = await Promise.all([
       chrome.runtime.sendMessage({ action: "listCustomers" }),
@@ -96,11 +101,9 @@ $("loadCustomersServicesBtn").addEventListener("click", async () => {
       pickLists: { customers: customersRes.customers, services: servicesRes.services },
     });
     $("loadCustomersServicesBtn").textContent = "Reload customers & services";
-    el.className = "ok";
-    el.textContent = `Loaded ${customersRes.customers.length} customers, ${servicesRes.services.length} services.`;
+    setStatus(el, `✓ Loaded ${customersRes.customers.length} customers, ${servicesRes.services.length} services.`, "ok");
   } catch (e) {
-    el.className = "bad";
-    el.textContent = `✗ ${e.message}`;
+    setStatus(el, `✗ ${e.message}`, "bad");
   }
 });
 
@@ -117,21 +120,14 @@ $("addSkipBtn").addEventListener("click", () => {
 
 $("testBtn").addEventListener("click", async () => {
   const el = $("testResult");
-  el.className = "";
-  el.textContent = "Testing…";
+  setStatus(el, "Testing…");
   await saveConfig(collect());
   try {
     const res = await chrome.runtime.sendMessage({ action: "testConnection" });
-    if (res.ok) {
-      el.className = "ok";
-      el.textContent = `✓ Connected as ${res.name} (id ${res.usersId})`;
-    } else {
-      el.className = "bad";
-      el.textContent = `✗ ${res.error}`;
-    }
+    if (res.ok) setStatus(el, `✓ Connected as ${res.name} (id ${res.usersId})`, "ok");
+    else setStatus(el, `✗ ${res.error}`, "bad");
   } catch (e) {
-    el.className = "bad";
-    el.textContent = `✗ ${e.message}`;
+    setStatus(el, `✗ ${e.message}`, "bad");
   }
 });
 
@@ -150,12 +146,8 @@ $("saveBtn").addEventListener("click", async () => {
   await saveConfig(collect());
   await chrome.runtime.sendMessage({ action: "rescheduleAlarm" });
   const el = $("saveResult");
-  el.className = "ok";
-  el.textContent = "Saved.";
-  setTimeout(() => {
-    el.textContent = "";
-    el.className = "";
-  }, 2000);
+  setStatus(el, "✓ Saved", "ok");
+  setTimeout(() => setStatus(el, ""), 2000);
 });
 
 init();
