@@ -1,9 +1,12 @@
 // options.js
-import { loadConfig, saveConfig, validateSchedule, HHMM_RE, MAX_BLOCKS } from "../lib/clockodo-api.js";
+import {
+  loadConfig, saveConfig, validateSchedule, randomBlocksFor, isWeekend, todayStr, addDays,
+  toMinutes, toHHMM, HHMM_RE, MAX_BLOCKS,
+} from "../lib/clockodo-api.js";
 
 const $ = (id) => document.getElementById(id);
 
-const TEXT_FIELDS = ["apiUser", "apiKey", "mode", "autoTime"];
+const TEXT_FIELDS = ["apiUser", "apiKey", "mode", "autoTime", "randomEarliestStart", "randomLatestStart"];
 const CHECKBOXES = ["autoApprove", "billable", "skipWeekends", "autoDaily", "checkUpdates"];
 
 let skipDates = [];
@@ -19,14 +22,8 @@ function setStatus(el, text, kind = "") {
 }
 
 // ---------------------------------------------------------------------------
-// Time helpers ("HH:MM" <-> minutes)
+// Time helpers
 // ---------------------------------------------------------------------------
-const toMinutes = (hhmm) => {
-  const [h, m] = hhmm.split(":").map(Number);
-  return h * 60 + m;
-};
-const toHHMM = (mins) =>
-  `${String(Math.floor(mins / 60)).padStart(2, "0")}:${String(mins % 60).padStart(2, "0")}`;
 const fmtDuration = (mins) => {
   const h = Math.floor(mins / 60);
   const m = mins % 60;
@@ -169,6 +166,74 @@ $("addBlockBtn").addEventListener("click", () => {
   blocks.push({ start: toHHMM(start), end: toHHMM(end) });
   renderBlocks();
 });
+
+// ---------------------------------------------------------------------------
+// Schedule mode (fixed blocks vs. random start with fixed duration)
+// ---------------------------------------------------------------------------
+const scheduleMode = () => document.querySelector('input[name="scheduleMode"]:checked')?.value || "fixed";
+
+function toggleScheduleFields() {
+  const random = scheduleMode() === "random";
+  $("fixedFields").style.display = random ? "none" : "block";
+  $("randomFields").style.display = random ? "block" : "none";
+  if (random) renderRandomPreview();
+}
+for (const r of document.querySelectorAll('input[name="scheduleMode"]')) {
+  r.addEventListener("change", toggleScheduleFields);
+}
+
+function randomSettings() {
+  return {
+    scheduleMode: "random",
+    randomTotalMinutes: (Number($("randomTotalH").value) || 0) * 60 + (Number($("randomTotalM").value) || 0),
+    randomBreakMinutes: Number($("randomBreakMinutes").value) || 0,
+    randomEarliestStart: $("randomEarliestStart").value,
+    randomLatestStart: $("randomLatestStart").value,
+    timezone: $("timezone").value,
+  };
+}
+
+function renderRandomPreview() {
+  const list = $("randomPreview");
+  const badge = $("randomTotalBadge");
+  list.innerHTML = "";
+  const cfg = randomSettings();
+  badge.textContent = cfg.randomTotalMinutes ? `${fmtDuration(cfg.randomTotalMinutes)} / day` : "—";
+  badge.classList.toggle("warn", cfg.randomTotalMinutes > 10 * 60);
+
+  const error = validateSchedule({ ...cfg, blocks: [] });
+  if (error) {
+    const li = document.createElement("li");
+    li.className = "day";
+    li.textContent = error;
+    list.appendChild(li);
+    return;
+  }
+
+  // Next five workdays, seeded like the real run (per date; user id may be unknown here).
+  let day = todayStr(cfg.timezone);
+  let shown = 0;
+  while (shown < 5) {
+    if (!isWeekend(day, cfg.timezone)) {
+      const blocks = randomBlocksFor(cfg, day, `preview|${day}`);
+      const li = document.createElement("li");
+      const label = document.createElement("span");
+      label.className = "day";
+      label.textContent = new Date(day + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric" });
+      const times = document.createElement("span");
+      times.textContent = blocks.map((b) => `${b.start}–${b.end}`).join("  ·  ");
+      li.append(label, times);
+      list.appendChild(li);
+      shown++;
+    }
+    day = addDays(day, 1);
+  }
+}
+
+$("previewRandomBtn").addEventListener("click", renderRandomPreview);
+for (const id of ["randomTotalH", "randomTotalM", "randomBreakMinutes", "randomEarliestStart", "randomLatestStart"]) {
+  $(id).addEventListener("input", renderRandomPreview);
+}
 
 // ---------------------------------------------------------------------------
 // Timezone
@@ -322,6 +387,7 @@ function collect() {
   patch.servicesId = selectedId($("servicesId"), savedServicesId);
   patch.billable = $("billable").checked ? 1 : 0;
   patch.blocks = blocks.map((b) => ({ start: b.start, end: b.end }));
+  Object.assign(patch, randomSettings(), { scheduleMode: scheduleMode() });
   patch.timezone = $("timezone").value;
   patch.skipDates = [...skipDates];
   return patch;
@@ -369,8 +435,16 @@ async function init() {
   skipDates = [...(cfg.skipDates || [])];
   blocks = cfg.blocks.map((b) => ({ ...b }));
 
+  const modeRadio = document.querySelector(`input[name="scheduleMode"][value="${cfg.scheduleMode}"]`)
+    || document.querySelector('input[name="scheduleMode"][value="fixed"]');
+  modeRadio.checked = true;
+  $("randomTotalH").value = Math.floor(cfg.randomTotalMinutes / 60);
+  $("randomTotalM").value = cfg.randomTotalMinutes % 60;
+  $("randomBreakMinutes").value = cfg.randomBreakMinutes;
+
   renderBlocks();
   renderTimezones(cfg.timezone);
+  toggleScheduleFields();
   renderSkipList();
   toggleModeFields();
 

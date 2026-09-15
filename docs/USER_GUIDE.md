@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.2.2 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.3.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Fill your daily Clockodo working times in one click, for a date range, or
 automatically every workday. Each person uses their **own** Clockodo API key;
@@ -62,9 +62,20 @@ split the day; the gap between blocks is your break. Example:
 | —     | break         |
 | 2     | 14:00 – 17:30 |
 
-The total per day is shown under the list. Choose your **Timezone** below the
-blocks — all times are wall-clock in that zone and DST-aware.
-Keep **Skip weekends** on unless you work weekends.
+The total per day is shown under the list.
+
+**Prefer varying times?** Switch to **Random start, fixed duration**:
+
+- **Total work time per day** — exact, e.g. 8 h 23 min.
+- **Break** — minutes between the two blocks (0 = one continuous block).
+- **Start no earlier / no later than** — the window for the day's start.
+
+Each day gets a different start inside the window; the end follows from the
+duration. The same date always produces the same times, so a retry or
+*Replace* never shifts a day. **Preview next days** shows what will be booked.
+
+Choose your **Timezone** below — all times are wall-clock in that zone and
+DST-aware. Keep **Skip weekends** on unless you work weekends.
 
 ## 6. Automatic daily fill
 

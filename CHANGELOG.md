@@ -4,6 +4,18 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.3.0] — 2026-09-15
+
+### Added
+- **Random start, fixed duration** schedule mode (Options → Working hours).
+  Set the exact daily total (e.g. 8 h 23 min), an optional break, and a
+  start window (e.g. 07:30–09:30). Each day gets a different start time
+  inside the window; the end follows from the duration. Times are derived
+  deterministically from the date, so retries and *Replace* reproduce the
+  same day. Live preview of the next five workdays. The existing fixed-blocks
+  mode is unchanged and remains the default.
+- Popup results now list the booked times (e.g. `08:13–12:52, 13:52–17:36`).
+
 ## [1.2.2] — 2026-09-15
 
 ### Fixed
