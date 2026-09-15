@@ -12,20 +12,22 @@
 export const BASE = "https://my.clockodo.com";
 
 const EP = {
-  users: "/api/v2/users",
-  // Working-times change request (create + approve). This is the documented
-  // path for adjusting attendance/working times. If a 404 appears, confirm the
-  // exact path in DevTools (Network tab) while adding a block manually and
-  // update these two constants.
+  // v2/users was retired by Clockodo (410 Gone). v4/users/me returns the
+  // authenticated user directly — no listing/pagination needed.
+  me: "/api/v4/users/me",
+  // Working-times change request (create + approve). Confirmed against the
+  // official `clockodo` npm SDK (peerigon/clockodo): create is v2, but the
+  // approve action was moved to v3.
   changeRequestCreate: "/api/v2/workTimes/changeRequests",
-  changeRequestApprove: (id) => `/api/v2/workTimes/changeRequests/${id}/approve`,
+  changeRequestApprove: (id) => `/api/v3/workTimes/changeRequests/${id}/approve`,
   // Fallback mode: plain time entries (Zeiterfassung). Well documented, needs
   // no approval. Used when config.mode === "entry".
   entries: "/api/v2/entries",
 };
 
 // Interval type sent in a working-times change request.
-const INTERVAL_ADD = "add"; // matches WorkTimeChangeRequestIntervalType.Add
+// WorkTimeChangeRequestIntervalType.Add === 1 (Remove === 2) — a number, not a string.
+const INTERVAL_ADD = 1;
 
 // ---------------------------------------------------------------------------
 // Config storage
@@ -79,6 +81,9 @@ function headers(cfg) {
     "X-ClockodoApiUser": cfg.apiUser,
     "X-ClockodoApiKey": cfg.apiKey,
     "X-Clockodo-External-Application": `${cfg.appName};${cfg.apiUser}`.slice(0, 50),
+    // Matches the official SDK's default: makes the API accept/return ISO-8601
+    // UTC timestamps (what wallclockToUTC() produces) instead of its legacy format.
+    "X-ClockodoEnableIsoUtcDateTimes": "1",
     "Content-Type": "application/json",
     "Accept": "application/json",
   };
@@ -127,17 +132,12 @@ export function wallclockToUTC(dateStr, hhmm, timeZone = "Europe/Berlin") {
 // Connection test + resolve own user id
 // ---------------------------------------------------------------------------
 export async function testConnectionAndResolveUser(cfg) {
-  const data = await request(cfg, "GET", EP.users);
-  const users = data.users || data.data || (Array.isArray(data) ? data : []);
-  const me = users.find(
-    (u) => (u.email || "").toLowerCase() === cfg.apiUser.toLowerCase()
-  );
-  if (!me) {
-    throw new Error(
-      "Connected, but could not match your email to a user. Check the API user email."
-    );
+  const data = await request(cfg, "GET", EP.me);
+  const me = data.user || data.data || data;
+  if (!me || me.id == null) {
+    throw new Error("Connected, but could not read your user record from the API response.");
   }
-  return { usersId: me.id, name: me.name, users };
+  return { usersId: me.id, name: me.name || me.email, me };
 }
 
 // ---------------------------------------------------------------------------
@@ -207,8 +207,10 @@ async function fillDayAsWorkTime(cfg, dateStr) {
   });
 
   const id =
-    (created && (created.id ||
-      (created.work_times_change_request && created.work_times_change_request.id))) ||
+    (created &&
+      (created.id ||
+        (created.data && created.data.id) ||
+        (created.work_times_change_request && created.work_times_change_request.id))) ||
     null;
 
   let approved = false;
