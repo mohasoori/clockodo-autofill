@@ -98,10 +98,10 @@ DST-aware. Keep **Skip weekends** on unless you work weekends.
 | **Fill today**     | Books today. Shows *created*, *already filled*, or *skipped*.   |
 | **Fill range**     | Books every workday between From and To (max 92 days). Use **This week / Last week / This month** to set both dates at once. The status shows the exact range being booked, then a summary (e.g. `2026-09-14 → 2026-09-20, 7 days: 5 replaced · 2 skipped`) and one line per day. |
 | **If a day already has any time entry** | *Skip that day* (default) never touches existing bookings. *Replace* deletes all entries on those days and books your blocks — confirmation required; use it to clean up duplicates. |
-| **Auto-fill daily**| Enables/disables the schedule; shows next run.                  |
+| **Auto-fill daily**| Enables/disables the schedule; shows the next run and the result of the last automatic run (✓ booked/already filled, – skipped, ✗ error). |
 | **Skip today**     | Marks today as a day that must never be filled.                 |
 | Green/red dot      | Whether the API key currently works.                            |
-| Footer             | Installed version + last update check ("up to date" / "update available"), and the last automatic run. |
+| Footer             | Installed version and whether a newer one exists ("up to date" / "update available"). |
 
 Manage the full list of skipped dates (holidays, sick days) in
 **Options → Days to never fill**.

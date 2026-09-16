@@ -72,19 +72,21 @@ function fmtTime(ts) {
 async function refreshSchedule() {
   const res = await send({ action: "getStatus" });
   if (!res.ok) return;
-  $("nextRun").textContent = res.nextRun ? `Next run: ${fmtTime(res.nextRun)}` : "Off";
+  const parts = [res.nextRun ? `Next run: ${fmtTime(res.nextRun)}` : "Off"];
   if (res.lastAutoRun) {
     const when = new Date(res.lastAutoRun.at).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    $("lastRun").textContent = `Last auto: ${when} · ${res.lastAutoRun.status}`;
+    const mark = { created: "✓", replaced: "✓", exists: "✓", skipped: "–", error: "✗" }[res.lastAutoRun.status] || "";
+    parts.push(`last: ${when} ${mark}`);
   }
+  $("nextRun").textContent = parts.join(" · ");
+
   const versionEl = $("versionInfo");
   versionEl.className = "";
   if (res.update) {
     versionEl.textContent = `v${res.version} · update ${res.update.latest} available`;
     versionEl.className = "warn";
   } else if (res.updateInfo?.checkedAt) {
-    const checked = new Date(res.updateInfo.checkedAt).toLocaleDateString(undefined, { month: "short", day: "numeric" });
-    versionEl.textContent = `v${res.version} · up to date (checked ${checked})`;
+    versionEl.textContent = `v${res.version} · up to date`;
     versionEl.className = "ok";
   } else {
     versionEl.textContent = `v${res.version}`;
