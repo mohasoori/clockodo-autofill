@@ -4,6 +4,18 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.3.6] — 2026-09-16
+
+### Changed
+- Popup: compact footer (`v1.3.6 · up to date`); the last automatic run is
+  shown under the Auto-fill toggle (`Next run … · last: Sep 16 ✓`).
+- Installs from the Chrome Web Store skip the GitHub update check — Chrome
+  updates them itself. Options → Updates says so.
+
+### Fixed
+- Notification icon is embedded as a data URL, so image loading can never
+  fail.
+
 ## [1.3.5] — 2026-09-16
 
 ### Fixed

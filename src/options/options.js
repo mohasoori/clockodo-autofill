@@ -358,7 +358,7 @@ $("checkUpdateBtn").addEventListener("click", async () => {
   try {
     const res = await chrome.runtime.sendMessage({ action: "checkForUpdate" });
     if (!res.ok) throw new Error(res.error);
-    if (res.disabled) return setStatus(el, "Update check is not configured in this build.");
+    if (res.disabled) return setStatus(el, "Installed from the Chrome Web Store — Chrome updates it automatically.");
     if (res.update.available) {
       el.textContent = "";
       const a = document.createElement("a");
