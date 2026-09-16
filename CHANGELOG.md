@@ -4,6 +4,13 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.3.5] — 2026-09-16
+
+### Fixed
+- Notification icons are resolved with `chrome.runtime.getURL`, removing the
+  "Unable to download all specified images" error that could appear in the
+  extension's error log.
+
 ## [1.3.4] — 2026-09-15
 
 ### Fixed
