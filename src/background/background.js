@@ -83,9 +83,9 @@ async function doAutoFill(cfg) {
     const detail =
       cfg.mode === "entry" ? "time entries created." :
       result.approved ? "working time approved." : "change request pending approval.";
-    notify("Clockodo filled", `Today (${dateStr}): ${detail}`);
+    await notify("Clockodo filled", `Today (${dateStr}): ${detail}`);
   } else if (result.status === "error") {
-    notify("Clockodo auto-fill failed", result.error || "Unknown error");
+    await notify("Clockodo auto-fill failed", result.error || "Unknown error");
   }
   // "skipped" / "exists" → silent, nothing to report.
 }
@@ -113,12 +113,11 @@ async function checkForUpdate() {
   const { updateInfo } = await chrome.storage.local.get("updateInfo");
   await chrome.storage.local.set({ updateInfo: { ...info, notifiedVersion: updateInfo?.notifiedVersion } });
   if (info.available && updateInfo?.notifiedVersion !== info.latest) {
-    chrome.notifications.create(UPDATE_NOTIFICATION_ID, {
-      type: "basic",
-      iconUrl: chrome.runtime.getURL("assets/icons/icon128.png"),
-      title: `Clockodo Auto-Fill ${info.latest} is available`,
-      message: `You have ${info.current}. Click to open the download page.`,
-    });
+    await notify(
+      `Clockodo Auto-Fill ${info.latest} is available`,
+      `You have ${info.current}. Click to open the download page.`,
+      UPDATE_NOTIFICATION_ID
+    );
     await chrome.storage.local.set({ updateInfo: { ...info, notifiedVersion: info.latest } });
   }
 }
@@ -147,8 +146,26 @@ chrome.alarms.onAlarm.addListener(async (alarm) => {
   await rescheduleAlarm(cfg);
 });
 
-function notify(title, message) {
-  chrome.notifications.create({ type: "basic", iconUrl: chrome.runtime.getURL("assets/icons/icon128.png"), title, message });
+// chrome.notifications occasionally fails to fetch extension-packaged images
+// ("Unable to download all specified images"); an inline data URL never does.
+let iconDataUrl = null;
+async function notificationIcon() {
+  if (iconDataUrl) return iconDataUrl;
+  try {
+    const res = await fetch(chrome.runtime.getURL("assets/icons/icon128.png"));
+    const bytes = new Uint8Array(await res.arrayBuffer());
+    let bin = "";
+    for (const b of bytes) bin += String.fromCharCode(b);
+    iconDataUrl = `data:image/png;base64,${btoa(bin)}`;
+  } catch {
+    iconDataUrl = chrome.runtime.getURL("assets/icons/icon128.png");
+  }
+  return iconDataUrl;
+}
+
+async function notify(title, message, id) {
+  const options = { type: "basic", iconUrl: await notificationIcon(), title, message };
+  return id ? chrome.notifications.create(id, options) : chrome.notifications.create(options);
 }
 
 // ---------------------------------------------------------------------------
