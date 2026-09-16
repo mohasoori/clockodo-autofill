@@ -15,6 +15,7 @@
     .hero img { width: 48px; height: 48px; border-radius: 12px; }
     .hero h1 { font-size: 22px; margin: 0; letter-spacing: -0.01em; }
     .hero p { margin: 2px 0 0; color: var(--text-muted); font-size: 13px; }
+    .hero .hero-links { margin-top: 6px; font-size: 12px; }
 
     .toc {
       display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 26px;
@@ -100,6 +101,11 @@
     <div>
       <h1>Clockodo Auto-Fill — Guide <span class="badge" data-version="prefix">v1.3.6</span></h1>
       <p>Fill your daily Clockodo times in one click, for a date range, or automatically every workday.</p>
+      <p class="hero-links">
+        <a href="https://github.com/mohasoori/clockodo-autofill" target="_blank" rel="noopener noreferrer">Source on GitHub</a> ·
+        <a href="https://github.com/mohasoori/clockodo-autofill/releases/latest" target="_blank" rel="noopener noreferrer">Latest release</a> ·
+        <a href="https://github.com/mohasoori/clockodo-autofill/issues" target="_blank" rel="noopener noreferrer">Report a problem</a>
+      </p>
     </div>
   </div>
 
@@ -128,7 +134,7 @@
       <li>Fixes: legacy hours migration, DST-safe daily alarm, transactional multi-block booking, timezone edge cases.</li>
       <li>From 1.1.0: flexible working blocks with day timeline, your own timezone, auto-fill catch-up, customer &amp; service picker, redesigned UI, this guide.</li>
     </ul>
-    <div class="hint" style="margin-top:10px">Full history: <code>CHANGELOG.md</code> in the repository.</div>
+    <div class="hint" style="margin-top:10px">Full history: <a href="https://github.com/mohasoori/clockodo-autofill/blob/main/CHANGELOG.md" target="_blank" rel="noopener noreferrer">CHANGELOG.md on GitHub</a>.</div>
   </section>
 
   <!-- 1 Install -->
@@ -380,7 +386,7 @@
       <li><strong>API key, not password.</strong> You never enter your Clockodo password. The personal API key can be regenerated in Clockodo at any time, which instantly invalidates the old one.</li>
       <li><strong>Nothing runs without Chrome.</strong> There is no background service or cron job on your machine. The daily auto-fill is a Chrome alarm: it fires only while Chrome is running, and catches up on the next launch if it was missed.</li>
       <li><strong>Everyone uses their own key.</strong> When you share the extension with colleagues, each person enters their own credentials. Nothing about your account is inside the shared files.</li>
-      <li><strong>Open source.</strong> Every line is readable in the repository (MIT license). You can inspect exactly what is sent — or remove the extension at any time; uninstalling deletes all stored data.</li>
+      <li><strong>Open source.</strong> Every line is readable at <a href="https://github.com/mohasoori/clockodo-autofill" target="_blank" rel="noopener noreferrer">github.com/mohasoori/clockodo-autofill</a> (MIT license); the privacy policy is <a href="https://github.com/mohasoori/clockodo-autofill/blob/main/docs/PRIVACY.md" target="_blank" rel="noopener noreferrer">docs/PRIVACY.md</a>. You can inspect exactly what is sent — or remove the extension at any time; uninstalling deletes all stored data.</li>
     </ul>
   </section>
 
@@ -419,7 +425,8 @@
 
   <p class="foot">
     Clockodo Auto-Fill · Made by <a href="https://msoori.com" target="_blank" rel="noopener noreferrer">Mohammad Soori</a> ·
-    <a href="mailto:contact@msoori.com">contact@msoori.com</a> · MIT License
+    <a href="mailto:contact@msoori.com">contact@msoori.com</a> ·
+    <a href="https://github.com/mohasoori/clockodo-autofill" target="_blank" rel="noopener noreferrer">GitHub</a> · MIT License
   </p>
 </div>
 <script src="help.js"></script>
