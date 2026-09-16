@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Clockodo Auto-Fill",
-  "version": "1.3.5",
+  "version": "1.3.6",
   "description": "Fill your daily Clockodo working times in one click, for a date range, or automatically every workday.",
   "author": "Mohammad Soori <contact@msoori.com>",
   "homepage_url": "https://msoori.com",

@@ -8,7 +8,10 @@ export const GITHUB_REPO = "mohasoori/clockodo-autofill";
 export const RELEASES_URL = `https://github.com/${GITHUB_REPO}/releases/latest`;
 const MANIFEST_URL = `https://raw.githubusercontent.com/${GITHUB_REPO}/main/manifest.json`;
 
-export const updateCheckConfigured = () => !GITHUB_REPO.startsWith("OWNER/");
+// Chrome adds `update_url` to the manifest of Web Store installs — those
+// receive updates from the store, so the GitHub check is unnecessary there.
+export const installedFromStore = () => Boolean(chrome.runtime.getManifest().update_url);
+export const updateCheckConfigured = () => !GITHUB_REPO.startsWith("OWNER/") && !installedFromStore();
 
 // Returns 1 if a > b, -1 if a < b, 0 if equal. Accepts "1.2.3" style versions.
 export function compareVersions(a, b) {

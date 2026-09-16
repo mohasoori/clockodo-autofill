@@ -176,7 +176,8 @@ banner. `GITHUB_REPO` must be set to `owner/repo`; while it still reads
 `OWNER/REPO` the feature is inert. raw.githubusercontent.com serves
 `Access-Control-Allow-Origin: *`, so no extra host permission is needed.
 Users can disable it (`cfg.checkUpdates`). Web Store installs get real
-auto-updates and don't need this.
+auto-updates and don't need this — `installedFromStore()` detects them via
+the `update_url` Chrome injects into the manifest and turns the check off.
 
 ## Local development
 
