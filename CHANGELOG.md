@@ -4,6 +4,17 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.3.9] — 2026-09-17
+
+### Changed
+- Release automation hardened: the Google OAuth app runs *in production*
+  so the store refresh token no longer expires every 7 days; a manual
+  **Check Web Store credentials** workflow verifies the pipeline without
+  releasing.
+- New `docs/RELEASING.md`: end-to-end release process, one-time Google
+  Cloud / GitHub setup, every pitfall met along the way, troubleshooting.
+  No functional changes to the extension.
+
 ## [1.3.8] — 2026-09-17
 
 ### Changed

@@ -198,12 +198,10 @@ pwsh scripts/build-zip.ps1
 
 `.github/workflows/release.yml` runs on every `v*` tag: it verifies the tag
 matches `manifest.json`, builds the zip, creates the GitHub release with the
-CHANGELOG section as notes, and — if the repository secrets
-`CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN`, `CWS_EXTENSION_ID`
-exist — uploads and publishes the package to the Chrome Web Store via
-`chrome-webstore-upload-cli`. Obtain the OAuth client in Google Cloud
-(Desktop app, Chrome Web Store API enabled) and the refresh token once with
-`npx chrome-webstore-upload-keys`.
+CHANGELOG section as notes, and uploads + publishes the package to the
+Chrome Web Store. Full setup, the pitfalls we hit, and troubleshooting are
+in **[RELEASING.md](RELEASING.md)**. `cws-check.yml` (manual) verifies the
+store credentials without releasing.
 
 So a release is:
 

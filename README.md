@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill
 
-**Version 1.3.8** · [What's new](CHANGELOG.md) · MIT ·
+**Version 1.3.9** · [What's new](CHANGELOG.md) · MIT ·
 [**Install from the Chrome Web Store**](https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp)
 
 A small Chrome extension (Manifest V3) that fills your daily working times in
@@ -60,7 +60,8 @@ in other Chromium browsers (Edge, Brave, Opera, Vivaldi) via the same
 The full illustrated walkthrough is in the extension itself: popup → **Help**.
 Also available as [docs/USER_GUIDE.md](docs/USER_GUIDE.md) and a printable
 [PDF](docs/Clockodo-Auto-Fill-Guide.pdf). Developers: see
-[docs/DEVELOPER.md](docs/DEVELOPER.md).
+[docs/DEVELOPER.md](docs/DEVELOPER.md) and [docs/RELEASING.md](docs/RELEASING.md)
+(automated releases to GitHub + Chrome Web Store).
 
 ## How it works
 
@@ -121,8 +122,9 @@ src/
   help/                       illustrated setup guide + what's new
   styles/theme.css            shared design tokens (light/dark)
 assets/icons/                 16/48/128 px icons
-docs/                         user guide (md + pdf), developer guide, privacy policy, store listing
-scripts/build-zip.ps1         builds clockodo-autofill.zip
+docs/                         user guide (md + pdf), developer guide, releasing guide, privacy policy, store listing
+.github/workflows/            release.yml (tag → GitHub release + Web Store), cws-check.yml (credential check)
+scripts/build-zip.ps1         builds clockodo-autofill.zip (manual fallback)
 CHANGELOG.md                  release notes
 ```
 
