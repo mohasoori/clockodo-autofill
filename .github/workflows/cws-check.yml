@@ -1,0 +1,38 @@
+name: Check Web Store credentials
+
+# Manual sanity check: exchanges the stored refresh token for an access token
+# and reads the item's status. Uploads nothing. Run it after rotating the
+# OAuth client or refresh token.
+
+on:
+  workflow_dispatch:
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Exchange refresh token
+        env:
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          RESP="$(curl -sS -X POST https://oauth2.googleapis.com/token \
+            -d client_id="$CLIENT_ID" -d client_secret="$CLIENT_SECRET" \
+            -d refresh_token="$REFRESH_TOKEN" -d grant_type=refresh_token)"
+          TOKEN="$(echo "$RESP" | jq -r '.access_token // empty')"
+          if [ -z "$TOKEN" ]; then
+            echo "::error::Token exchange failed: $(echo "$RESP" | jq -c 'del(.access_token)')"
+            exit 1
+          fi
+          echo "::add-mask::$TOKEN"
+          echo "TOKEN=$TOKEN" >> "$GITHUB_ENV"
+          echo "Token OK (expires in $(echo "$RESP" | jq -r .expires_in)s)"
+
+      - name: Read item status
+        env:
+          EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+        run: |
+          curl -sS -H "Authorization: Bearer $TOKEN" -H "x-goog-api-version: 2" \
+            "https://www.googleapis.com/chromewebstore/v1.1/items/$EXTENSION_ID?projection=DRAFT" \
+            | jq '{id, kind, uploadState, itemError}'
