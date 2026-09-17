@@ -1,0 +1,65 @@
+name: Release
+
+# Pushing a tag like v1.4.0 builds the zip, creates the GitHub release with the
+# zip attached, and — when the CWS_* secrets exist — uploads and publishes the
+# same package to the Chrome Web Store.
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Check tag matches manifest version
+        run: |
+          TAG="${GITHUB_REF_NAME#v}"
+          VER="$(node -p "require('./manifest.json').version")"
+          echo "tag=$TAG manifest=$VER"
+          test "$TAG" = "$VER" || { echo "::error::Tag v$TAG does not match manifest version $VER"; exit 1; }
+
+      - name: Build zip
+        run: |
+          zip -r clockodo-autofill.zip manifest.json src assets docs README.md LICENSE CHANGELOG.md -x "*.DS_Store"
+          ls -la clockodo-autofill.zip
+
+      - name: Extract release notes from CHANGELOG
+        id: notes
+        run: |
+          VER="${GITHUB_REF_NAME#v}"
+          awk -v ver="$VER" '
+            $0 ~ "^## \\[" ver "\\]" { on=1; next }
+            on && /^## \[/ { exit }
+            on { print }
+          ' CHANGELOG.md > notes.md
+          if [ ! -s notes.md ]; then echo "See CHANGELOG.md" > notes.md; fi
+          printf '\n---\nInstall from the Chrome Web Store: https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp\n' >> notes.md
+          cat notes.md
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          name: ${{ github.ref_name }}
+          body_path: notes.md
+          files: clockodo-autofill.zip
+
+      - name: Upload & publish to Chrome Web Store
+        if: ${{ secrets.CWS_REFRESH_TOKEN != '' }}
+        env:
+          EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        run: |
+          npx --yes chrome-webstore-upload-cli@3 upload --source clockodo-autofill.zip --auto-publish
+
+      - name: Web Store step skipped
+        if: ${{ secrets.CWS_REFRESH_TOKEN == '' }}
+        run: echo "::notice::CWS_* secrets not set — GitHub release created, Chrome Web Store upload skipped."

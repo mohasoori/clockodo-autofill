@@ -194,6 +194,26 @@ the `update_url` Chrome injects into the manifest and turns the check off.
 pwsh scripts/build-zip.ps1
 ```
 
+### Automated (preferred)
+
+`.github/workflows/release.yml` runs on every `v*` tag: it verifies the tag
+matches `manifest.json`, builds the zip, creates the GitHub release with the
+CHANGELOG section as notes, and — if the repository secrets
+`CWS_CLIENT_ID`, `CWS_CLIENT_SECRET`, `CWS_REFRESH_TOKEN`, `CWS_EXTENSION_ID`
+exist — uploads and publishes the package to the Chrome Web Store via
+`chrome-webstore-upload-cli`. Obtain the OAuth client in Google Cloud
+(Desktop app, Chrome Web Store API enabled) and the refresh token once with
+`npx chrome-webstore-upload-keys`.
+
+So a release is:
+
+```bash
+# bump manifest.json version + CHANGELOG.md + help.html fallbacks, commit, then:
+git tag -a v1.4.0 -m "Clockodo Auto-Fill 1.4.0" && git push origin main v1.4.0
+```
+
+### Manual fallback
+
 Release checklist:
 
 1. Bump `version` in `manifest.json` (SemVer). It is displayed in Options and
