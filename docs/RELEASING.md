@@ -109,6 +109,18 @@ last upload is already in review) — not an error.
 | Store dashboard still shows old version | The upload landed in **Draft / Pending review**; the *Published* column updates after Google approves. Uploading again while pending restarts the review. |
 | Push rejected `GH007 … private email` | Commit with the GitHub noreply address: `git config user.email "<id>+<user>@users.noreply.github.com"`. |
 
+## Store listing assets are not automated
+
+The Web Store API only accepts the package. Screenshots, promo tiles and the
+listing text live in the Developer Dashboard and **do not change when a new
+version is uploaded**. After a visible UI change:
+
+1. Regenerate `docs/store/screenshot-help-1280x800.png` (Edge headless, see
+   `DEVELOPER.md`) and re-capture the popup/timetable shots from the
+   installed extension (anonymise names).
+2. Dashboard → item → **Store listing → Screenshots** → replace → **Save
+   draft** → **Submit for review** (listing-only changes are reviewed quickly).
+
 ## Manual fallback
 
 `pwsh scripts/build-zip.ps1` builds the zip locally; upload it in the
