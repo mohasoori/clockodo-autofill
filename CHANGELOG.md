@@ -4,6 +4,13 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.3.8] — 2026-09-17
+
+### Changed
+- Releases are now automated: pushing a `v*` tag builds the package,
+  publishes the GitHub release and uploads to the Chrome Web Store.
+  No functional changes.
+
 ## [1.3.7] — 2026-09-17
 
 ### Security
