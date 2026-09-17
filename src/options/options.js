@@ -6,7 +6,8 @@ import {
 
 const $ = (id) => document.getElementById(id);
 
-const TEXT_FIELDS = ["apiUser", "apiKey", "mode", "autoTime", "randomEarliestStart", "randomLatestStart"];
+// apiKey is handled separately: the stored key is never written back into the DOM.
+const TEXT_FIELDS = ["apiUser", "mode", "autoTime", "randomEarliestStart", "randomLatestStart"];
 const CHECKBOXES = ["autoApprove", "billable", "skipWeekends", "autoDaily", "checkUpdates"];
 
 let skipDates = [];
@@ -336,10 +337,33 @@ $("loadCustomersServicesBtn").addEventListener("click", async () => {
 // ---------------------------------------------------------------------------
 // Connection test
 // ---------------------------------------------------------------------------
+// The saved key is shown only as a masked hint; the field stays empty until the
+// user types a replacement, so nothing sensitive sits in the page.
+function showKeyState(cfg) {
+  const input = $("apiKey");
+  input.value = "";
+  if (cfg.apiKey) {
+    const tail = cfg.apiKey.slice(-4);
+    input.placeholder = `Saved · ends in …${tail} — type a new key to replace it`;
+    $("apiKeyHint").textContent = "A key is stored on this device. Leave the field empty to keep it.";
+  } else {
+    input.placeholder = "Paste from My area → Edit self";
+    $("apiKeyHint").textContent = "";
+  }
+}
+
+function credentialPatch() {
+  const patch = { apiUser: $("apiUser").value.trim() };
+  const key = $("apiKey").value.trim();
+  if (key) patch.apiKey = key;
+  return patch;
+}
+
 $("testBtn").addEventListener("click", async () => {
   const el = $("testResult");
   setStatus(el, "Testing…");
-  await saveConfig({ apiUser: $("apiUser").value.trim(), apiKey: $("apiKey").value.trim() });
+  const next = await saveConfig(credentialPatch());
+  showKeyState(next);
   try {
     const res = await chrome.runtime.sendMessage({ action: "testConnection" });
     if (res.ok) setStatus(el, `✓ Connected as ${res.name} (id ${res.usersId})`, "ok");
@@ -381,7 +405,7 @@ $("checkUpdateBtn").addEventListener("click", async () => {
 // Collect + save
 // ---------------------------------------------------------------------------
 function collect() {
-  const patch = {};
+  const patch = credentialPatch();
   for (const f of TEXT_FIELDS) patch[f] = $(f).value.trim();
   for (const c of CHECKBOXES) patch[c] = $(c).checked;
   patch.customersId = selectedId($("customersId"), savedCustomersId);
@@ -400,7 +424,8 @@ $("saveBtn").addEventListener("click", async () => {
   const scheduleError = validateSchedule(patch);
   if (scheduleError) return setStatus(el, `✗ ${scheduleError}`, "bad");
   if (!HHMM_RE.test(patch.autoTime)) return setStatus(el, "✗ Auto-fill time must be HH:MM.", "bad");
-  await saveConfig(patch);
+  const next = await saveConfig(patch);
+  showKeyState(next);
   const res = await chrome.runtime.sendMessage({ action: "rescheduleAlarm" });
   if (!res.ok) return setStatus(el, `✗ Saved, but scheduling failed: ${res.error}`, "bad");
   savedCustomersId = patch.customersId;
@@ -431,6 +456,7 @@ async function init() {
 
   for (const f of TEXT_FIELDS) $(f).value = cfg[f] ?? "";
   for (const c of CHECKBOXES) $(c).checked = !!cfg[c];
+  showKeyState(cfg);
   savedCustomersId = cfg.customersId;
   savedServicesId = cfg.servicesId;
   skipDates = [...(cfg.skipDates || [])];

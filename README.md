@@ -1,6 +1,7 @@
 # Clockodo Auto-Fill
 
-**Version 1.3.6** · [What's new](CHANGELOG.md) · MIT
+**Version 1.3.7** · [What's new](CHANGELOG.md) · MIT ·
+[**Install from the Chrome Web Store**](https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp)
 
 A small Chrome extension (Manifest V3) that fills your daily working times in
 [Clockodo](https://my.clockodo.com) — in one click, for a whole date range, or
@@ -32,11 +33,10 @@ in other Chromium browsers (Edge, Brave, Opera, Vivaldi) via the same
 
 ## Install
 
-**Easiest — Chrome Web Store (auto-updates):**
+**Recommended — Chrome Web Store (one click, automatic updates):**
 <https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp>
-*(listing pending review; the link goes live once approved)*
 
-**Manual — load unpacked:**
+**Manual — load unpacked** (for development, or if the store is blocked):
 
 1. Download the latest release zip from
    <https://github.com/mohasoori/clockodo-autofill/releases/latest> (or clone
