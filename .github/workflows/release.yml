@@ -15,6 +15,11 @@ permissions:
 jobs:
   release:
     runs-on: ubuntu-latest
+    env:
+      EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
+      CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
+      CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
+      REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
     steps:
       - uses: actions/checkout@v4
 
@@ -51,15 +56,10 @@ jobs:
           files: clockodo-autofill.zip
 
       - name: Upload & publish to Chrome Web Store
-        if: ${{ secrets.CWS_REFRESH_TOKEN != '' }}
-        env:
-          EXTENSION_ID: ${{ secrets.CWS_EXTENSION_ID }}
-          CLIENT_ID: ${{ secrets.CWS_CLIENT_ID }}
-          CLIENT_SECRET: ${{ secrets.CWS_CLIENT_SECRET }}
-          REFRESH_TOKEN: ${{ secrets.CWS_REFRESH_TOKEN }}
+        if: ${{ env.REFRESH_TOKEN != '' }}
         run: |
           npx --yes chrome-webstore-upload-cli@3 upload --source clockodo-autofill.zip --auto-publish
 
       - name: Web Store step skipped
-        if: ${{ secrets.CWS_REFRESH_TOKEN == '' }}
+        if: ${{ env.REFRESH_TOKEN == '' }}
         run: echo "::notice::CWS_* secrets not set — GitHub release created, Chrome Web Store upload skipped."
