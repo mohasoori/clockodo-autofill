@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.3.9 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.4.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Fill your daily Clockodo working times in one click, for a date range, or
 automatically every workday. Each person uses their **own** Clockodo API key;
@@ -99,6 +99,23 @@ DST-aware. Keep **Skip weekends** on unless you work weekends.
 - You get a notification only when something was created or failed.
 - The popup shows **Next run** and the result of the last automatic run.
 
+## 6b. Sync & backup (Options → Sync & backup)
+
+- **Sync settings across my Chrome devices** (on by default) — hours,
+  schedule, skip days, timezone, customer/service travel with your Chrome
+  account to every device you are signed into. A new device only asks for
+  the API key. Turn it off to keep everything on this device only.
+- **Also sync my API key** (off by default) — switch on if you want new
+  devices to work without re-entering the key. It is then stored in your
+  Google account the same way Chrome stores saved passwords.
+- **Export settings…** — downloads a JSON file. Tick *include API key* only if
+  you keep the file somewhere private.
+- **Import settings…** — pick a previously exported file; the schedule is
+  validated, then the page reloads with the imported settings.
+
+Chrome Sync must be enabled in Chrome for the first two to work (some
+company-managed Chrome profiles disable it — Export/Import still works).
+
 ## 7. Day-to-day use (popup)
 
 | Control            | What it does                                                    |
@@ -122,10 +139,13 @@ Manage the full list of skipped dates (holidays, sick days) in
   its documented public REST API (`https://my.clockodo.com/api`) — the same
   one Clockodo's own integrations use. No scraping, no website automation,
   no hidden endpoints.
-- **Your data stays on your computer.** Email, API key and settings live in
-  the extension's local storage inside *your* Chrome profile. Never synced,
-  uploaded or shared. There is no server behind this extension, no account,
-  no analytics, no crash reporting.
+- **Your data stays with you.** Email, API key and settings live in the
+  extension's storage inside *your* Chrome profile. There is no server behind
+  this extension, no account, no analytics, no crash reporting. Settings can
+  sync between your own devices through your Google account (Chrome Sync,
+  encrypted in transit and at rest by Google; end-to-end if you use a sync
+  passphrase). The API key joins that sync **only if you switch it on**.
+  Both switches are in Options → Sync & backup.
 - **Only one destination for your data.** Every request carrying your
   credentials goes to `my.clockodo.com`, and only when you click Fill / Test /
   Load or the scheduled fill runs. The extension has no permission for any

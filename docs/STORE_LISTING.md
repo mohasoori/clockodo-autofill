@@ -56,6 +56,7 @@ have to do it by hand.
   your own timezone, DST-safe.
 • Duplicate-safe — never books a day that already has working time.
 • Skip days — quick "Skip today" toggle plus a list of dates to never fill.
+• Sync & backup — settings follow you across your Chrome devices (API key only if you opt in), plus JSON export/import.
 
 Privacy first: everything runs in your browser. Your email and personal
 Clockodo API key are stored only on your device and sent only to

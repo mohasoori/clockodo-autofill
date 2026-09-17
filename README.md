@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill
 
-**Version 1.3.9** · [What's new](CHANGELOG.md) · MIT ·
+**Version 1.4.0** · [What's new](CHANGELOG.md) · MIT ·
 [**Install from the Chrome Web Store**](https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp)
 
 A small Chrome extension (Manifest V3) that fills your daily working times in
@@ -18,6 +18,8 @@ with their **own** personal Clockodo API key, stored only in their browser.
 - **Auto-fill every workday** — runs at a time you choose while Chrome is open,
   and catches up on next launch if that time already passed.
 - **Skip days** — quick "Skip today" toggle plus a managed list of dates to never fill.
+- **Sync & backup** — settings follow you across your Chrome devices (Chrome
+  Sync; API key only if you opt in), plus JSON export/import.
 - **Configurable hours** — fixed blocks (gaps = breaks), or *random start
   with a fixed duration* (e.g. exactly 8 h 23 min starting somewhere between
   07:30 and 09:30, different each day). Any IANA timezone, DST-safe.
@@ -80,9 +82,11 @@ Everything runs client-side. Requests go from your browser to
 
 - **Official API only** — every call goes through Clockodo's documented public
   REST API at `https://my.clockodo.com/api`. No scraping, no website automation.
-- **Your data stays on your machine** — email, API key and settings are kept in
-  the extension's local storage in your own Chrome profile. Nothing is synced,
-  uploaded or shared. There is no server, no account, no analytics.
+- **Your data stays with you** — email, API key and settings live in the
+  extension's storage in your own Chrome profile. There is no server of ours,
+  no account, no analytics. Settings sync between *your* devices through your
+  own Google account (Chrome Sync) — the API key only if you switch that on;
+  both can be turned off in Options → Sync & backup.
 - **Single destination for your data** — credentials are only ever sent to
   `my.clockodo.com` (the only `host_permissions` entry), and only when you
   trigger a fill or the scheduled fill runs.

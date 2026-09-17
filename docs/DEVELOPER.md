@@ -66,6 +66,8 @@ in `chrome.notifications` `iconUrl` are relative to the extension root.
   | `fillToday`          | `onExisting?` (`skip`\|`replace`), `force?` | `result`      |
   | `fillRange`          | `from`, `to`, `onExisting?`, `force?` | `results[]` (≤ 92 days) |
   | `checkForUpdate`     | —                   | `update` `{latest,current,available,url}` |
+  | `exportConfig`       | `includeApiKey?`    | `payload` (JSON-serialisable settings file) |
+  | `importConfig`       | `payload`           | — (validates, saves, re-plans alarms) |
   | `toggleSkipToday`    | —                   | `skippedToday`                   |
   | `setAutoDaily`       | `enabled`           | `nextRun` (ms epoch)             |
   | `rescheduleAlarm`    | —                   | `nextRun`                        |
@@ -94,8 +96,16 @@ See `DEFAULT_CONFIG` in `clockodo-api.js`. Notable fields:
 | `skipDates`    | `"YYYY-MM-DD"[]`  | never fill                                        |
 | `autoDaily`, `autoTime` | bool, `"HH:MM"` |                                            |
 
-Other storage keys: `lastAutoRun` (result + `at`), `pickLists`
-(cached customers/services for the Options dropdowns).
+| `syncSettings`, `syncApiKey` | bool | mirror settings (and optionally the key) to `chrome.storage.sync` |
+| `updatedAt`    | ms epoch          | set on every save; `pullFromSync()` only merges a remote copy that is newer |
+
+Other local storage keys: `lastAutoRun` (result + `at`), `pickLists`
+(cached customers/services for the Options dropdowns), `updateInfo`.
+Sync storage holds one key, `settings` — the config minus `apiKey` unless
+`syncApiKey`. `chrome.storage.local` remains the runtime source of truth;
+`saveConfig()` pushes, `onLaunch` and `storage.onChanged(sync)` pull.
+Imported/synced blobs go through `sanitizeImported()` (known keys, matching
+types) and `validateSchedule()` before they are applied.
 
 ## Clockodo API notes (things that bit us)
 

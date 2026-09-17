@@ -19,10 +19,23 @@ inside your browser profile (`chrome.storage.local`):
 | Your settings (hours, timezone, schedule, skip dates, customer/service) | To book the right times |
 | Cached customer/service list, last auto-fill result, last update check | Convenience / status display |
 
-The extension does **not** use `chrome.storage.sync`; nothing is copied to
-your Google account or other devices. The Options page never displays the
-stored API key again (only its last four characters). Uninstalling the
-extension deletes all of the above.
+**Sync between your devices (optional, on by default for settings):** the
+extension mirrors your *settings* (hours, schedule, skip days, timezone,
+customer/service, preferences) to `chrome.storage.sync`, which Chrome stores
+in **your own Google account** and delivers to other Chrome profiles you are
+signed into. Google encrypts this data in transit and at rest (end-to-end if
+you set a Chrome sync passphrase). The developer has no access to it. The
+**API key is excluded** unless you explicitly enable *Also sync my API key*.
+Both can be switched off in Options → Sync & backup; switching off removes
+the synced copy.
+
+**Export / Import:** you can download your settings as a JSON file (with the
+API key only if you tick the box) and import it elsewhere. The file is
+written to your device only.
+
+The Options page never displays the stored API key again (only its last
+four characters). Uninstalling the extension deletes the local copy; the
+synced copy is removed when you turn sync off or when Chrome Sync is cleared.
 
 Note that `chrome.storage.local` is protected by your operating-system
 account, not encrypted separately by the extension — anyone with full access
@@ -59,7 +72,7 @@ reports.
 
 | Permission        | Why                                                        |
 |-------------------|------------------------------------------------------------|
-| `storage`         | Save your settings and API key locally                     |
+| `storage`         | Save your settings and API key locally, and sync settings between your own devices via Chrome Sync |
 | `alarms`          | Run the daily auto-fill and the daily update check         |
 | `notifications`   | Tell you when a day was booked, failed, or an update exists |
 | `https://my.clockodo.com/*` | Call the Clockodo API                            |
