@@ -1,6 +1,11 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.4.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.5.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+
+Options is organised in four tabs: **Account** (your Clockodo login and what
+to book), **Schedule** (working hours, auto-fill, days to never fill),
+**Sync & updates**, and **Help** (this guide, inside the settings page).
+**Save** in the top bar saves all tabs at once.
 
 Fill your daily Clockodo working times in one click, for a date range, or
 automatically every workday. Each person uses their **own** Clockodo API key;
@@ -39,14 +44,14 @@ extension storage and is sent only to `my.clockodo.com`. Options never shows
 the saved key again — only `Saved · ends in …xxxx`; type a new key to replace
 it. You can revoke a key in Clockodo at any time.
 
-## 3. Connect
+## 3. Connect (Options → Account tab)
 
-1. Click the extension icon → **Options**.
+1. Click the extension icon → **Options** (tab **Account**).
 2. Enter your Clockodo login email and paste the API key.
 3. Click **Test connection** — you should see your name with a green check.
 4. Press **Save** in the top bar.
 
-## 4. Choose customer & service
+## 4. Choose customer & service (Options → Account tab → What to book)
 
 Clockodo derives attendance from **time entries**, so each booked block needs a
 customer and a service.
@@ -59,7 +64,7 @@ customer and a service.
 Not sure which to pick? Open any existing entry in Clockodo and use the same
 customer/service shown there.
 
-## 5. Working hours & timezone
+## 5. Working hours & timezone (Options → Schedule tab)
 
 You start with one block (default 09:00 – 17:00). Click **+ Add block** to
 split the day; the gap between blocks is your break. Example:
@@ -87,7 +92,7 @@ end follows from it. Running *Replace* on a day re-rolls it.
 Choose your **Timezone** below — all times are wall-clock in that zone and
 DST-aware. Keep **Skip weekends** on unless you work weekends.
 
-## 6. Automatic daily fill
+## 6. Automatic daily fill (Options → Schedule tab → Schedule)
 
 - In **Schedule**, set the time (default 09:15) and enable
   **Auto-fill every workday**, then Save — or toggle **Auto-fill daily** in the popup.
@@ -99,7 +104,7 @@ DST-aware. Keep **Skip weekends** on unless you work weekends.
 - You get a notification only when something was created or failed.
 - The popup shows **Next run** and the result of the last automatic run.
 
-## 6b. Sync & backup (Options → Sync & backup)
+## 6b. Sync & backup (Options → Sync & updates tab)
 
 - **Sync settings across my Chrome devices** (on by default) — hours,
   schedule, skip days, timezone, customer/service travel with your Chrome
@@ -129,7 +134,7 @@ company-managed Chrome profiles disable it — Export/Import still works).
 | Footer             | Installed version and whether a newer one exists ("up to date" / "update available"). |
 
 Manage the full list of skipped dates (holidays, sick days) in
-**Options → Days to never fill**.
+**Options → Schedule tab → Days to never fill**.
 
 ---
 
@@ -145,14 +150,14 @@ Manage the full list of skipped dates (holidays, sick days) in
   sync between your own devices through your Google account (Chrome Sync,
   encrypted in transit and at rest by Google; end-to-end if you use a sync
   passphrase). The API key joins that sync **only if you switch it on**.
-  Both switches are in Options → Sync & backup.
+  Both switches are in Options → Sync & updates → Sync & backup.
 - **Only one destination for your data.** Every request carrying your
   credentials goes to `my.clockodo.com`, and only when you click Fill / Test /
   Load or the scheduled fill runs. The extension has no permission for any
   other website.
 - **Optional update check.** Once a day it downloads one public file (the
   project's `manifest.json` on GitHub) to see whether a newer version exists.
-  That request contains no personal data. Turn it off in Options → Updates.
+  That request contains no personal data. Turn it off in Options → Sync & updates → Updates.
   If a new version exists you get a notification and a banner in the popup
   with the download link.
 - **API key, not password.** You never enter your Clockodo password. The
@@ -195,7 +200,7 @@ Chrome must be running. It catches up on next launch; toggling the switch also
 triggers a catch-up when the time has passed.
 
 **Can I change the hours later?**
-Yes — Options → Working hours → Save. Future fills use the new times; existing
+Yes — Options → Schedule tab → Working hours → Save. Future fills use the new times; existing
 entries are not modified.
 
 **Is anything sent anywhere besides Clockodo?**

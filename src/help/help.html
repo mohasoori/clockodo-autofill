@@ -99,7 +99,7 @@
   <div class="hero">
     <img src="../../assets/icons/icon48.png" alt="" />
     <div>
-      <h1>Clockodo Auto-Fill — Guide <span class="badge" data-version="prefix">v1.4.0</span></h1>
+      <h1>Clockodo Auto-Fill — Guide <span class="badge" data-version="prefix">v1.5.0</span></h1>
       <p>Fill your daily Clockodo times in one click, for a date range, or automatically every workday.</p>
       <p class="hero-links">
         <a href="https://github.com/mohasoori/clockodo-autofill" target="_blank" rel="noopener noreferrer">Source on GitHub</a> ·
@@ -125,12 +125,13 @@
 
   <!-- What's new -->
   <section class="card" id="whatsnew" style="margin-bottom:18px">
-    <h2 class="card-title" style="margin-bottom:8px">What's new in <span data-version>1.4.0</span></h2>
+    <h2 class="card-title" style="margin-bottom:8px">What's new in <span data-version>1.5.0</span></h2>
     <ul style="margin:0; padding-left:20px; font-size:13px; line-height:1.6">
+      <li><strong>Options in tabs</strong> — Account · Schedule · Sync &amp; updates · Help. Save writes all tabs; the last tab is remembered.</li>
       <li><strong>Sync &amp; backup</strong> — settings follow you to every Chrome you're signed into (API key only if you opt in); JSON export/import for everything else.</li>
       <li><strong>Random start, fixed duration</strong> — schedule mode: exact daily total (e.g. 8 h 23 min), break ± variation, start window; fresh random times on every fill.</li>
       <li><strong>Conflict handling</strong> — choose what happens when a day already has time entries: <em>Skip</em> (default) or <em>Replace</em> (delete that day's entries and book your blocks). Handy for cleaning up duplicates.</li>
-      <li><strong>Update notice</strong> — a banner and notification tell you when a newer version is available (opt-out in Options → Updates).</li>
+      <li><strong>Update notice</strong> — a banner and notification tell you when a newer version is available (opt-out in Options → Sync &amp; updates → Updates).</li>
       <li><strong>Reliable duplicate check</strong> — it now inspects your actual time entries for the day and never books when the check fails.</li>
       <li><strong>Security &amp; privacy</strong> section (below) and a published privacy policy.</li>
       <li>Fixes: legacy hours migration, DST-safe daily alarm, transactional multi-block booking, timezone edge cases.</li>
@@ -169,7 +170,7 @@
         <rect x="22" y="88" width="26" height="26" rx="7" class="mock-accent"/>
         <circle cx="35" cy="101" r="7" fill="none" stroke="#fff" stroke-width="2"/>
         <text x="58" y="98" class="mock-txt">Clockodo Auto-Fill</text>
-        <text x="58" y="112" class="mock-muted"><tspan data-version>1.4.0</tspan> · Loaded from folder</text>
+        <text x="58" y="112" class="mock-muted"><tspan data-version>1.5.0</tspan> · Loaded from folder</text>
         <text x="22" y="145" class="mock-muted">Details   Remove</text>
         <rect x="248" y="130" width="28" height="12" rx="6" class="mock-accent"/>
         <circle cx="270" cy="136" r="5" fill="#fff"/>
@@ -213,7 +214,7 @@
     <div>
       <h2><span class="num">3</span>Connect the extension</h2>
       <ol>
-        <li>Click the extension icon → <strong>Options</strong>.</li>
+        <li>Click the extension icon → <strong>Options</strong> (tab <em>Account</em>).</li>
         <li>Enter your Clockodo login email and paste the API key.</li>
         <li>Click <strong>Test connection</strong> — you should see your name with a green check.</li>
         <li>Press <strong>Save</strong> in the top bar.</li>
@@ -222,7 +223,15 @@
     <div class="figure">
       <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
-        <text x="14" y="26" class="mock-txt" font-weight="600">ACCOUNT</text>
+        <rect x="10" y="6" width="44" height="13" rx="6" class="mock-accent"/>
+        <text x="14" y="15.5" class="mock-accent-txt" font-size="8">Account</text>
+        <rect x="58" y="6" width="50" height="13" rx="6" class="mock-field"/>
+        <text x="62" y="15.5" class="mock-muted" font-size="8">Schedule</text>
+        <rect x="112" y="6" width="81" height="13" rx="6" class="mock-field"/>
+        <text x="116" y="15.5" class="mock-muted" font-size="8">Sync &amp; updates</text>
+        <rect x="197" y="6" width="29" height="13" rx="6" class="mock-field"/>
+        <text x="201" y="15.5" class="mock-muted" font-size="8">Help</text>
+        <text x="14" y="38" class="mock-txt" font-weight="600">ACCOUNT</text>
         <text x="14" y="48" class="mock-muted">Clockodo login email</text>
         <rect x="14" y="54" width="272" height="20" rx="5" class="mock-field"/>
         <text x="22" y="68" class="mock-txt">you@company.com</text>
@@ -243,7 +252,7 @@
   <section class="step card" id="booking">
     <div>
       <h2><span class="num">4</span>Choose customer &amp; service</h2>
-      <p>Clockodo books your attendance as <strong>time entries</strong>, so each entry needs a customer and a service (e.g. your internal company customer and a generic "Work" service).</p>
+      <p><em>Options → Account tab → What to book.</em> Clockodo books your attendance as <strong>time entries</strong>, so each entry needs a customer and a service (e.g. your internal company customer and a generic "Work" service).</p>
       <ol>
         <li>In <strong>What to book</strong>, keep mode = <em>Time entries</em>.</li>
         <li>Click <strong>Load customers &amp; services</strong>.</li>
@@ -255,7 +264,15 @@
     <div class="figure">
       <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
-        <text x="14" y="26" class="mock-txt" font-weight="600">WHAT TO BOOK</text>
+        <rect x="10" y="6" width="44" height="13" rx="6" class="mock-accent"/>
+        <text x="14" y="15.5" class="mock-accent-txt" font-size="8">Account</text>
+        <rect x="58" y="6" width="50" height="13" rx="6" class="mock-field"/>
+        <text x="62" y="15.5" class="mock-muted" font-size="8">Schedule</text>
+        <rect x="112" y="6" width="81" height="13" rx="6" class="mock-field"/>
+        <text x="116" y="15.5" class="mock-muted" font-size="8">Sync &amp; updates</text>
+        <rect x="197" y="6" width="29" height="13" rx="6" class="mock-field"/>
+        <text x="201" y="15.5" class="mock-muted" font-size="8">Help</text>
+        <text x="14" y="38" class="mock-txt" font-weight="600">WHAT TO BOOK</text>
         <text x="14" y="48" class="mock-muted">Mode</text>
         <rect x="14" y="54" width="272" height="20" rx="5" class="mock-field"/>
         <text x="22" y="68" class="mock-txt">Time entries (recommended)</text>
@@ -277,7 +294,7 @@
   <section class="step card" id="hours">
     <div>
       <h2><span class="num">5</span>Set your working hours</h2>
-      <p><strong>Fixed blocks:</strong> start with one block (default <code>09:00–17:00</code>). Click <strong>+ Add block</strong> to split the day — the gap between blocks is your break, e.g. <code>08:30–13:00</code> and <code>14:00–17:30</code>.</p>
+      <p><em>Options → Schedule tab.</em> <strong>Fixed blocks:</strong> start with one block (default <code>09:00–17:00</code>). Click <strong>+ Add block</strong> to split the day — the gap between blocks is your break, e.g. <code>08:30–13:00</code> and <code>14:00–17:30</code>.</p>
       <p><strong>Random start, fixed duration:</strong> set the exact daily total (e.g. <code>8 h 23 min</code>), a break with an optional ± variation, and a start window (e.g. <code>07:30–09:30</code>). Every fill draws fresh values — start, break length and the morning/afternoon split — while the total stays exact. Running <em>Replace</em> again re-rolls the day. <strong>Preview next days</strong> shows sample results.</p>
       <ul>
         <li>Pick your <strong>Timezone</strong> below. All times are wall-clock in that zone and DST-aware.</li>
@@ -308,7 +325,7 @@
     <div>
       <h2><span class="num">6</span>Turn on automatic daily fill</h2>
       <ol>
-        <li>In <strong>Schedule</strong>, set the time (default 09:15) and switch on <strong>Auto-fill every workday</strong>. Save.</li>
+        <li>In <strong>Options → Schedule tab → Schedule</strong>, set the time (default 09:15) and switch on <strong>Auto-fill every workday</strong>. Save.</li>
         <li>Or toggle <strong>Auto-fill daily</strong> right from the popup.</li>
       </ol>
       <p>How it behaves:</p>
@@ -342,6 +359,7 @@
   <section class="step card" id="sync">
     <div>
       <h2><span class="num">6b</span>Sync &amp; backup</h2>
+      <p><em>Options → Sync &amp; updates tab.</em></p>
       <ul>
         <li><strong>Sync settings across my Chrome devices</strong> (on by default) — hours, schedule, skip days, timezone and customer/service follow your Chrome account. A new device only asks for the API key.</li>
         <li><strong>Also sync my API key</strong> (off by default) — switch on and new devices need no re-entry; the key is then kept in your Google account like a saved password.</li>
@@ -352,7 +370,15 @@
     <div class="figure">
       <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
-        <text x="14" y="26" class="mock-txt" font-weight="600">SYNC &amp; BACKUP</text>
+        <rect x="10" y="6" width="44" height="13" rx="6" class="mock-field"/>
+        <text x="14" y="15.5" class="mock-muted" font-size="8">Account</text>
+        <rect x="58" y="6" width="50" height="13" rx="6" class="mock-field"/>
+        <text x="62" y="15.5" class="mock-muted" font-size="8">Schedule</text>
+        <rect x="112" y="6" width="81" height="13" rx="6" class="mock-accent"/>
+        <text x="116" y="15.5" class="mock-accent-txt" font-size="8">Sync &amp; updates</text>
+        <rect x="197" y="6" width="29" height="13" rx="6" class="mock-field"/>
+        <text x="201" y="15.5" class="mock-muted" font-size="8">Help</text>
+        <text x="14" y="38" class="mock-txt" font-weight="600">SYNC &amp; BACKUP</text>
         <text x="14" y="52" class="mock-txt">Sync settings across my Chrome devices</text>
         <rect x="256" y="42" width="30" height="16" rx="8" class="mock-accent"/>
         <circle cx="278" cy="50" r="6" fill="#fff"/>
@@ -416,9 +442,9 @@
     <h2 class="card-title" style="margin-bottom:10px">Security &amp; privacy — in plain words</h2>
     <ul style="margin:0; padding-left:20px; font-size:13px; line-height:1.7">
       <li><strong>Official API only.</strong> The extension talks to Clockodo exclusively through its documented public REST API (<code>https://my.clockodo.com/api</code>), the same one Clockodo's own integrations use. No scraping, no automation of the website, no hidden endpoints.</li>
-      <li><strong>Your data stays with you.</strong> Your email, API key and settings are stored in the extension's storage inside <em>your</em> Chrome profile. There is no server behind this extension, no account, no analytics and no crash reporting. Settings can sync between your own devices through your Google account (Chrome Sync) — the API key <strong>only if you switch that on</strong>. Both switches: Options → Sync &amp; backup.</li>
+      <li><strong>Your data stays with you.</strong> Your email, API key and settings are stored in the extension's storage inside <em>your</em> Chrome profile. There is no server behind this extension, no account, no analytics and no crash reporting. Settings can sync between your own devices through your Google account (Chrome Sync) — the API key <strong>only if you switch that on</strong>. Both switches: Options → Sync &amp; updates → Sync &amp; backup.</li>
       <li><strong>Only one destination for your data.</strong> Every request carrying your credentials goes to <code>my.clockodo.com</code>, and only when you click Fill / Test / Load or the scheduled fill runs. The extension has no permission for any other website.</li>
-      <li><strong>Optional update check.</strong> Once a day it downloads one public file (the project's <code>manifest.json</code> on GitHub) to see if a newer version exists. That request contains no personal data at all. Turn it off in Options → Updates if you prefer.</li>
+      <li><strong>Optional update check.</strong> Once a day it downloads one public file (the project's <code>manifest.json</code> on GitHub) to see if a newer version exists. That request contains no personal data at all. Turn it off in Options → Sync &amp; updates → Updates if you prefer.</li>
       <li><strong>API key, not password.</strong> You never enter your Clockodo password. The personal API key can be regenerated in Clockodo at any time, which instantly invalidates the old one.</li>
       <li><strong>Nothing runs without Chrome.</strong> There is no background service or cron job on your machine. The daily auto-fill is a Chrome alarm: it fires only while Chrome is running, and catches up on the next launch if it was missed.</li>
       <li><strong>Everyone uses their own key.</strong> When you share the extension with colleagues, each person enters their own credentials. Nothing about your account is inside the shared files.</li>
@@ -451,7 +477,7 @@
     </details>
     <details open>
       <summary>Can I change the hours later?</summary>
-      <p>Yes — Options → Working hours → Save. Future fills use the new times; existing entries are not changed.</p>
+      <p>Yes — Options → Schedule tab → Working hours → Save. Future fills use the new times; existing entries are not changed.</p>
     </details>
     <details open>
       <summary>Is anything sent anywhere besides Clockodo?</summary>
