@@ -374,6 +374,39 @@ $("testBtn").addEventListener("click", async () => {
 });
 
 // ---------------------------------------------------------------------------
+// Tabs
+// ---------------------------------------------------------------------------
+const TAB_KEY = "clockodo-options-tab";
+
+function showTab(name) {
+  let found = false;
+  for (const panel of document.querySelectorAll(".tab-panel")) {
+    const on = panel.dataset.tab === name;
+    panel.classList.toggle("active", on);
+    found ||= on;
+  }
+  if (!found) return showTab("account");
+  for (const tab of document.querySelectorAll(".tab")) {
+    const on = tab.dataset.tab === name;
+    tab.classList.toggle("active", on);
+    tab.setAttribute("aria-selected", String(on));
+  }
+  try { localStorage.setItem(TAB_KEY, name); } catch { /* ignore */ }
+}
+
+for (const tab of document.querySelectorAll(".tab")) {
+  tab.addEventListener("click", () => showTab(tab.dataset.tab));
+}
+
+// Tab that contains a given element (used to jump to validation errors).
+const tabOf = (el) => el.closest(".tab-panel")?.dataset.tab || "account";
+
+let initialTab = "account";
+try { initialTab = localStorage.getItem(TAB_KEY) || "account"; } catch { /* ignore */ }
+if (location.hash) initialTab = location.hash.slice(1);
+showTab(initialTab);
+
+// ---------------------------------------------------------------------------
 // Sync & backup
 // ---------------------------------------------------------------------------
 function refreshSyncToggles() {
@@ -471,8 +504,8 @@ $("saveBtn").addEventListener("click", async () => {
   const el = $("saveResult");
   const patch = collect();
   const scheduleError = validateSchedule(patch);
-  if (scheduleError) return setStatus(el, `✗ ${scheduleError}`, "bad");
-  if (!HHMM_RE.test(patch.autoTime)) return setStatus(el, "✗ Auto-fill time must be HH:MM.", "bad");
+  if (scheduleError) { showTab("schedule"); return setStatus(el, `✗ ${scheduleError}`, "bad"); }
+  if (!HHMM_RE.test(patch.autoTime)) { showTab(tabOf($("autoTime"))); return setStatus(el, "✗ Auto-fill time must be HH:MM.", "bad"); }
   const next = await saveConfig(patch);
   showKeyState(next);
   const res = await chrome.runtime.sendMessage({ action: "rescheduleAlarm" });

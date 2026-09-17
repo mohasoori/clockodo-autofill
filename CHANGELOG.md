@@ -4,6 +4,15 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.5.0] — 2026-09-17
+
+### Changed
+- **Options reorganised into tabs:** *Account* (account, what to book),
+  *Schedule* (working hours, schedule, days to never fill), *Sync & updates*
+  (sync & backup, updates) and a new *Help* tab that shows the illustrated
+  guide inside the settings page. Save still writes everything; a validation
+  error jumps to the tab it belongs to; the last tab is remembered.
+
 ## [1.4.0] — 2026-09-17
 
 ### Added

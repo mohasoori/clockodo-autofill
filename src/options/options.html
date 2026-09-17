@@ -39,6 +39,22 @@
     }
 
     .action-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
+    .tabs {
+      display: inline-flex; padding: 4px; gap: 4px;
+      background: var(--card); border: 1px solid var(--border); border-radius: 12px;
+      box-shadow: var(--shadow);
+    }
+    .tab {
+      border: none; background: transparent; color: var(--text-muted);
+      padding: 8px 16px; border-radius: 9px; font-size: 13px; font-weight: 600;
+    }
+    .tab:hover { border: none; color: var(--text); }
+    .tab.active { background: var(--accent); color: var(--accent-text); }
+    .tab-panel { display: none; }
+    .tab-panel.active { display: grid; gap: 16px; }
+    .help-panel.active { display: block; }
+    #helpFrame { width: 100%; height: calc(100vh - 170px); min-height: 520px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); box-shadow: var(--shadow); }
+
 
     .inline-time { width: 112px !important; }
     .inline-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
@@ -189,7 +205,14 @@
   </header>
 
   <main class="page">
+    <nav class="tabs" role="tablist" aria-label="Settings sections">
+      <button type="button" class="tab" role="tab" data-tab="account">Account</button>
+      <button type="button" class="tab" role="tab" data-tab="schedule">Schedule</button>
+      <button type="button" class="tab" role="tab" data-tab="system">Sync &amp; updates</button>
+      <button type="button" class="tab" role="tab" data-tab="help">Help</button>
+    </nav>
 
+    <div class="tab-panel" data-tab="account">
     <section class="card">
       <h2 class="card-title">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>
@@ -268,7 +291,9 @@
         </div>
       </div>
     </section>
+    </div>
 
+    <div class="tab-panel" data-tab="schedule">
     <section class="card">
       <h2 class="card-title">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
@@ -363,6 +388,21 @@
 
     <section class="card">
       <h2 class="card-title">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 8l8 8M16 8l-8 8"/></svg></span>
+        Days to never fill
+      </h2>
+      <div class="action-row" style="margin-top:0">
+        <input type="date" id="skipDateInput" style="flex:1" />
+        <button class="small" id="addSkipBtn">Add</button>
+      </div>
+      <ul id="skipList"></ul>
+      <div class="hint">Holidays, sick days, vacation. You can also toggle "Skip today" from the popup.</div>
+    </section>
+    </div>
+
+    <div class="tab-panel" data-tab="system">
+    <section class="card">
+      <h2 class="card-title">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a4 4 0 0 1 .5-8 5.5 5.5 0 0 1 10.6 1.5A4 4 0 0 1 18 15H7"/><path d="M12 12v9m-3-3 3 3 3-3"/></svg></span>
         Sync &amp; backup
       </h2>
@@ -416,19 +456,11 @@
         <span id="updateResult" class="status-text"></span>
       </div>
     </section>
+    </div>
 
-    <section class="card">
-      <h2 class="card-title">
-        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M8 8l8 8M16 8l-8 8"/></svg></span>
-        Days to never fill
-      </h2>
-      <div class="action-row" style="margin-top:0">
-        <input type="date" id="skipDateInput" style="flex:1" />
-        <button class="small" id="addSkipBtn">Add</button>
-      </div>
-      <ul id="skipList"></ul>
-      <div class="hint">Holidays, sick days, vacation. You can also toggle "Skip today" from the popup.</div>
-    </section>
+    <div class="tab-panel help-panel" data-tab="help">
+      <iframe id="helpFrame" src="../help/help.html" title="Help & guide" loading="lazy"></iframe>
+    </div>
 
   </main>
 

@@ -25,6 +25,19 @@ store install updates automatically. Manual zip installs see the in-app
 
 ---
 
+## Version numbers
+
+- **major** (2.0.0) — incompatible change, e.g. removing a booking mode or
+  a settings format users must redo.
+- **minor** (1.x.0) — a new capability **or** a visible redesign users will
+  notice (new Options layout counts).
+- **patch** (1.x.y) — fixes, wording, docs, assets. Docs-only changes do
+  not need a release at all; they ride along with the next one.
+
+Every release also needs a `CHANGELOG.md` section, the three
+`data-version` fallbacks in `src/help/help.html`, the version lines in
+`README.md` / `docs/USER_GUIDE.md`, and a regenerated PDF.
+
 ## One-time setup (already done for this repo — documented for rebuilds)
 
 ### 1. Google Cloud project with the Chrome Web Store API

@@ -18,7 +18,8 @@ src/
                               (pure module, no DOM)
   lib/updates.js              new-version check (GITHUB_REPO constant)
   popup/popup.html|js         action popup
-  options/options.html|js     settings page
+  options/options.html|js     settings page (tabs: account / schedule / system / help;
+                              the Help tab iframes help.html)
   help/help.html|js           illustrated end-user guide + what's new
                               (help.js only injects the version)
   styles/theme.css            shared design tokens, light/dark
