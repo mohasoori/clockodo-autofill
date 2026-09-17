@@ -62,6 +62,12 @@ export const DEFAULT_CONFIG = {
   autoTime: "09:15",    // when the daily alarm fires (in `timezone`)
   checkUpdates: true,   // daily "new version" check against the public GitHub repo
 
+  // Cross-device sync via the user's own Chrome account (chrome.storage.sync).
+  // The API key is only included when the user opts in.
+  syncSettings: true,
+  syncApiKey: false,
+  updatedAt: 0,         // last local save; newer wins when merging from sync
+
   // entry mode only
   customersId: null,
   servicesId: null,
@@ -87,9 +93,85 @@ function migrateStoredConfig(stored) {
 }
 
 export async function saveConfig(patch) {
-  const next = { ...(await loadConfig()), ...patch };
+  const next = { ...(await loadConfig()), ...patch, updatedAt: Date.now() };
   await chrome.storage.local.set({ config: next });
+  await pushToSync(next);
   return next;
+}
+
+// ---------------------------------------------------------------------------
+// Cross-device sync (chrome.storage.sync) and export/import
+// ---------------------------------------------------------------------------
+// chrome.storage.local stays the source of truth at runtime. Every save mirrors
+// the settings to chrome.storage.sync (minus the API key unless opted in);
+// pullFromSync() merges a newer copy from another device back into local.
+const SYNC_KEY = "settings";
+
+async function pushToSync(cfg) {
+  try {
+    if (!cfg.syncSettings) {
+      await chrome.storage.sync.remove(SYNC_KEY);
+      return;
+    }
+    const copy = { ...cfg };
+    if (!cfg.syncApiKey) delete copy.apiKey;
+    await chrome.storage.sync.set({ [SYNC_KEY]: copy });
+  } catch (e) {
+    // Quota exceeded or sync unavailable — local copy is still saved.
+    console.warn("[Clockodo Auto-Fill] sync push failed:", e.message);
+  }
+}
+
+// Returns the merged config when the synced copy was newer, otherwise null.
+export async function pullFromSync() {
+  const { [SYNC_KEY]: remote } = await chrome.storage.sync.get(SYNC_KEY);
+  if (!remote || typeof remote !== "object") return null;
+  const local = await loadConfig();
+  if (!local.syncSettings && local.updatedAt) return null; // user turned sync off here
+  if ((remote.updatedAt || 0) <= (local.updatedAt || 0)) return null;
+
+  const merged = { ...local, ...sanitizeImported(remote) };
+  if (remote.apiKey === undefined) merged.apiKey = local.apiKey; // key not synced → keep ours
+  merged.updatedAt = remote.updatedAt;
+  await chrome.storage.local.set({ config: merged });
+  return merged;
+}
+
+// Keep only known keys with plausible types so a tampered/foreign blob can't
+// inject arbitrary fields.
+function sanitizeImported(obj) {
+  const out = {};
+  for (const [k, def] of Object.entries(DEFAULT_CONFIG)) {
+    if (!(k in obj) || k === "updatedAt") continue;
+    const v = obj[k];
+    if (def === null) { if (v === null || typeof v === "number") out[k] = v; continue; }
+    if (Array.isArray(def)) { if (Array.isArray(v)) out[k] = v; continue; }
+    if (typeof v === typeof def) out[k] = v;
+  }
+  return out;
+}
+
+export async function exportConfig({ includeApiKey = false } = {}) {
+  const cfg = await loadConfig();
+  const data = { ...cfg };
+  if (!includeApiKey) delete data.apiKey;
+  delete data.updatedAt;
+  return {
+    app: "clockodo-autofill",
+    version: chrome.runtime.getManifest().version,
+    exportedAt: new Date().toISOString(),
+    settings: data,
+  };
+}
+
+export async function importConfig(payload) {
+  const settings = payload && payload.app === "clockodo-autofill" ? payload.settings : payload;
+  if (!settings || typeof settings !== "object") throw new Error("Not a Clockodo Auto-Fill settings file.");
+  const patch = sanitizeImported(migrateStoredConfig({ ...settings }));
+  if (Object.keys(patch).length === 0) throw new Error("The file contains no recognised settings.");
+  const scheduleError = validateSchedule({ ...(await loadConfig()), ...patch });
+  if (scheduleError) throw new Error(`Imported schedule is invalid: ${scheduleError}`);
+  return saveConfig(patch);
 }
 
 // ---------------------------------------------------------------------------

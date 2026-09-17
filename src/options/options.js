@@ -8,7 +8,7 @@ const $ = (id) => document.getElementById(id);
 
 // apiKey is handled separately: the stored key is never written back into the DOM.
 const TEXT_FIELDS = ["apiUser", "mode", "autoTime", "randomEarliestStart", "randomLatestStart"];
-const CHECKBOXES = ["autoApprove", "billable", "skipWeekends", "autoDaily", "checkUpdates"];
+const CHECKBOXES = ["autoApprove", "billable", "skipWeekends", "autoDaily", "checkUpdates", "syncSettings", "syncApiKey"];
 
 let skipDates = [];
 let blocks = [];
@@ -374,6 +374,55 @@ $("testBtn").addEventListener("click", async () => {
 });
 
 // ---------------------------------------------------------------------------
+// Sync & backup
+// ---------------------------------------------------------------------------
+function refreshSyncToggles() {
+  const on = $("syncSettings").checked;
+  $("syncApiKey").disabled = !on;
+  if (!on) $("syncApiKey").checked = false;
+}
+$("syncSettings").addEventListener("change", refreshSyncToggles);
+
+$("exportBtn").addEventListener("click", async () => {
+  const el = $("backupResult");
+  setStatus(el, "Preparing…");
+  try {
+    const res = await chrome.runtime.sendMessage({ action: "exportConfig", includeApiKey: $("exportWithKey").checked });
+    if (!res.ok) throw new Error(res.error);
+    const blob = new Blob([JSON.stringify(res.payload, null, 2)], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `clockodo-autofill-settings-${new Date().toISOString().slice(0, 10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    setTimeout(() => URL.revokeObjectURL(url), 5000);
+    setStatus(el, $("exportWithKey").checked ? "✓ Exported (includes your API key — keep the file private)." : "✓ Exported (without API key).", "ok");
+  } catch (e) {
+    setStatus(el, `✗ ${e.message}`, "bad");
+  }
+});
+
+$("importBtn").addEventListener("click", () => $("importFile").click());
+$("importFile").addEventListener("change", async () => {
+  const el = $("backupResult");
+  const file = $("importFile").files[0];
+  $("importFile").value = "";
+  if (!file) return;
+  setStatus(el, "Importing…");
+  try {
+    const payload = JSON.parse(await file.text());
+    const res = await chrome.runtime.sendMessage({ action: "importConfig", payload });
+    if (!res.ok) throw new Error(res.error);
+    setStatus(el, "✓ Imported — reloading…", "ok");
+    setTimeout(() => location.reload(), 600);
+  } catch (e) {
+    setStatus(el, `✗ ${e.message}`, "bad");
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Update check
 // ---------------------------------------------------------------------------
 $("checkUpdateBtn").addEventListener("click", async () => {
@@ -475,6 +524,7 @@ async function init() {
   toggleScheduleFields();
   renderSkipList();
   toggleModeFields();
+  refreshSyncToggles();
 
   if (pickLists) {
     fillSelect($("customersId"), pickLists.customers, savedCustomersId);

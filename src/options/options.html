@@ -41,6 +41,8 @@
     .action-row { display: flex; align-items: center; gap: 10px; margin-top: 14px; }
 
     .inline-time { width: 112px !important; }
+    .inline-check { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; color: var(--text-muted); }
+    .inline-check input { accent-color: var(--accent); }
 
     ul#skipList { list-style: none; padding: 0; margin: 12px 0 0; font-size: 13px; }
     ul#skipList li {
@@ -357,6 +359,41 @@
           </label>
         </div>
       </div>
+    </section>
+
+    <section class="card">
+      <h2 class="card-title">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 14a4 4 0 0 1 .5-8 5.5 5.5 0 0 1 10.6 1.5A4 4 0 0 1 18 15H7"/><path d="M12 12v9m-3-3 3 3 3-3"/></svg></span>
+        Sync &amp; backup
+      </h2>
+      <div class="switch-row">
+        <div>
+          <div class="lbl">Sync settings across my Chrome devices</div>
+          <div class="sub">Uses your own Chrome account (Chrome Sync). Hours, schedule, skip days, customer/service — not the API key.</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="syncSettings" />
+          <span class="track"></span>
+        </label>
+      </div>
+      <div class="switch-row">
+        <div>
+          <div class="lbl">Also sync my API key</div>
+          <div class="sub">Off by default. When on, new devices need no re-entry; the key is then stored in your Google account like a saved password.</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="syncApiKey" />
+          <span class="track"></span>
+        </label>
+      </div>
+      <div class="action-row" style="margin-top:12px; flex-wrap:wrap">
+        <button class="small" id="exportBtn">Export settings…</button>
+        <label class="inline-check"><input type="checkbox" id="exportWithKey" /> include API key</label>
+        <button class="small" id="importBtn">Import settings…</button>
+        <input type="file" id="importFile" accept="application/json,.json" hidden />
+        <span id="backupResult" class="status-text"></span>
+      </div>
+      <div class="hint">Export writes a JSON file you control. Import replaces the settings on this device (the schedule is validated first).</div>
     </section>
 
     <section class="card">

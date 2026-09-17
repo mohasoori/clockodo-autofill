@@ -4,6 +4,24 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.4.0] — 2026-09-17
+
+### Added
+- **Sync across devices** — settings (hours, schedule, skip days, customer/
+  service, timezone…) follow you to every Chrome you are signed into, via
+  Chrome Sync (`chrome.storage.sync`). On by default. A new device only asks
+  for the API key.
+- **Optional API-key sync** — a separate switch (off by default) includes the
+  key so new devices need no re-entry; it is then stored in your Google
+  account like a saved password.
+- **Export / Import** — download your settings as a JSON file (API key only
+  if you tick the box) and import it on another machine or after a reset.
+  Imported schedules are validated before they are applied.
+
+### Changed
+- Settings carry an `updatedAt` stamp; the newer copy wins when devices
+  disagree. The alarm is re-planned automatically after a remote change.
+
 ## [1.3.9] — 2026-09-17
 
 ### Changed

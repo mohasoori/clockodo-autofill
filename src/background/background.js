@@ -14,6 +14,9 @@ import {
   wallclockToUTC,
   DATE_RE,
   ON_EXISTING,
+  pullFromSync,
+  exportConfig,
+  importConfig,
 } from "../lib/clockodo-api.js";
 import { fetchLatestVersion, updateCheckConfigured, compareVersions } from "../lib/updates.js";
 
@@ -130,6 +133,7 @@ chrome.notifications.onClicked.addListener(async (id) => {
 });
 
 async function onLaunch() {
+  await pullFromSync(); // a fresh device picks up settings from the user's Chrome account
   const cfg = await loadConfig();
   await rescheduleAlarm(cfg);
   await scheduleUpdateCheck(cfg);
@@ -137,6 +141,15 @@ async function onLaunch() {
 }
 chrome.runtime.onInstalled.addListener(onLaunch);
 chrome.runtime.onStartup.addListener(onLaunch);
+
+// Settings changed on another device → merge and re-plan the alarms.
+chrome.storage.onChanged.addListener(async (changes, area) => {
+  if (area !== "sync" || !changes.settings) return;
+  const merged = await pullFromSync();
+  if (!merged) return;
+  await rescheduleAlarm(merged);
+  await scheduleUpdateCheck(merged);
+});
 
 chrome.alarms.onAlarm.addListener(async (alarm) => {
   if (alarm.name === UPDATE_ALARM_NAME) return checkForUpdate();
@@ -251,6 +264,14 @@ async function handle(msg) {
       const info = await fetchLatestVersion();
       await chrome.storage.local.set({ updateInfo: info });
       return { ok: true, update: info };
+    }
+    case "exportConfig":
+      return { ok: true, payload: await exportConfig({ includeApiKey: !!msg.includeApiKey }) };
+    case "importConfig": {
+      const next = await importConfig(msg.payload);
+      await rescheduleAlarm(next);
+      await scheduleUpdateCheck(next);
+      return { ok: true };
     }
     case "listCustomers":
       return { ok: true, customers: await getCustomers(cfg) };
