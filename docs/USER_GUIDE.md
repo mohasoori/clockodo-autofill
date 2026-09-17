@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.3.6 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.3.7 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Fill your daily Clockodo working times in one click, for a date range, or
 automatically every workday. Each person uses their **own** Clockodo API key;
@@ -14,6 +14,12 @@ nothing is shared and nothing leaves your browser except requests to
 ---
 
 ## 1. Install
+
+**Recommended:** open the Chrome Web Store listing and click **Add to Chrome**
+— updates arrive automatically:
+<https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp>
+
+**Manual (load unpacked):**
 
 1. Unzip the release (or clone the repository) to a folder you will **keep** —
    Chrome loads the extension from there.
@@ -29,7 +35,9 @@ nothing is shared and nothing leaves your browser except requests to
 2. Find the **API key** section and copy the key (generate one if empty).
 
 This is **not** your password. The key is stored only in your browser's local
-extension storage and is sent only to `my.clockodo.com`.
+extension storage and is sent only to `my.clockodo.com`. Options never shows
+the saved key again — only `Saved · ends in …xxxx`; type a new key to replace
+it. You can revoke a key in Clockodo at any time.
 
 ## 3. Connect
 

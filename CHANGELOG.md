@@ -4,6 +4,20 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.3.7] — 2026-09-17
+
+### Security
+- Options never writes the stored API key back into the page. The field
+  shows only `Saved · ends in …xxxx`; typing a new key replaces it, leaving
+  it empty keeps the current one. (Switching the input to `type=text` in
+  DevTools therefore reveals nothing.)
+
+### Changed
+- Now available on the Chrome Web Store — the recommended install with
+  automatic updates. README, guide and listing updated.
+- Help page links to the GitHub repository, latest release, issues and the
+  privacy policy.
+
 ## [1.3.6] — 2026-09-16
 
 ### Changed

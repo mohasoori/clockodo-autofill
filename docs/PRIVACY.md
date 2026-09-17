@@ -20,8 +20,15 @@ inside your browser profile (`chrome.storage.local`):
 | Cached customer/service list, last auto-fill result, last update check | Convenience / status display |
 
 The extension does **not** use `chrome.storage.sync`; nothing is copied to
-your Google account or other devices. Uninstalling the extension deletes
-all of the above.
+your Google account or other devices. The Options page never displays the
+stored API key again (only its last four characters). Uninstalling the
+extension deletes all of the above.
+
+Note that `chrome.storage.local` is protected by your operating-system
+account, not encrypted separately by the extension — anyone with full access
+to your logged-in user profile could read it, as with any browser data. Use
+OS login protection and disk encryption, and revoke the key in Clockodo if a
+device is lost.
 
 ## Where data is sent
 

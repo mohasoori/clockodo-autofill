@@ -1,6 +1,6 @@
 # Chrome Web Store — publishing checklist & listing copy
 
-Item ID: `igjjblageocnhjonnhbgkldoojdijppp` ·
+**Status: published (approved 2026-09-17).** Item ID: `igjjblageocnhjonnhbgkldoojdijppp` ·
 Store URL: <https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp> ·
 Dashboard: <https://chrome.google.com/webstore/devconsole>
 
