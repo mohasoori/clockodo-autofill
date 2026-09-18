@@ -99,7 +99,7 @@
   <div class="hero">
     <img src="../../assets/icons/icon48.png" alt="" />
     <div>
-      <h1>Clockodo Auto-Fill — Guide <span class="badge" data-version="prefix">v1.5.0</span></h1>
+      <h1>Clockodo Auto-Fill — Guide <span class="badge" data-version="prefix">v1.6.0</span></h1>
       <p>Fill your daily Clockodo times in one click, for a date range, or automatically every workday.</p>
       <p class="hero-links">
         <a href="https://github.com/mohasoori/clockodo-autofill" target="_blank" rel="noopener noreferrer">Source on GitHub</a> ·
@@ -118,6 +118,7 @@
     <a href="#hours">Hours</a>
     <a href="#auto">Auto-fill</a>
     <a href="#sync">Sync &amp; backup</a>
+    <a href="#activity">Activity</a>
     <a href="#popup">Daily use</a>
     <a href="#security">Security &amp; privacy</a>
     <a href="#faq">FAQ</a>
@@ -125,9 +126,12 @@
 
   <!-- What's new -->
   <section class="card" id="whatsnew" style="margin-bottom:18px">
-    <h2 class="card-title" style="margin-bottom:8px">What's new in <span data-version>1.5.0</span></h2>
+    <h2 class="card-title" style="margin-bottom:8px">What's new in <span data-version>1.6.0</span></h2>
     <ul style="margin:0; padding-left:20px; font-size:13px; line-height:1.6">
-      <li><strong>Options in tabs</strong> — Account · Schedule · Sync &amp; updates · Help. Save writes all tabs; the last tab is remembered.</li>
+      <li><strong>Confirmation dialogs</strong> redesigned (Replace, Clear log, sign-out) — themed, no more browser popups.</li>
+      <li><strong>Sign in/out clarity</strong> — Account shows Ready/Not set up per card; a single Log in button when signed out, Sign out + Delete login data once connected. Optional session-only API key.</li>
+      <li><strong>Activity log</strong> — what the extension booked, replaced or failed, per day or per range, synced across your devices; CSV export.</li>
+      <li><strong>Options in tabs</strong> — Account · Schedule · Activity · Sync &amp; updates · Help. Save writes all tabs; the last tab is remembered.</li>
       <li><strong>Sync &amp; backup</strong> — settings follow you to every Chrome you're signed into (API key only if you opt in); JSON export/import for everything else.</li>
       <li><strong>Random start, fixed duration</strong> — schedule mode: exact daily total (e.g. 8 h 23 min), break ± variation, start window; fresh random times on every fill.</li>
       <li><strong>Conflict handling</strong> — choose what happens when a day already has time entries: <em>Skip</em> (default) or <em>Replace</em> (delete that day's entries and book your blocks). Handy for cleaning up duplicates.</li>
@@ -170,7 +174,7 @@
         <rect x="22" y="88" width="26" height="26" rx="7" class="mock-accent"/>
         <circle cx="35" cy="101" r="7" fill="none" stroke="#fff" stroke-width="2"/>
         <text x="58" y="98" class="mock-txt">Clockodo Auto-Fill</text>
-        <text x="58" y="112" class="mock-muted"><tspan data-version>1.5.0</tspan> · Loaded from folder</text>
+        <text x="58" y="112" class="mock-muted"><tspan data-version>1.6.0</tspan> · Loaded from folder</text>
         <text x="22" y="145" class="mock-muted">Details   Remove</text>
         <rect x="248" y="130" width="28" height="12" rx="6" class="mock-accent"/>
         <circle cx="270" cy="136" r="5" fill="#fff"/>
@@ -216,21 +220,23 @@
       <ol>
         <li>Click the extension icon → <strong>Options</strong> (tab <em>Account</em>).</li>
         <li>Enter your Clockodo login email and paste the API key.</li>
-        <li>Click <strong>Test connection</strong> — you should see your name with a green check.</li>
+        <li>Click <strong>Log in</strong> — you should see your name with a green check.</li>
         <li>Press <strong>Save</strong> in the top bar.</li>
       </ol>
     </div>
     <div class="figure">
       <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
-        <rect x="10" y="6" width="44" height="13" rx="6" class="mock-accent"/>
-        <text x="14" y="15.5" class="mock-accent-txt" font-size="8">Account</text>
-        <rect x="58" y="6" width="50" height="13" rx="6" class="mock-field"/>
-        <text x="62" y="15.5" class="mock-muted" font-size="8">Schedule</text>
-        <rect x="112" y="6" width="81" height="13" rx="6" class="mock-field"/>
-        <text x="116" y="15.5" class="mock-muted" font-size="8">Sync &amp; updates</text>
-        <rect x="197" y="6" width="29" height="13" rx="6" class="mock-field"/>
-        <text x="201" y="15.5" class="mock-muted" font-size="8">Help</text>
+        <rect x="10" y="6" width="38" height="13" rx="6" class="mock-accent"/>
+        <text x="13" y="15.5" class="mock-accent-txt" font-size="7.5">Account</text>
+        <rect x="51" y="6" width="43" height="13" rx="6" class="mock-field"/>
+        <text x="54" y="15.5" class="mock-muted" font-size="7.5">Schedule</text>
+        <rect x="97" y="6" width="43" height="13" rx="6" class="mock-field"/>
+        <text x="100" y="15.5" class="mock-muted" font-size="7.5">Activity</text>
+        <rect x="143" y="6" width="70" height="13" rx="6" class="mock-field"/>
+        <text x="146" y="15.5" class="mock-muted" font-size="7.5">Sync &amp; updates</text>
+        <rect x="216" y="6" width="24" height="13" rx="6" class="mock-field"/>
+        <text x="219" y="15.5" class="mock-muted" font-size="7.5">Help</text>
         <text x="14" y="38" class="mock-txt" font-weight="600">ACCOUNT</text>
         <text x="14" y="48" class="mock-muted">Clockodo login email</text>
         <rect x="14" y="54" width="272" height="20" rx="5" class="mock-field"/>
@@ -238,13 +244,47 @@
         <text x="14" y="94" class="mock-muted">Personal API key</text>
         <rect x="14" y="100" width="272" height="20" rx="5" class="mock-field"/>
         <text x="22" y="114" class="mock-txt">••••••••••••••••••••••••••••</text>
-        <rect x="14" y="134" width="92" height="22" rx="6" class="mock-field"/>
-        <text x="24" y="149" class="mock-txt">Test connection</text>
+        <rect x="14" y="134" width="92" height="22" rx="6" class="mock-accent"/>
+        <text x="40" y="149" class="mock-accent-txt">Log in</text>
         <circle cx="122" cy="145" r="6" class="mock-ok"/>
         <path d="M119 145l2 2 4-4" fill="none" stroke="#fff" stroke-width="1.6"/>
         <text x="133" y="149" class="mock-txt">Connected as Your Name</text>
       </svg>
       <div class="cap">Green check = the key works</div>
+    </div>
+  </section>
+
+  <!-- 3b Account state -->
+  <section class="step card" id="account-state">
+    <div>
+      <h2><span class="num">3b</span>Account state &amp; signing out</h2>
+      <p><em>Options → Account tab.</em> Cards that still need attention get a
+      thin red edge and a badge (<em>Not set up</em>, <em>Not logged in</em>,
+      <em>Pick customer &amp; service</em>); the Account tab shows a small red
+      dot until both cards are ready. Once connected, both turn <em>Ready ✓</em>.</p>
+      <ul>
+        <li><strong>Log in</strong> — the only button shown while signed out. It tests the connection and resolves your Clockodo user.</li>
+        <li>Once connected, <strong>Sign out</strong> and <strong>Delete login data</strong> replace it.
+          <strong>Sign out</strong> only disconnects — your email and key stay saved, so signing back in is one click.
+          <strong>Delete login data</strong> permanently removes email, key, user id, customer/service <em>and the activity log</em> from this device (and from synced settings, if the key was synced) — always asks for confirmation first.</li>
+        <li><strong>Remember my API key on this device</strong> (on by default) — turn off to keep the key only until Chrome closes (session storage, never on disk or synced); auto-fill then pauses after a restart until you log in again.</li>
+      </ul>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
+        <rect x="1" y="6" width="140" height="16" rx="8" fill="none" stroke="#e0553f" stroke-width="1.5"/>
+        <text x="8" y="18" class="mock-txt" font-weight="600">ACCOUNT</text>
+        <rect x="248" y="8" width="44" height="13" rx="6" class="mock-field"/><text x="253" y="17.5" class="mock-muted" font-size="8">Not set up</text>
+        <text x="14" y="40" class="mock-muted">Clockodo login email</text>
+        <rect x="14" y="46" width="272" height="18" rx="5" class="mock-field"/>
+        <text x="14" y="80" class="mock-muted">Personal API key</text>
+        <rect x="14" y="86" width="272" height="18" rx="5" class="mock-field"/>
+        <rect x="14" y="112" width="10" height="10" rx="2" class="mock-accent"/><text x="28" y="120" class="mock-txt" font-size="8">Remember my API key on this device</text>
+        <rect x="14" y="134" width="60" height="20" rx="6" class="mock-accent"/><text x="24" y="147" class="mock-accent-txt" font-size="8">Log in</text>
+        <rect x="8" y="128" width="72" height="32" rx="8" class="mock-hl"/>
+      </svg>
+      <div class="cap">Signed out: only "Log in" shows</div>
     </div>
   </section>
 
@@ -264,14 +304,16 @@
     <div class="figure">
       <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
-        <rect x="10" y="6" width="44" height="13" rx="6" class="mock-accent"/>
-        <text x="14" y="15.5" class="mock-accent-txt" font-size="8">Account</text>
-        <rect x="58" y="6" width="50" height="13" rx="6" class="mock-field"/>
-        <text x="62" y="15.5" class="mock-muted" font-size="8">Schedule</text>
-        <rect x="112" y="6" width="81" height="13" rx="6" class="mock-field"/>
-        <text x="116" y="15.5" class="mock-muted" font-size="8">Sync &amp; updates</text>
-        <rect x="197" y="6" width="29" height="13" rx="6" class="mock-field"/>
-        <text x="201" y="15.5" class="mock-muted" font-size="8">Help</text>
+        <rect x="10" y="6" width="38" height="13" rx="6" class="mock-accent"/>
+        <text x="13" y="15.5" class="mock-accent-txt" font-size="7.5">Account</text>
+        <rect x="51" y="6" width="43" height="13" rx="6" class="mock-field"/>
+        <text x="54" y="15.5" class="mock-muted" font-size="7.5">Schedule</text>
+        <rect x="97" y="6" width="43" height="13" rx="6" class="mock-field"/>
+        <text x="100" y="15.5" class="mock-muted" font-size="7.5">Activity</text>
+        <rect x="143" y="6" width="70" height="13" rx="6" class="mock-field"/>
+        <text x="146" y="15.5" class="mock-muted" font-size="7.5">Sync &amp; updates</text>
+        <rect x="216" y="6" width="24" height="13" rx="6" class="mock-field"/>
+        <text x="219" y="15.5" class="mock-muted" font-size="7.5">Help</text>
         <text x="14" y="38" class="mock-txt" font-weight="600">WHAT TO BOOK</text>
         <text x="14" y="48" class="mock-muted">Mode</text>
         <rect x="14" y="54" width="272" height="20" rx="5" class="mock-field"/>
@@ -370,14 +412,16 @@
     <div class="figure">
       <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
         <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
-        <rect x="10" y="6" width="44" height="13" rx="6" class="mock-field"/>
-        <text x="14" y="15.5" class="mock-muted" font-size="8">Account</text>
-        <rect x="58" y="6" width="50" height="13" rx="6" class="mock-field"/>
-        <text x="62" y="15.5" class="mock-muted" font-size="8">Schedule</text>
-        <rect x="112" y="6" width="81" height="13" rx="6" class="mock-accent"/>
-        <text x="116" y="15.5" class="mock-accent-txt" font-size="8">Sync &amp; updates</text>
-        <rect x="197" y="6" width="29" height="13" rx="6" class="mock-field"/>
-        <text x="201" y="15.5" class="mock-muted" font-size="8">Help</text>
+        <rect x="10" y="6" width="38" height="13" rx="6" class="mock-field"/>
+        <text x="13" y="15.5" class="mock-muted" font-size="7.5">Account</text>
+        <rect x="51" y="6" width="43" height="13" rx="6" class="mock-field"/>
+        <text x="54" y="15.5" class="mock-muted" font-size="7.5">Schedule</text>
+        <rect x="97" y="6" width="43" height="13" rx="6" class="mock-field"/>
+        <text x="100" y="15.5" class="mock-muted" font-size="7.5">Activity</text>
+        <rect x="143" y="6" width="70" height="13" rx="6" class="mock-accent"/>
+        <text x="146" y="15.5" class="mock-accent-txt" font-size="7.5">Sync &amp; updates</text>
+        <rect x="216" y="6" width="24" height="13" rx="6" class="mock-field"/>
+        <text x="219" y="15.5" class="mock-muted" font-size="7.5">Help</text>
         <text x="14" y="38" class="mock-txt" font-weight="600">SYNC &amp; BACKUP</text>
         <text x="14" y="52" class="mock-txt">Sync settings across my Chrome devices</text>
         <rect x="256" y="42" width="30" height="16" rx="8" class="mock-accent"/>
@@ -396,6 +440,49 @@
     </div>
   </section>
 
+  <!-- 6c Activity -->
+  <section class="step card" id="activity">
+    <div>
+      <h2><span class="num">6c</span>Activity log</h2>
+      <p><em>Options → Activity tab</em> (also via the popup footer).</p>
+      <ul>
+        <li>One row per <strong>Fill today</strong> / <strong>Auto-fill</strong> run: work day, result (<em>created</em>, <em>replaced</em>, <em>already filled</em>, <em>skipped</em>, <em>error</em>), the booked times, when it ran and on which device. Errors are collapsed behind a <em>details</em> toggle, closed by default.</li>
+        <li>A <strong>Fill range</strong> run is one row — <code>15 Sep → 19 Sep (5 days)</code> with a summary like <em>4 created · 1 skipped</em>; expand it to see each day.</li>
+        <li>Repeated identical errors collapse into one row with <em>×N</em>.</li>
+        <li>Filter by month or errors only; the chips count days booked, entries created and errors.</li>
+        <li><strong>Export CSV</strong> (opens cleanly in Excel) · <strong>Clear log</strong> · rename this device.</li>
+      </ul>
+      <div class="callout">Only the extension's own actions are logged — changes made directly in Clockodo don't appear here. The last 150 entries sync between your devices; up to 1000 stay on this one. <strong>Delete login data</strong> (Account tab) clears the whole log.</div>
+    </div>
+    <div class="figure">
+      <svg viewBox="0 0 300 170" xmlns="http://www.w3.org/2000/svg">
+        <rect x="1" y="1" width="298" height="168" rx="8" class="mock-win"/>
+        <text x="14" y="26" class="mock-txt" font-weight="600">ACTIVITY</text>
+        <rect x="14" y="36" width="70" height="13" rx="6" class="mock-accent"/><text x="20" y="46" class="mock-accent-txt" font-size="8">5 days booked</text>
+        <rect x="90" y="36" width="82" height="13" rx="6" class="mock-accent"/><text x="96" y="46" class="mock-accent-txt" font-size="8">10 entries created</text>
+        <rect x="178" y="36" width="44" height="13" rx="6" class="mock-field"/><text x="184" y="46" class="mock-muted" font-size="8">0 errors</text>
+        <rect x="14" y="60" width="272" height="1" class="mock-bar"/>
+        <text x="16" y="78" class="mock-txt">Thu, 18 Sep</text>
+        <rect x="96" y="69" width="40" height="12" rx="6" class="mock-ok"/><text x="101" y="78" class="mock-accent-txt" font-size="7.5">created</text>
+        <text x="142" y="78" class="mock-muted">08:32–12:58 · 13:58–17:32</text>
+        <text x="255" y="78" class="mock-muted" font-size="8">Auto-fill</text>
+        <rect x="14" y="88" width="272" height="1" class="mock-bar"/>
+        <text x="16" y="106" class="mock-txt">15 Sep → 19 Sep (5 days)</text>
+        <rect x="150" y="97" width="46" height="12" rx="6" class="mock-ok"/><text x="155" y="106" class="mock-accent-txt" font-size="7.5">4 replaced</text>
+        <rect x="200" y="97" width="42" height="12" rx="6" class="mock-field"/><text x="205" y="106" class="mock-muted" font-size="7.5">1 skipped</text>
+        <text x="248" y="106" class="mock-accent" font-size="8">▸ 4 days</text>
+        <rect x="14" y="116" width="272" height="1" class="mock-bar"/>
+        <text x="16" y="134" class="mock-txt">Wed, 17 Sep</text>
+        <rect x="96" y="125" width="40" height="12" rx="6" class="mock-ok"/><text x="101" y="134" class="mock-accent-txt" font-size="7.5">created</text>
+        <text x="142" y="134" class="mock-muted">08:30–13:00 · 14:00–17:30</text>
+        <text x="245" y="134" class="mock-muted" font-size="8">Fill today</text>
+        <rect x="14" y="150" width="70" height="14" rx="5" class="mock-field"/><text x="22" y="160" class="mock-txt" font-size="8">Export CSV</text>
+        <rect x="90" y="150" width="60" height="14" rx="5" class="mock-field"/><text x="98" y="160" class="mock-txt" font-size="8">Clear log</text>
+      </svg>
+      <div class="cap">Every booking the extension made, in one place</div>
+    </div>
+  </section>
+
   <!-- 7 Popup -->
   <section class="step card" id="popup">
     <div>
@@ -405,6 +492,7 @@
         <li><strong>Fill range</strong> — pick From/To (or tap <em>This week / Last week / This month</em>), fills every workday in between. The status line tells you the exact range it is booking.</li>
         <li><strong>If a day already has any time entry</strong> — <em>Skip that day</em> (default, never touches existing bookings) or <em>Replace</em> (deletes all entries on those days and books your blocks — asks for confirmation; use it to clean up duplicates).</li>
         <li><strong>Skip today</strong> — mark today as a day that must not be filled (sick day, holiday). Manage the full list in Options.</li>
+        <li><strong>Activity</strong> (footer link) — opens the log of everything the extension booked.</li>
         <li>The dot next to your name is green when the API key works.</li>
         <li>The footer shows your installed version and whether a newer one exists, plus the last automatic run.</li>
       </ul>
@@ -446,6 +534,7 @@
       <li><strong>Only one destination for your data.</strong> Every request carrying your credentials goes to <code>my.clockodo.com</code>, and only when you click Fill / Test / Load or the scheduled fill runs. The extension has no permission for any other website.</li>
       <li><strong>Optional update check.</strong> Once a day it downloads one public file (the project's <code>manifest.json</code> on GitHub) to see if a newer version exists. That request contains no personal data at all. Turn it off in Options → Sync &amp; updates → Updates if you prefer.</li>
       <li><strong>API key, not password.</strong> You never enter your Clockodo password. The personal API key can be regenerated in Clockodo at any time, which instantly invalidates the old one.</li>
+      <li><strong>Sign out anytime.</strong> Options → Account → <em>Sign out</em> just disconnects (email/key stay for next time); <em>Delete login data</em> wipes the login and the activity log from this device.</li>
       <li><strong>Nothing runs without Chrome.</strong> There is no background service or cron job on your machine. The daily auto-fill is a Chrome alarm: it fires only while Chrome is running, and catches up on the next launch if it was missed.</li>
       <li><strong>Everyone uses their own key.</strong> When you share the extension with colleagues, each person enters their own credentials. Nothing about your account is inside the shared files.</li>
       <li><strong>Open source.</strong> Every line is readable at <a href="https://github.com/mohasoori/clockodo-autofill" target="_blank" rel="noopener noreferrer">github.com/mohasoori/clockodo-autofill</a> (MIT license); the privacy policy is <a href="https://github.com/mohasoori/clockodo-autofill/blob/main/docs/PRIVACY.md" target="_blank" rel="noopener noreferrer">docs/PRIVACY.md</a>. You can inspect exactly what is sent — or remove the extension at any time; uninstalling deletes all stored data.</li>

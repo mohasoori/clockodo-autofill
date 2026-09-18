@@ -183,6 +183,38 @@ button.block { width: 100%; }
 .dot.ok { background: var(--ok); }
 .dot.bad { background: var(--danger); }
 
+/* Confirmation dialog (src/lib/dialog.js) */
+dialog.cd {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--card);
+  color: var(--text);
+  padding: 0;
+  width: min(360px, calc(100vw - 32px));
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+  font: inherit;
+}
+dialog.cd::backdrop { background: rgba(15, 18, 25, 0.45); backdrop-filter: blur(2px); }
+dialog.cd .cd-body { padding: 20px 20px 6px; text-align: center; }
+dialog.cd .cd-icon {
+  width: 42px; height: 42px; border-radius: 50%; margin: 0 auto 10px;
+  display: flex; align-items: center; justify-content: center;
+  background: var(--accent-soft); color: var(--accent);
+}
+dialog.cd .cd-icon.danger { background: var(--danger-soft); color: var(--danger); }
+dialog.cd .cd-icon svg { width: 22px; height: 22px; }
+dialog.cd h3 { margin: 0 0 6px; font-size: 15px; font-weight: 650; }
+dialog.cd p { margin: 0; font-size: 13px; color: var(--text-muted); line-height: 1.5; }
+dialog.cd .cd-details {
+  margin: 12px 0 0; padding: 10px 12px; text-align: left; list-style: none;
+  background: var(--bg); border-radius: 9px; font-size: 12.5px; color: var(--text);
+}
+dialog.cd .cd-details li + li { margin-top: 4px; }
+dialog.cd .cd-actions { display: flex; gap: 8px; padding: 14px 20px 20px; }
+dialog.cd .cd-actions button { flex: 1; }
+button.danger-btn { background: var(--danger); color: #fff; border-color: var(--danger); }
+button.danger-btn:hover { filter: brightness(1.08); border-color: var(--danger); }
+
 .badge {
   display: inline-block;
   font-size: 11px;

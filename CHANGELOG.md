@@ -4,6 +4,36 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.6.0] — 2026-09-18
+
+### Added
+- **Activity log** (Options → Activity, also from the popup footer): every
+  run the extension made — work day, result (created / replaced / already
+  filled / skipped / error), booked times, how it ran (Fill today / Fill range / Auto-fill),
+  when, and on which device. A *Fill range* run is a single expandable row
+  (`15 Sep → 19 Sep (5 days) · 4 created · 1 skipped`). Repeated identical
+  errors collapse into one row with ×N. Month filter, errors-only filter,
+  counters, CSV export (Excel-friendly), Clear log, device rename.
+- The log syncs with your settings: the last 150 entries travel between
+  your devices, up to 1000 stay on each device.
+
+### Added (Options UX)
+- **Setup status per card** — Account and What to book show a small badge
+  (*Not set up*, *Not logged in*, *Pick customer & service*, *Ready ✓*) and a
+  thin red edge until configured; the Account tab carries a matching dot.
+- **Log in / Sign out / Delete login data** — a single **Log in** button
+  while signed out; once connected it's replaced by **Sign out** (keeps
+  email/key for next time) and **Delete login data** (wipes email, key,
+  user id, customer/service and the activity log from this device).
+- **Remember my API key on this device** toggle — off keeps the key only
+  for the current Chrome session (never on disk or synced).
+- **Themed confirmation dialogs** replace the browser's native confirm for
+  Replace, Clear log and the two sign-out actions.
+- Errors in the Activity log are collapsed behind a closed-by-default
+  **details** toggle instead of always showing inline; *Fill today* /
+  *Fill range* now also logs *already filled* and *skipped* runs (not just
+  created/replaced/error), with repeats collapsed as ×N.
+
 ## [1.5.0] — 2026-09-17
 
 ### Changed

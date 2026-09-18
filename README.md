@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill
 
-**Version 1.5.0** · [What's new](CHANGELOG.md) · MIT ·
+**Version 1.6.0** · [What's new](CHANGELOG.md) · MIT ·
 [**Install from the Chrome Web Store**](https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp)
 
 A small Chrome extension (Manifest V3) that fills your daily working times in
@@ -20,6 +20,10 @@ with their **own** personal Clockodo API key, stored only in their browser.
 - **Skip days** — quick "Skip today" toggle plus a managed list of dates to never fill.
 - **Sync & backup** — settings follow you across your Chrome devices (Chrome
   Sync; API key only if you opt in), plus JSON export/import.
+- **Activity log** — what the extension booked, replaced or failed, per day or
+  per range, synced across your devices, CSV export.
+- **Account controls** — clear setup status per section, Sign out vs Delete
+  login data, optional session-only API key.
 - **Configurable hours** — fixed blocks (gaps = breaks), or *random start
   with a fixed duration* (e.g. exactly 8 h 23 min starting somewhere between
   07:30 and 09:30, different each day). Any IANA timezone, DST-safe.
@@ -54,7 +58,7 @@ in other Chromium browsers (Edge, Brave, Opera, Vivaldi) via the same
    (<https://my.clockodo.com/en/users/editself>) and copy your **API key**.
    This is not your password.
 2. Click the extension icon → **Options**.
-3. Enter your login email + API key → **Test connection** → green check.
+3. Enter your login email + API key → **Log in** → green check.
 4. Under **What to book**, click **Load customers & services** and pick the
    customer/service your team uses for regular work.
 5. Adjust hours and schedule if needed → **Save**.
@@ -121,6 +125,7 @@ src/
   background/background.js    service worker: daily alarm, catch-up, message router
   lib/clockodo-api.js         API client, config store, timezone/date helpers
   lib/updates.js              daily new-version check against this repo
+  lib/activity.js             activity log (local + synced chunks)
   popup/                      one-click today, range fill, toggles
   options/                    account, booking target, hours, schedule, skip days
   help/                       illustrated setup guide + what's new

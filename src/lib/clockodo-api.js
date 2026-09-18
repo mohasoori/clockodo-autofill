@@ -36,6 +36,7 @@ const INTERVAL_ADD = 1;
 export const DEFAULT_CONFIG = {
   apiUser: "",          // Clockodo login email
   apiKey: "",           // personal API key from My area
+  rememberKey: true,    // false → key lives in chrome.storage.session only (gone when Chrome closes)
   usersId: null,        // resolved via /users/me
   userName: "",         // display name cached from /users/me
   // "entry" is the default: accounts that derive attendance from time entries
@@ -76,7 +77,13 @@ export const DEFAULT_CONFIG = {
 
 export async function loadConfig() {
   const { config } = await chrome.storage.local.get("config");
-  return { ...DEFAULT_CONFIG, ...migrateStoredConfig(config || {}) };
+  const cfg = { ...DEFAULT_CONFIG, ...migrateStoredConfig(config || {}) };
+  if (!cfg.rememberKey && !cfg.apiKey) {
+    // Session-only key: available until the browser closes.
+    const { apiKey } = await chrome.storage.session.get("apiKey");
+    if (apiKey) cfg.apiKey = apiKey;
+  }
+  return cfg;
 }
 
 // 1.0.x stored two fixed blocks as block1Start/End + block2Start/End.
@@ -94,7 +101,16 @@ function migrateStoredConfig(stored) {
 
 export async function saveConfig(patch) {
   const next = { ...(await loadConfig()), ...patch, updatedAt: Date.now() };
-  await chrome.storage.local.set({ config: next });
+  const persisted = { ...next };
+  if (!next.rememberKey) {
+    // Keep the key out of disk storage; hold it in session storage instead.
+    persisted.apiKey = "";
+    if (next.apiKey) await chrome.storage.session.set({ apiKey: next.apiKey });
+    else await chrome.storage.session.remove("apiKey");
+  } else {
+    await chrome.storage.session.remove("apiKey");
+  }
+  await chrome.storage.local.set({ config: persisted });
   await pushToSync(next);
   return next;
 }
@@ -114,7 +130,7 @@ async function pushToSync(cfg) {
       return;
     }
     const copy = { ...cfg };
-    if (!cfg.syncApiKey) delete copy.apiKey;
+    if (!cfg.syncApiKey || !cfg.rememberKey) delete copy.apiKey;
     await chrome.storage.sync.set({ [SYNC_KEY]: copy });
   } catch (e) {
     // Quota exceeded or sync unavailable — local copy is still saved.

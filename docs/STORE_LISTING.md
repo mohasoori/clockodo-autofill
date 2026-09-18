@@ -57,6 +57,7 @@ have to do it by hand.
 • Duplicate-safe — never books a day that already has working time.
 • Skip days — quick "Skip today" toggle plus a list of dates to never fill.
 • Sync & backup — settings follow you across your Chrome devices (API key only if you opt in), plus JSON export/import.
+• Activity log — see exactly what the extension booked, replaced or failed, per day or per range; CSV export.
 
 Privacy first: everything runs in your browser. Your email and personal
 Clockodo API key are stored only on your device and sent only to

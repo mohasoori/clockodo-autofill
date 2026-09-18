@@ -17,6 +17,8 @@ src/
   lib/clockodo-api.js         API client + config store + date/timezone helpers
                               (pure module, no DOM)
   lib/updates.js              new-version check (GITHUB_REPO constant)
+  lib/activity.js             activity log: local list (≤1000) + sync chunks activity_N (≤150)
+  lib/dialog.js                themed confirm() replacement (<dialog> element)
   popup/popup.html|js         action popup
   options/options.html|js     settings page (tabs: account / schedule / system / help;
                               the Help tab iframes help.html)
@@ -98,10 +100,15 @@ See `DEFAULT_CONFIG` in `clockodo-api.js`. Notable fields:
 | `autoDaily`, `autoTime` | bool, `"HH:MM"` |                                            |
 
 | `syncSettings`, `syncApiKey` | bool | mirror settings (and optionally the key) to `chrome.storage.sync` |
+| `rememberKey` | bool | `false` keeps `apiKey` out of `chrome.storage.local`/`sync`, in `chrome.storage.session` instead (cleared when Chrome closes) |
 | `updatedAt`    | ms epoch          | set on every save; `pullFromSync()` only merges a remote copy that is newer |
 
 Other local storage keys: `lastAutoRun` (result + `at`), `pickLists`
-(cached customers/services for the Options dropdowns), `updateInfo`.
+(cached customers/services for the Options dropdowns), `updateInfo`,
+`activity` (log, newest first, ≤1000), `device` (`{id,label}`).
+Sync also holds `activity_0..N` chunks (≤7 KB each, ≤150 entries total);
+`getActivity()` merges local + synced by id. Entries are `kind:"day"`
+(one fill) or `kind:"range"` (one Fill-range run with `counts` and `days[]`).
 Sync storage holds one key, `settings` — the config minus `apiKey` unless
 `syncApiKey`. `chrome.storage.local` remains the runtime source of truth;
 `saveConfig()` pushes, `onLaunch` and `storage.onChanged(sync)` pull.

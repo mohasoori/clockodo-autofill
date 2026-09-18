@@ -19,6 +19,7 @@ import {
   importConfig,
 } from "../lib/clockodo-api.js";
 import { fetchLatestVersion, updateCheckConfigured, compareVersions } from "../lib/updates.js";
+import { logActivity, logRangeActivity, clearActivity } from "../lib/activity.js";
 
 const ALARM_NAME = "clockodo-daily-fill";
 const UPDATE_ALARM_NAME = "clockodo-update-check";
@@ -81,6 +82,7 @@ async function doAutoFill(cfg) {
     result = { dateStr, status: "error", error: e.message };
   }
   await chrome.storage.local.set({ lastAutoRun: { ...result, at: Date.now() } });
+  await logActivity(result, "auto");
 
   if (result.status === "created") {
     const detail =
@@ -210,8 +212,31 @@ async function handle(msg) {
       await saveConfig({ usersId, userName: name });
       return { ok: true, usersId, name };
     }
+    case "signOut": {
+      // Soft: disconnect only. Email and API key stay, so signing back in is
+      // just "Test connection" again.
+      const next = await saveConfig({ usersId: null, userName: "", autoDaily: false });
+      await rescheduleAlarm(next);
+      return { ok: true };
+    }
+    case "deleteLoginData": {
+      // Hard: credentials and account-bound data go; hours, schedule and preferences stay.
+      const next = await saveConfig({ apiUser: "", apiKey: "", usersId: null, userName: "", customersId: null, servicesId: null, autoDaily: false });
+      await chrome.storage.local.remove(["pickLists", "lastAutoRun"]);
+      await clearActivity(); // the log is tied to this Clockodo account; it leaves with the login data
+      await rescheduleAlarm(next);
+      return { ok: true };
+    }
     case "fillToday": {
-      const result = await fillDay(cfg, todayStr(cfg.timezone), fillOptions(msg));
+      const dateStr = todayStr(cfg.timezone);
+      let result;
+      try {
+        result = await fillDay(cfg, dateStr, fillOptions(msg));
+      } catch (e) {
+        await logActivity({ dateStr, status: "error", error: e.message }, "manual");
+        throw e;
+      }
+      await logActivity(result, "manual");
       return { ok: true, result };
     }
     case "fillRange": {
@@ -220,7 +245,14 @@ async function handle(msg) {
       if (msg.from > msg.to) throw new Error("\"From\" must not be after \"To\".");
       const days = Math.round((Date.parse(msg.to) - Date.parse(msg.from)) / 86400000) + 1;
       if (days > MAX_RANGE_DAYS) throw new Error(`Range too large (max ${MAX_RANGE_DAYS} days).`);
-      const results = await fillRange(cfg, msg.from, msg.to, fillOptions(msg));
+      let results;
+      try {
+        results = await fillRange(cfg, msg.from, msg.to, fillOptions(msg));
+      } catch (e) {
+        await logRangeActivity(msg.from, msg.to, [], "range", e.message);
+        throw e;
+      }
+      await logRangeActivity(msg.from, msg.to, results);
       return { ok: true, results };
     }
     case "toggleSkipToday": {

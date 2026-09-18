@@ -1,5 +1,6 @@
 // popup.js
 import { loadConfig, todayStr, addDays, isWeekend } from "../lib/clockodo-api.js";
+import { confirmDialog } from "../lib/dialog.js";
 
 const $ = (id) => document.getElementById(id);
 
@@ -53,13 +54,16 @@ function kindOf(results) {
 
 // Returns the chosen existing-day policy, or null if the user cancelled the
 // destructive confirmation.
-function existingPolicy(scopeText) {
+async function existingPolicy(scopeText) {
   const onExisting = $("onExisting").value;
   if (onExisting === "replace") {
-    const ok = window.confirm(
-      `Replace mode deletes ALL of your existing time entries on every already-filled day ${scopeText} ` +
-      "and books your configured blocks instead.\n\nThis cannot be undone. Continue?"
-    );
+    const ok = await confirmDialog({
+      title: "Replace existing entries?",
+      message: `On every already-filled day ${scopeText}, all of your time entries will be deleted and your configured blocks booked instead.`,
+      details: ["Affects only days that already have entries", "Cannot be undone"],
+      confirmText: "Replace",
+      danger: true,
+    });
     if (!ok) return null;
   }
   return onExisting;
@@ -188,7 +192,7 @@ async function init() {
 }
 
 $("fillTodayBtn").addEventListener("click", async () => {
-  const onExisting = existingPolicy("(today)");
+  const onExisting = await existingPolicy("(today)");
   if (!onExisting) return;
   const res = await run($("fillTodayBtn"), "Filling today…", () => send({ action: "fillToday", onExisting }));
   if (res) setStatus(describe(res.result), kindOf([res.result]));
@@ -199,7 +203,7 @@ $("fillRangeBtn").addEventListener("click", async () => {
   const to = $("toDate").value;
   if (!from || !to) return setStatus("Pick both dates first.", "bad");
   if (from > to) return setStatus("\"From\" must be before \"To\".", "bad");
-  const onExisting = existingPolicy(`between ${from} and ${to}`);
+  const onExisting = await existingPolicy(`between ${from} and ${to}`);
   if (!onExisting) return;
   const res = await run($("fillRangeBtn"), `Filling ${from} → ${to}…`, () => send({ action: "fillRange", from, to, onExisting }));
   if (res) setStatus(`${summarize(res.results)}\n${res.results.map(describe).join("\n")}`, kindOf(res.results));
@@ -243,6 +247,11 @@ $("skipTodayToggle").addEventListener("change", async () => {
 $("optionsLink").addEventListener("click", (e) => {
   e.preventDefault();
   chrome.runtime.openOptionsPage();
+});
+
+$("activityLink").addEventListener("click", (e) => {
+  e.preventDefault();
+  chrome.tabs.create({ url: chrome.runtime.getURL("src/options/options.html#activity") });
 });
 
 init();

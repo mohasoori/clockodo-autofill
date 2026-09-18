@@ -1,10 +1,11 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.5.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.6.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
-Options is organised in four tabs: **Account** (your Clockodo login and what
+Options is organised in five tabs: **Account** (your Clockodo login and what
 to book), **Schedule** (working hours, auto-fill, days to never fill),
-**Sync & updates**, and **Help** (this guide, inside the settings page).
+**Activity** (what the extension booked), **Sync & updates**, and **Help**
+(this guide, inside the settings page).
 **Save** in the top bar saves all tabs at once.
 
 Fill your daily Clockodo working times in one click, for a date range, or
@@ -48,8 +49,23 @@ it. You can revoke a key in Clockodo at any time.
 
 1. Click the extension icon → **Options** (tab **Account**).
 2. Enter your Clockodo login email and paste the API key.
-3. Click **Test connection** — you should see your name with a green check.
+3. Click **Log in** — you should see your name with a green check.
 4. Press **Save** in the top bar.
+
+## 3b. Account state & signing out (Options → Account tab)
+
+- A card with a thin red edge and a badge (*Not set up*, *Not logged in*,
+  *Pick customer & service*) needs action; a small red dot on the **Account**
+  tab means at least one card isn't ready. Both turn **Ready ✓** once connected.
+- **Signed out:** only **Log in** is shown.
+- **Signed in:** **Log in** is replaced by **Sign out** (just disconnects —
+  email and key stay, so signing back in is one click) and **Delete login
+  data** (permanently removes email, key, user id, customer/service *and the
+  activity log* from this device — and from synced settings if the key was
+  synced; always asks for confirmation).
+- **Remember my API key on this device** (on by default) — turn off to keep
+  the key only until Chrome closes (never written to disk or synced);
+  auto-fill then pauses after a restart until you log in again.
 
 ## 4. Choose customer & service (Options → Account tab → What to book)
 
@@ -121,6 +137,29 @@ DST-aware. Keep **Skip weekends** on unless you work weekends.
 Chrome Sync must be enabled in Chrome for the first two to work (some
 company-managed Chrome profiles disable it — Export/Import still works).
 
+## 6c. Activity log (Options → Activity tab)
+
+Every action the extension took, newest first — also reachable from the
+popup footer (**Activity**).
+
+- **Fill today / Auto-fill** → one row: work day, result (*created*,
+  *replaced (N removed)*, *already filled*, *skipped*, *error*), booked
+  times, how it ran, when, device.
+- **Fill range** → one row for the whole run, e.g.
+  `15 Sep → 19 Sep (5 days) · 4 created · 1 skipped`, with **▸ 4 days** to
+  expand each day.
+- Identical errors in a row collapse into one line with **×N**.
+- Filter by month or *errors only*; the chips count days booked, entries
+  created and errors for the current filter.
+- Errors are collapsed behind a **details** toggle, closed by default.
+- **Export CSV** (one row per affected day; opens cleanly in Excel),
+  **Clear log** (all devices), and a name for this device.
+
+Only the extension's own actions are logged; changes made directly in
+Clockodo are not. The last 150 entries sync between your devices, up to
+1000 stay on each device. **Delete login data** (Account tab) clears the
+whole log.
+
 ## 7. Day-to-day use (popup)
 
 | Control            | What it does                                                    |
@@ -131,7 +170,7 @@ company-managed Chrome profiles disable it — Export/Import still works).
 | **Auto-fill daily**| Enables/disables the schedule; shows the next run and the result of the last automatic run (✓ booked/already filled, – skipped, ✗ error). |
 | **Skip today**     | Marks today as a day that must never be filled.                 |
 | Green/red dot      | Whether the API key currently works.                            |
-| Footer             | Installed version and whether a newer one exists ("up to date" / "update available"). |
+| Footer             | Installed version and whether a newer one exists ("up to date" / "update available"); **Activity** opens the log. |
 
 Manage the full list of skipped dates (holidays, sick days) in
 **Options → Schedule tab → Days to never fill**.
@@ -163,6 +202,9 @@ Manage the full list of skipped dates (holidays, sick days) in
 - **API key, not password.** You never enter your Clockodo password. The
   personal API key can be regenerated in Clockodo at any time, which
   instantly invalidates the old one.
+- **Sign out anytime.** Options → Account → *Sign out* just disconnects
+  (email/key stay for next time); *Delete login data* wipes the login and
+  the activity log from this device.
 - **Nothing runs without Chrome.** No background service, no cron job on your
   machine. The daily auto-fill is a Chrome alarm: it fires only while Chrome
   is running and catches up on the next launch if missed.
