@@ -3,12 +3,14 @@ import {
   loadConfig, saveConfig, validateSchedule, randomBlocks, isWeekend, todayStr, addDays,
   toMinutes, toHHMM, HHMM_RE, MAX_BLOCKS,
 } from "../lib/clockodo-api.js";
+import { getActivity, clearActivity, activityToCsv, renameDevice } from "../lib/activity.js";
+import { confirmDialog } from "../lib/dialog.js";
 
 const $ = (id) => document.getElementById(id);
 
 // apiKey is handled separately: the stored key is never written back into the DOM.
 const TEXT_FIELDS = ["apiUser", "mode", "autoTime", "randomEarliestStart", "randomLatestStart"];
-const CHECKBOXES = ["autoApprove", "billable", "skipWeekends", "autoDaily", "checkUpdates", "syncSettings", "syncApiKey"];
+const CHECKBOXES = ["autoApprove", "billable", "skipWeekends", "autoDaily", "checkUpdates", "syncSettings", "syncApiKey", "rememberKey"];
 
 let skipDates = [];
 let blocks = [];
@@ -329,10 +331,74 @@ $("loadCustomersServicesBtn").addEventListener("click", async () => {
     });
     $("loadCustomersServicesBtn").textContent = "Reload customers & services";
     setStatus(el, `✓ Loaded ${customersRes.customers.length} customers, ${servicesRes.services.length} services.`, "ok");
+    refreshSetupState();
   } catch (e) {
     setStatus(el, `✗ ${e.message}`, "bad");
   }
 });
+
+// ---------------------------------------------------------------------------
+// Setup state (which cards still need the user's attention)
+// ---------------------------------------------------------------------------
+async function refreshSetupState() {
+  const cfg = await loadConfig();
+  const keyPresent = Boolean(cfg.apiKey) || Boolean($("apiKey").value.trim());
+  const accountOk = Boolean($("apiUser").value.trim()) && keyPresent && Number.isInteger(cfg.usersId);
+  const entryMode = $("mode").value === "entry";
+  const bookingOk = !entryMode || (Boolean($("customersId").value) && Boolean($("servicesId").value));
+
+  const mark = (card, badge, ok, todoText) => {
+    card.classList.toggle("needs-setup", !ok);
+    badge.className = `setup-badge ${ok ? "ok" : "todo"}`;
+    badge.textContent = ok ? "Ready ✓" : todoText;
+  };
+  mark($("accountCard"), $("accountBadge"), accountOk,
+    !$("apiUser").value.trim() || !keyPresent ? "Not set up" : "Not logged in");
+  mark($("bookingCard"), $("bookingBadge"), bookingOk, "Pick customer & service");
+  document.querySelector('.tab[data-tab="account"]').classList.toggle("attention", !(accountOk && bookingOk));
+
+  const loggedIn = Boolean(cfg.usersId);
+  $("testBtn").hidden = loggedIn;
+  $("signOutBtn").hidden = !loggedIn;
+  $("deleteLoginBtn").hidden = !loggedIn;
+}
+
+$("signOutBtn").addEventListener("click", async () => {
+  const ok = await confirmDialog({
+    title: "Sign out?",
+    message: "Disconnects this device and switches off auto-fill. Your email and API key stay saved — sign back in any time with Test connection.",
+    confirmText: "Sign out",
+  });
+  if (!ok) return;
+  const res = await chrome.runtime.sendMessage({ action: "signOut" });
+  if (!res.ok) return setStatus($("testResult"), `✗ ${res.error}`, "bad");
+  location.reload();
+});
+
+$("deleteLoginBtn").addEventListener("click", async () => {
+  const cfg = await loadConfig();
+  const ok = await confirmDialog({
+    title: "Delete login data?",
+    message: `This permanently deletes your saved login (${cfg.apiUser || "email"}), the API key, your Clockodo user id and the selected customer/service from this device. Working hours, schedule and other preferences are kept.`,
+    details: [
+      "Auto-fill is switched off until you sign in again",
+      "The activity log is cleared, on this device and every synced device",
+      cfg.syncApiKey ? "The key is also removed from your synced settings" : "Other synced devices keep their own login",
+      "To fully revoke access, also regenerate the key in Clockodo → My area → Edit self",
+    ],
+    confirmText: "Delete login data",
+    danger: true,
+  });
+  if (!ok) return;
+  const res = await chrome.runtime.sendMessage({ action: "deleteLoginData" });
+  if (!res.ok) return setStatus($("testResult"), `✗ ${res.error}`, "bad");
+  activityCache = [];
+  location.reload();
+});
+for (const id of ["apiUser", "apiKey", "mode", "customersId", "servicesId"]) {
+  $(id).addEventListener("input", refreshSetupState);
+  $(id).addEventListener("change", refreshSetupState);
+}
 
 // ---------------------------------------------------------------------------
 // Connection test
@@ -353,11 +419,21 @@ function showKeyState(cfg) {
 }
 
 function credentialPatch() {
-  const patch = { apiUser: $("apiUser").value.trim() };
+  const patch = { apiUser: $("apiUser").value.trim(), rememberKey: $("rememberKey").checked };
   const key = $("apiKey").value.trim();
   if (key) patch.apiKey = key;
   return patch;
 }
+
+function refreshRememberHint() {
+  const on = $("rememberKey").checked;
+  $("rememberHint").textContent = on
+    ? ""
+    : "Off: the key is kept only until Chrome closes. Auto-fill will pause after a restart until you enter the key again; the key is never synced.";
+  $("syncApiKey").disabled = !on || !$("syncSettings").checked;
+  if (!on) $("syncApiKey").checked = false;
+}
+$("rememberKey").addEventListener("change", refreshRememberHint);
 
 $("testBtn").addEventListener("click", async () => {
   const el = $("testResult");
@@ -371,6 +447,7 @@ $("testBtn").addEventListener("click", async () => {
   } catch (e) {
     setStatus(el, `✗ ${e.message}`, "bad");
   }
+  refreshSetupState();
 });
 
 // ---------------------------------------------------------------------------
@@ -407,10 +484,240 @@ if (location.hash) initialTab = location.hash.slice(1);
 showTab(initialTab);
 
 // ---------------------------------------------------------------------------
+// Activity log
+// ---------------------------------------------------------------------------
+let activityCache = [];
+
+const fmtLogged = (ts) => new Date(ts).toLocaleString(undefined, { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" });
+const fmtDay = (d) => new Date(d + "T12:00:00Z").toLocaleDateString(undefined, { weekday: "short", year: "numeric", month: "short", day: "numeric" });
+const SOURCE_LABEL = { manual: "Fill today", range: "Fill range", auto: "Auto-fill" };
+
+function activityMonths(entries) {
+  const set = new Set(entries.map((e) => e.date.slice(0, 7)));
+  return [...set].sort().reverse();
+}
+
+function renderActivityMonths() {
+  const sel = $("activityMonth");
+  const prev = sel.value;
+  sel.innerHTML = "";
+  sel.appendChild(new Option("All time", "all"));
+  for (const m of activityMonths(activityCache)) {
+    const label = new Date(m + "-15T12:00:00Z").toLocaleDateString(undefined, { month: "long", year: "numeric" });
+    sel.appendChild(new Option(label, m));
+  }
+  sel.value = [...sel.options].some((o) => o.value === prev) ? prev : (sel.options[1]?.value || "all");
+}
+
+const fmtBlocks = (s) => (s || "").split(",").filter(Boolean).join("  ·  ").replace(/-/g, "–");
+const fmtShortDay = (d) => new Date(d + "T12:00:00Z").toLocaleDateString(undefined, { month: "short", day: "numeric" });
+
+function pill(cls, text) {
+  const el = document.createElement("span");
+  el.className = `pill ${cls}`;
+  el.textContent = text;
+  return el;
+}
+
+function td(content, cls) {
+  const cell = document.createElement("td");
+  if (cls) cell.className = cls;
+  if (content instanceof Node) cell.appendChild(content); else cell.textContent = content ?? "";
+  return cell;
+}
+
+// Collapsed full-width detail row with a toggle button; returns the toggle.
+function errorDetail(tbody, text) {
+  const detail = document.createElement("tr");
+  detail.className = "detail-row"; detail.hidden = true;
+  const cell = td(null); cell.colSpan = 6;
+  const list = document.createElement("div"); list.className = "detail-list";
+  const line = document.createElement("div"); line.className = "detail-line";
+  line.append(Object.assign(document.createElement("span"), { textContent: text, className: "d-err" }));
+  list.appendChild(line); cell.appendChild(list); detail.appendChild(cell);
+  const toggle = document.createElement("button");
+  toggle.type = "button"; toggle.className = "expander"; toggle.textContent = "▸ details";
+  toggle.addEventListener("click", () => {
+    detail.hidden = !detail.hidden;
+    toggle.textContent = detail.hidden ? "▸ details" : "▾ details";
+  });
+  return { toggle, detail };
+}
+
+// Days affected by an entry (a range expands to its detail days).
+const entryDays = (e) => (e.kind === "range" ? e.days : [e]);
+const entryHasError = (e) => (e.kind === "range" ? Boolean(e.runError) || e.counts.error > 0 : e.status === "error");
+const entryInMonth = (e, month) =>
+  month === "all" || (e.kind === "range" ? (e.from.slice(0, 7) <= month && month <= e.to.slice(0, 7)) : e.date.startsWith(month));
+
+function renderActivity() {
+  const month = $("activityMonth").value;
+  const errorsOnly = $("activityErrorsOnly").checked;
+  const rows = activityCache.filter((e) => entryInMonth(e, month) && (!errorsOnly || entryHasError(e)));
+
+  const okDays = rows.flatMap(entryDays).filter((d) => (d.status === "created" || d.status === "replaced") && (month === "all" || d.date.startsWith(month)));
+  const days = new Set(okDays.map((d) => d.date)).size;
+  const entries = okDays.reduce((n, d) => n + (d.blocks ? d.blocks.split(",").length : 0), 0);
+  const errors = rows.reduce((n, e) => n + (e.kind === "range" ? (e.runError ? 1 : e.counts.error) : e.status === "error" ? (e.count || 1) : 0), 0);
+  const stats = $("activityStats");
+  stats.innerHTML = "";
+  for (const [text, cls] of [[`${days} day${days === 1 ? "" : "s"} booked`, ""], [`${entries} entr${entries === 1 ? "y" : "ies"} created`, ""], [`${errors} error${errors === 1 ? "" : "s"}`, errors ? "bad" : ""]]) {
+    const c = document.createElement("span"); c.className = `chip ${cls}`; c.textContent = text; stats.appendChild(c);
+  }
+
+  const tbody = $("activityRows");
+  tbody.innerHTML = "";
+  if (!rows.length) {
+    const tr = document.createElement("tr");
+    const cell = td("Nothing logged yet.", "empty"); cell.colSpan = 6;
+    tr.appendChild(cell); tbody.appendChild(tr);
+    return;
+  }
+
+  for (const e of rows) {
+    const tr = document.createElement("tr");
+    const src = pill("src", SOURCE_LABEL[e.source] || e.source);
+
+    if (e.kind === "range") {
+      const c = e.counts;
+      const total = Math.round((Date.parse(e.to + "T12:00:00Z") - Date.parse(e.from + "T12:00:00Z")) / 86400000) + 1;
+      if (e.runError) {
+        const { toggle, detail } = errorDetail(tbody, e.runError);
+        tr.className = "range-row";
+        const failed = pill("error", "run failed");
+        if ((e.count || 1) > 1) failed.textContent += ` ×${e.count}`;
+        tr.append(
+          td(`${fmtShortDay(e.from)} → ${fmtShortDay(e.to)}  (${total} day${total === 1 ? "" : "s"})`),
+          td(failed),
+          td(toggle),
+          td(src),
+          td(fmtLogged(e.at)),
+          td(e.device || "")
+        );
+        tbody.append(tr, detail);
+        continue;
+      }
+      const summary = document.createElement("span");
+      summary.className = "range-summary";
+      for (const [k, cls] of [["created", "created"], ["replaced", "replaced"], ["error", "error"], ["skipped", "skipped"], ["exists", "exists"]]) {
+        if (c[k]) summary.appendChild(pill(cls, `${c[k]} ${k === "exists" ? "already filled" : k}`));
+      }
+      const changed = e.days.length > 0;
+      let timesCell;
+      let toggle = null;
+      if (changed) {
+        toggle = document.createElement("button");
+        toggle.type = "button"; toggle.className = "expander";
+        toggle.textContent = `▸ ${e.days.length} day${e.days.length === 1 ? "" : "s"}`;
+        timesCell = td(toggle);
+      } else {
+        timesCell = td("nothing booked", "times muted");
+      }
+
+      if ((e.count || 1) > 1) summary.appendChild(pill("src", `×${e.count}`));
+      tr.className = changed ? "range-row" : "range-row quiet-row";
+      tr.append(
+        td(`${fmtShortDay(e.from)} → ${fmtShortDay(e.to)}  (${total} day${total === 1 ? "" : "s"})`),
+        td(summary),
+        timesCell,
+        td(src),
+        td(fmtLogged(e.at)),
+        td(e.device || "")
+      );
+      tbody.appendChild(tr);
+      if (!changed) continue;
+
+      const detail = document.createElement("tr");
+      detail.className = "detail-row"; detail.hidden = true;
+      const cell = td(null); cell.colSpan = 6;
+      const list = document.createElement("div"); list.className = "detail-list";
+      for (const d of e.days) {
+        const line = document.createElement("div"); line.className = "detail-line";
+        line.append(
+          Object.assign(document.createElement("span"), { textContent: fmtDay(d.date), className: "d-day" }),
+          pill(d.status, d.status === "replaced" ? `replaced (${d.replaced} removed)` : d.status),
+          Object.assign(document.createElement("span"), { textContent: d.status === "error" ? d.error : fmtBlocks(d.blocks), className: d.status === "error" ? "d-err" : "d-times" })
+        );
+        list.appendChild(line);
+      }
+      cell.appendChild(list); detail.appendChild(cell); tbody.appendChild(detail);
+      toggle.addEventListener("click", () => {
+        detail.hidden = !detail.hidden;
+        toggle.textContent = `${detail.hidden ? "▸" : "▾"} ${e.days.length} day${e.days.length === 1 ? "" : "s"}`;
+      });
+      continue;
+    }
+
+    const STATUS_LABEL = { exists: "already filled", skipped: `skipped${e.error ? ` (${e.error})` : ""}`, replaced: `replaced (${e.replaced} removed)` };
+    const status = pill(e.status, STATUS_LABEL[e.status] || e.status);
+    if ((e.count || 1) > 1) status.textContent += ` ×${e.count}`;
+    const nothing = e.status !== "created" && e.status !== "replaced";
+    if (nothing) tr.className = "quiet-row";
+    let timesCell;
+    let detail = null;
+    if (e.status === "error") {
+      ({ toggle: timesCell, detail } = errorDetail(tbody, e.error));
+      timesCell = td(timesCell);
+    } else {
+      timesCell = td(nothing ? "nothing booked" : fmtBlocks(e.blocks), nothing ? "times muted" : "times");
+    }
+    tr.append(td(fmtDay(e.date)), td(status), timesCell, td(src), td(fmtLogged(e.at)), td(e.device || ""));
+    tbody.appendChild(tr);
+    if (detail) tbody.appendChild(detail);
+  }
+}
+
+async function loadActivity() {
+  activityCache = await getActivity();
+  renderActivityMonths();
+  renderActivity();
+}
+
+$("activityMonth").addEventListener("change", renderActivity);
+$("activityErrorsOnly").addEventListener("change", renderActivity);
+
+$("activityCsvBtn").addEventListener("click", () => {
+  const blob = new Blob([activityToCsv(activityCache)], { type: "text/csv" });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url; a.download = `clockodo-autofill-activity-${todayStr()}.csv`;
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 5000);
+});
+
+$("activityClearBtn").addEventListener("click", async () => {
+  const ok = await confirmDialog({
+    title: "Clear the activity log?",
+    message: "The log is removed on this device and on every device you sync with.",
+    details: ["Your Clockodo entries are not affected"],
+    confirmText: "Clear log",
+    danger: true,
+  });
+  if (!ok) return;
+  await clearActivity();
+  await loadActivity();
+});
+
+$("deviceLabelBtn").addEventListener("click", async () => {
+  const label = $("deviceLabel").value.trim();
+  if (!label) return;
+  await renameDevice(label);
+  setStatus($("deviceLabelResult"), "✓ Renamed (applies to new entries)", "ok");
+  setTimeout(() => setStatus($("deviceLabelResult"), ""), 2000);
+});
+
+// Refresh when a run finishes on this or another device.
+chrome.storage.onChanged.addListener((changes, area) => {
+  if ((area === "local" && changes.activity) || (area === "sync" && Object.keys(changes).some((k) => k.startsWith("activity_")))) {
+    loadActivity();
+  }
+});
+
+// ---------------------------------------------------------------------------
 // Sync & backup
 // ---------------------------------------------------------------------------
 function refreshSyncToggles() {
-  const on = $("syncSettings").checked;
+  const on = $("syncSettings").checked && $("rememberKey").checked;
   $("syncApiKey").disabled = !on;
   if (!on) $("syncApiKey").checked = false;
 }
@@ -512,6 +819,7 @@ $("saveBtn").addEventListener("click", async () => {
   if (!res.ok) return setStatus(el, `✗ Saved, but scheduling failed: ${res.error}`, "bad");
   savedCustomersId = patch.customersId;
   savedServicesId = patch.servicesId;
+  refreshSetupState();
   setStatus(el, "✓ Saved", "ok");
   setTimeout(() => setStatus(el, ""), 2000);
 });
@@ -557,13 +865,17 @@ async function init() {
   toggleScheduleFields();
   renderSkipList();
   toggleModeFields();
+  refreshRememberHint();
   refreshSyncToggles();
+  loadActivity();
+  chrome.storage.local.get("device").then(({ device }) => { $("deviceLabel").value = device?.label || ""; });
 
   if (pickLists) {
     fillSelect($("customersId"), pickLists.customers, savedCustomersId);
     fillSelect($("servicesId"), pickLists.services, savedServicesId);
     $("loadCustomersServicesBtn").textContent = "Reload customers & services";
   }
+  refreshSetupState();
 }
 
 init();

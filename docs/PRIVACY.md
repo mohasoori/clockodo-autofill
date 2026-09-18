@@ -1,6 +1,6 @@
 # Privacy Policy — Clockodo Auto-Fill
 
-*Last updated: 2026-09-15*
+*Last updated: 2026-09-18*
 
 Clockodo Auto-Fill is a browser extension that books your working time in
 your own Clockodo account. It is developed by Mohammad Soori
@@ -18,6 +18,7 @@ inside your browser profile (`chrome.storage.local`):
 | Your Clockodo user id / name | Shown in the popup; used as `users_id` in requests   |
 | Your settings (hours, timezone, schedule, skip dates, customer/service) | To book the right times |
 | Cached customer/service list, last auto-fill result, last update check | Convenience / status display |
+| Activity log (dates and times the extension booked, result, device name) | Lets you see what the extension did; synced with settings (last 150 entries) |
 
 **Sync between your devices (optional, on by default for settings):** the
 extension mirrors your *settings* (hours, schedule, skip days, timezone,
@@ -36,6 +37,13 @@ written to your device only.
 The Options page never displays the stored API key again (only its last
 four characters). Uninstalling the extension deletes the local copy; the
 synced copy is removed when you turn sync off or when Chrome Sync is cleared.
+
+**Sign out vs. delete:** *Sign out* only disconnects — your email and key
+stay saved. *Delete login data* permanently removes email, key, user id,
+customer/service and the activity log from this device (and from synced
+settings, if the key was synced). Turning off *Remember my API key* keeps
+the key only for the current browser session (`chrome.storage.session`) —
+never written to disk or synced; it is gone once Chrome closes.
 
 Note that `chrome.storage.local` is protected by your operating-system
 account, not encrypted separately by the extension — anyone with full access

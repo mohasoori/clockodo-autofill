@@ -52,6 +52,53 @@
     .tab.active { background: var(--accent); color: var(--accent-text); }
     .tab-panel { display: none; }
     .tab-panel.active { display: grid; gap: 16px; }
+    /* Setup state */
+    .card.needs-setup { border-color: color-mix(in srgb, var(--danger) 45%, var(--border)); box-shadow: var(--shadow), inset 3px 0 0 var(--danger); }
+    .setup-badge { margin-left: auto; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
+    .setup-badge.todo { background: var(--danger-soft); color: var(--danger); }
+    .setup-badge.ok { background: var(--ok-soft); color: var(--ok); }
+    .tab { position: relative; }
+    .tab.attention::after {
+      content: ""; position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%;
+      background: var(--danger); box-shadow: 0 0 0 2px var(--card);
+    }
+    .tab.active.attention::after { box-shadow: 0 0 0 2px var(--accent); }
+
+    .activity-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
+    .activity-toolbar select { width: auto; }
+    .activity-toolbar .spacer { flex: 1; }
+    .activity-stats { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 12px; }
+    .activity-stats .chip {
+      font-size: 12px; padding: 4px 10px; border-radius: 999px;
+      background: var(--accent-soft); color: var(--accent); font-weight: 600;
+    }
+    .activity-stats .chip.bad { background: var(--danger-soft); color: var(--danger); }
+    .activity-table-wrap { overflow-x: auto; border: 1px solid var(--border); border-radius: 10px; }
+    .activity-table { width: 100%; border-collapse: collapse; font-size: 12.5px; }
+    .activity-table th, .activity-table td { text-align: left; padding: 8px 10px; border-top: 1px solid var(--border); white-space: nowrap; }
+    .activity-table th { border-top: none; background: var(--bg); color: var(--text-muted); font-weight: 600; font-size: 11.5px; }
+    .activity-table td.times { font-variant-numeric: tabular-nums; }
+    .activity-table td.err { white-space: normal; color: var(--danger); max-width: 320px; }
+    .activity-table td.muted { color: var(--text-muted); font-style: italic; }
+    .activity-table td.times { min-width: 200px; }
+    .activity-table .empty { color: var(--text-muted); text-align: center; padding: 18px; }
+    .pill { display: inline-block; padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .pill.created { background: var(--ok-soft); color: var(--ok); }
+    .pill.replaced { background: var(--warn-soft); color: var(--warn); }
+    .pill.error { background: var(--danger-soft); color: var(--danger); }
+    .pill.src { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); font-weight: 500; }
+    .pill.exists, .pill.skipped { background: var(--bg); color: var(--text-muted); border: 1px solid var(--border); }
+    .quiet-row td { color: var(--text-muted); }
+    .range-summary { display: inline-flex; gap: 4px; flex-wrap: nowrap; white-space: nowrap; }
+    .expander { padding: 2px 8px; font-size: 11.5px; font-weight: 500; color: var(--accent); }
+    .expander:disabled { color: var(--text-muted); }
+    .detail-row td { padding: 0 10px 10px 10px; background: var(--bg); white-space: normal; }
+    .detail-list { display: grid; gap: 4px; padding: 8px 0 0 12px; border-left: 2px solid var(--border); }
+    .detail-line { display: flex; align-items: center; gap: 10px; font-size: 12px; }
+    .detail-line .d-day { min-width: 150px; color: var(--text-muted); }
+    .detail-line .d-times { font-variant-numeric: tabular-nums; }
+    .detail-line .d-err { color: var(--danger); }
+
     .help-panel.active { display: block; }
     #helpFrame { width: 100%; height: calc(100vh - 170px); min-height: 520px; border: 1px solid var(--border); border-radius: 12px; background: var(--card); box-shadow: var(--shadow); }
 
@@ -208,15 +255,17 @@
     <nav class="tabs" role="tablist" aria-label="Settings sections">
       <button type="button" class="tab" role="tab" data-tab="account">Account</button>
       <button type="button" class="tab" role="tab" data-tab="schedule">Schedule</button>
+      <button type="button" class="tab" role="tab" data-tab="activity">Activity</button>
       <button type="button" class="tab" role="tab" data-tab="system">Sync &amp; updates</button>
       <button type="button" class="tab" role="tab" data-tab="help">Help</button>
     </nav>
 
     <div class="tab-panel" data-tab="account">
-    <section class="card">
+    <section class="card" id="accountCard">
       <h2 class="card-title">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="4"/><path d="M4 21c0-4 4-6 8-6s8 2 8 6"/></svg></span>
         Account
+        <span class="setup-badge" id="accountBadge"></span>
       </h2>
       <div class="field">
         <label class="field-label" for="apiUser">Clockodo login email</label>
@@ -226,21 +275,26 @@
         <label class="field-label" for="apiKey">Personal API key</label>
         <input type="password" id="apiKey" placeholder="Paste from My area → Edit self" autocomplete="new-password" />
         <div class="hint" id="apiKeyHint"></div>
+        <label class="inline-check" style="margin-top:8px"><input type="checkbox" id="rememberKey" /> Remember my API key on this device</label>
+        <div class="hint" id="rememberHint"></div>
         <div class="hint">
           Get it at <a href="https://my.clockodo.com/en/users/editself" target="_blank" rel="noopener noreferrer">my.clockodo.com/en/users/editself</a>.
           Not your password — stored only in this browser, sent only to my.clockodo.com. The saved key is never displayed here; you can revoke it in Clockodo at any time.
         </div>
       </div>
       <div class="action-row">
-        <button id="testBtn">Test connection</button>
+        <button class="primary" id="testBtn">Log in</button>
+        <button id="signOutBtn" hidden>Sign out</button>
+        <button class="danger-btn" id="deleteLoginBtn" hidden>Delete login data</button>
         <span id="testResult" class="status-text"></span>
       </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="bookingCard">
       <h2 class="card-title">
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 12h10M4 18h7"/></svg></span>
         What to book
+        <span class="setup-badge" id="bookingBadge"></span>
       </h2>
       <div class="field">
         <label class="field-label" for="mode">Mode</label>
@@ -397,6 +451,36 @@
       </div>
       <ul id="skipList"></ul>
       <div class="hint">Holidays, sick days, vacation. You can also toggle "Skip today" from the popup.</div>
+    </section>
+    </div>
+
+    <div class="tab-panel" data-tab="activity">
+    <section class="card">
+      <h2 class="card-title">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19h16M4 5v14"/><path d="M8 15l3-4 3 2 4-6"/></svg></span>
+        Activity
+      </h2>
+      <div class="activity-toolbar">
+        <select id="activityMonth" aria-label="Month"></select>
+        <label class="inline-check"><input type="checkbox" id="activityErrorsOnly" /> errors only</label>
+        <span class="spacer"></span>
+        <button class="small" id="activityCsvBtn">Export CSV</button>
+        <button class="small" id="activityClearBtn">Clear log</button>
+      </div>
+      <div class="activity-stats" id="activityStats"></div>
+      <div class="activity-table-wrap">
+        <table class="activity-table">
+          <thead><tr><th>Work day</th><th>Result</th><th>Booked times</th><th>How</th><th>Logged</th><th>Device</th></tr></thead>
+          <tbody id="activityRows"></tbody>
+        </table>
+      </div>
+      <div class="hint">Only what this extension did — booked, replaced, already filled, skipped or failed. Manual changes made directly in Clockodo are not listed. Synced across your devices with the settings; the last 150 entries travel, up to 1000 stay on this device.</div>
+      <div class="action-row" style="margin-top:10px">
+        <label class="field-label" for="deviceLabel" style="margin:0">This device is called</label>
+        <input type="text" id="deviceLabel" maxlength="40" style="max-width:220px" />
+        <button class="small" id="deviceLabelBtn">Rename</button>
+        <span id="deviceLabelResult" class="status-text"></span>
+      </div>
     </section>
     </div>
 
