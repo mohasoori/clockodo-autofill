@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.7.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.7.1 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Options is organised in five tabs: **Account** (your Clockodo login and what
 to book), **Schedule** (working hours, auto-fill, days to never fill),
@@ -105,7 +105,10 @@ and the morning/afternoon split (35–65 %). The total is always exact and the
 end follows from it. Running *Replace* on a day re-rolls it.
 **Preview next days** shows sample results.
 
-Choose your **Timezone** below — all times are wall-clock in that zone and
+Choose your **Timezone** below — click the field and type a city name to
+search (results are ranked, ↑/↓ + Enter to pick, Esc to cancel); the card
+shows the current time, zone name and UTC offset, and **Use browser zone**
+switches to your computer's zone. All times are wall-clock in that zone and
 DST-aware. Keep **Skip weekends** on unless you work weekends.
 
 **Skip public holidays** (on by default) uses the holiday calendar your

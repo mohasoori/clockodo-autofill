@@ -4,6 +4,16 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.7.1] — 2026-09-22
+
+### Changed
+- **Timezone field is now a single combobox:** click, type a city, pick from
+  the ranked list (↑/↓, Enter, Esc); no separate search box. Unfiltered, the
+  list opens on your current zone grouped by region; every entry shows its
+  UTC offset.
+- **Schedule card restyled:** each setting has an icon, a title and a short
+  description; the auto-fill time sits in its own "at" chip.
+
 ## [1.7.0] — 2026-09-22
 
 ### Added

@@ -160,6 +160,32 @@ button.block { width: 100%; }
 .switch-row .lbl { font-size: 13px; }
 .switch-row .sub { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
 .switch-row .sub.bad { color: var(--danger); }
+.switch-row.rich {
+  display: grid;
+  grid-template-columns: 30px minmax(0, 1fr) auto;
+  gap: 12px;
+  padding: 12px 0;
+}
+.switch-row.rich .lbl { font-weight: 550; }
+.switch-row.rich .sub { margin-top: 3px; }
+.row-ico {
+  width: 30px; height: 30px; border-radius: 9px;
+  background: var(--accent-soft); color: var(--accent);
+  display: grid; place-items: center; align-self: start; margin-top: 1px;
+}
+.row-ico svg { width: 16px; height: 16px; }
+.row-controls { display: flex; align-items: center; gap: 10px; }
+.time-chip {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 0 4px 0 10px; height: 34px;
+  border: 1px solid var(--border); border-radius: 9px; background: var(--input-bg);
+  font-size: 12px; color: var(--text-muted);
+}
+.time-chip input[type="time"] {
+  width: 118px !important; border: none; padding: 4px 6px; background: transparent;
+  font-variant-numeric: tabular-nums; box-shadow: none;
+}
+.time-chip:focus-within { border-color: var(--accent); box-shadow: 0 0 0 3px var(--accent-soft); }
 .switch { position: relative; display: inline-block; width: 38px; height: 22px; flex: none; }
 .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
 .switch .track {

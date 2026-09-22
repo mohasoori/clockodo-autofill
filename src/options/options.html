@@ -68,7 +68,7 @@
     .holiday-meta .pill.next { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); font-weight: 500; }
     .holiday-meta .pill.next b { font-weight: 600; }
     .holiday-meta .sep { color: var(--text-muted); }
-    .tz-card { border: 1px solid var(--border); border-radius: 10px; background: var(--bg); overflow: hidden; }
+    .tz-card { border: 1px solid var(--border); border-radius: 10px; background: var(--bg); }
     .tz-now { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
     .tz-ico { width: 34px; height: 34px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; flex: none; }
     .tz-ico svg { width: 18px; height: 18px; }
@@ -77,12 +77,25 @@
     .tz-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
     .tz-now .pill { margin-left: auto; }
     .tz-browser { flex: none; }
-    .tz-pick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; padding: 10px 12px; }
-    .tz-pick input, .tz-pick select { width: 100%; }
-    @media (max-width: 600px) {
-      .tz-now { flex-wrap: wrap; }
-      .tz-pick { grid-template-columns: 1fr; }
+    .tz-pick { padding: 10px 12px; }
+    .combo { position: relative; }
+    .combo input { width: 100%; padding-left: 34px; padding-right: 30px; }
+    .combo-ico { position: absolute; left: 11px; top: 50%; width: 15px; height: 15px; transform: translateY(-50%); color: var(--text-muted); pointer-events: none; }
+    .combo-caret { position: absolute; right: 11px; top: 50%; transform: translateY(-50%); color: var(--text-muted); font-size: 12px; pointer-events: none; }
+    .combo ul {
+      position: absolute; z-index: 30; left: 0; right: 0; top: calc(100% + 6px);
+      margin: 0; padding: 4px; list-style: none; max-height: 280px; overflow-y: auto;
+      background: var(--card); border: 1px solid var(--border); border-radius: 10px;
+      box-shadow: 0 10px 30px rgba(16, 24, 40, 0.14);
     }
+    .combo li.group { font-size: 10.5px; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-muted); padding: 8px 10px 3px; }
+    .combo li.group:not(:first-child) { border-top: 1px solid var(--border); margin-top: 4px; }
+    .combo li.item { display: flex; align-items: center; justify-content: space-between; gap: 10px; padding: 7px 10px; border-radius: 7px; cursor: pointer; font-size: 13px; }
+    .combo li.item .off { font-size: 11px; color: var(--text-muted); font-variant-numeric: tabular-nums; flex: none; }
+    .combo li.item.active { background: var(--accent-soft); }
+    .combo li.item[aria-selected="true"] { font-weight: 600; color: var(--accent); }
+    .combo li.empty, .combo li.more { padding: 8px 10px; font-size: 12px; color: var(--text-muted); }
+    @media (max-width: 600px) { .tz-now { flex-wrap: wrap; } }
     .tab { position: relative; }
     .tab.attention::after {
       content: ""; position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%;
@@ -449,8 +462,13 @@
             <button type="button" class="small tz-browser" id="tzUseBrowser" hidden>Use browser zone</button>
           </div>
           <div class="tz-pick">
-            <input type="search" id="tzSearch" placeholder="Search — Berlin, London, UTC…" aria-label="Search timezones" autocomplete="off" />
-            <select id="timezone" aria-describedby="tzHint"></select>
+            <div class="combo" id="tzCombo">
+              <svg class="combo-ico" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
+              <input type="text" id="tzSearch" role="combobox" aria-expanded="false" aria-controls="tzList" aria-autocomplete="list" aria-label="Timezone" autocomplete="off" spellcheck="false" />
+              <span class="combo-caret" aria-hidden="true">▾</span>
+              <ul id="tzList" role="listbox" hidden></ul>
+            </div>
+            <input type="hidden" id="timezone" />
           </div>
         </div>
         <div class="hint" id="tzHint">Block times, the auto-fill time, "today", weekends and holidays all use this zone. The clock above shows the current time there.</div>
@@ -462,14 +480,19 @@
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4"/></svg></span>
         Schedule
       </h2>
-      <div class="switch-row">
-        <div class="lbl">Skip weekends</div>
+      <div class="switch-row rich">
+        <span class="row-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M3 10h18M8 3v4M16 3v4M10 14l4 4M14 14l-4 4"/></svg></span>
+        <div>
+          <div class="lbl">Skip weekends</div>
+          <div class="sub">Saturdays and Sundays are never booked</div>
+        </div>
         <label class="switch">
           <input type="checkbox" id="skipWeekends" />
           <span class="track"></span>
         </label>
       </div>
-      <div class="switch-row">
+      <div class="switch-row rich">
+        <span class="row-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 21V4"/><path d="M5 4h11l-2 3.5L16 11H5"/></svg></span>
         <div>
           <div class="lbl">Skip public holidays</div>
           <div class="sub holiday-meta" id="holidayInfo">From your Clockodo holiday calendar</div>
@@ -479,13 +502,14 @@
           <span class="track"></span>
         </label>
       </div>
-      <div class="switch-row">
+      <div class="switch-row rich">
+        <span class="row-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M17 2l4 4-4 4"/><path d="M3 11V9a4 4 0 0 1 4-4h14"/><path d="M7 22l-4-4 4-4"/><path d="M21 13v2a4 4 0 0 1-4 4H3"/></svg></span>
         <div>
           <div class="lbl">Auto-fill every workday</div>
           <div class="sub">Runs while Chrome is open; catches up on launch if the time already passed</div>
         </div>
-        <div style="display:flex; align-items:center; gap:10px;">
-          <input type="time" id="autoTime" class="inline-time" />
+        <div class="row-controls">
+          <label class="time-chip" for="autoTime"><span>at</span><input type="time" id="autoTime" class="inline-time" /></label>
           <label class="switch">
             <input type="checkbox" id="autoDaily" />
             <span class="track"></span>

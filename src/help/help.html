@@ -99,7 +99,7 @@
   <div class="hero">
     <img src="../../assets/icons/icon48.png" alt="" />
     <div>
-      <h1>Clockodo Auto-Fill — Guide <span class="badge" data-version="prefix">v1.7.0</span></h1>
+      <h1>Clockodo Auto-Fill — Guide <span class="badge" data-version="prefix">v1.7.1</span></h1>
       <p>Fill your daily Clockodo times in one click, for a date range, or automatically every workday.</p>
       <p class="hero-links">
         <a href="https://github.com/mohasoori/clockodo-autofill" target="_blank" rel="noopener noreferrer">Source on GitHub</a> ·
@@ -126,7 +126,7 @@
 
   <!-- What's new -->
   <section class="card" id="whatsnew" style="margin-bottom:18px">
-    <h2 class="card-title" style="margin-bottom:8px">What's new in <span data-version>1.7.0</span></h2>
+    <h2 class="card-title" style="margin-bottom:8px">What's new in <span data-version>1.7.1</span></h2>
     <ul style="margin:0; padding-left:20px; font-size:13px; line-height:1.6">
       <li><strong>Confirmation dialogs</strong> redesigned (Replace, Clear log, sign-out) — themed, no more browser popups.</li>
       <li><strong>Public holidays are skipped</strong> — read from your Clockodo holiday calendar (your federal state / country, set by your admin). No setup: Options → Schedule shows the calendar and the next holiday. Fails safe: if the calendar can't be loaded, nothing is booked.</li>
@@ -175,7 +175,7 @@
         <rect x="22" y="88" width="26" height="26" rx="7" class="mock-accent"/>
         <circle cx="35" cy="101" r="7" fill="none" stroke="#fff" stroke-width="2"/>
         <text x="58" y="98" class="mock-txt">Clockodo Auto-Fill</text>
-        <text x="58" y="112" class="mock-muted"><tspan data-version>1.7.0</tspan> · Loaded from folder</text>
+        <text x="58" y="112" class="mock-muted"><tspan data-version>1.7.1</tspan> · Loaded from folder</text>
         <text x="22" y="145" class="mock-muted">Details   Remove</text>
         <rect x="248" y="130" width="28" height="12" rx="6" class="mock-accent"/>
         <circle cx="270" cy="136" r="5" fill="#fff"/>
@@ -340,7 +340,7 @@
       <p><em>Options → Schedule tab.</em> <strong>Fixed blocks:</strong> start with one block (default <code>09:00–17:00</code>). Click <strong>+ Add block</strong> to split the day — the gap between blocks is your break, e.g. <code>08:30–13:00</code> and <code>14:00–17:30</code>.</p>
       <p><strong>Random start, fixed duration:</strong> set the exact daily total (e.g. <code>8 h 23 min</code>), a break with an optional ± variation, and a start window (e.g. <code>07:30–09:30</code>). Every fill draws fresh values — start, break length and the morning/afternoon split — while the total stays exact. Running <em>Replace</em> again re-rolls the day. <strong>Preview next days</strong> shows sample results.</p>
       <ul>
-        <li>Pick your <strong>Timezone</strong> below. All times are wall-clock in that zone and DST-aware.</li>
+        <li>Pick your <strong>Timezone</strong> below — click the field and type a city (e.g. "Berlin") to search; the card shows the current time and UTC offset there. All times are wall-clock in that zone and DST-aware.</li>
         <li>Keep <strong>Skip weekends</strong> on unless you actually work weekends.</li>
         <li><strong>Skip public holidays</strong> (on by default) uses the holiday calendar your Clockodo admin assigned to you — e.g. <em>Sachsen-Anhalt</em> — including movable feasts like Easter Monday. The row shows the calendar, how many holidays this year and the next one. Half-day holidays count as workdays. If no calendar is assigned, ask your admin; the extension can't pick a state itself.</li>
       </ul>

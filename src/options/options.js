@@ -242,44 +242,113 @@ for (const id of ["randomTotalH", "randomTotalM", "randomBreakMinutes", "randomB
 // ---------------------------------------------------------------------------
 // Timezone
 // ---------------------------------------------------------------------------
-// The selected zone always stays in the list (own group at the top) so typing
-// in the search box can never silently change the saved value.
+// One combobox: the field shows the chosen zone; typing filters a grouped list
+// underneath. The hidden #timezone input holds the saved value, so an
+// unfinished search can never change what gets saved.
 let allZones = null;
 const zoneLabel = (tz) => tz.replace(/_/g, " ");
 const zoneRegion = (tz) => (tz.includes("/") ? tz.split("/")[0] : "Other");
+const TZ_LIST_MAX = 80;
+let tzActive = -1; // index into the currently rendered .item elements
 
-function renderTimezones(selected, filter = "") {
-  const select = $("timezone");
-  const current = selected || select.value;
+function tzOffsetShort(tz) {
+  try {
+    return tzNamePart(tz, "longOffset", new Date()).replace("GMT", "UTC").replace(/^UTC$/, "UTC±0");
+  } catch { return ""; }
+}
+
+function renderTimezones(selected) {
+  const tz = selected || $("timezone").value;
+  $("timezone").value = tz;
+  $("tzSearch").value = zoneLabel(tz);
+  closeTzList();
+  updateTzPreview();
+}
+
+function tzItems() { return [...$("tzList").querySelectorAll("li.item")]; }
+
+function setTzActive(i) {
+  const items = tzItems();
+  if (!items.length) { tzActive = -1; return; }
+  tzActive = (i + items.length) % items.length;
+  items.forEach((el, idx) => el.classList.toggle("active", idx === tzActive));
+  items[tzActive].scrollIntoView({ block: "nearest" });
+}
+
+function openTzList(filter) {
   if (!allZones) allZones = Intl.supportedValuesOf("timeZone");
+  const current = $("timezone").value;
   const q = filter.trim().toLowerCase().replace(/\s+/g, "_");
-  const zones = allZones.filter((z) => z !== current && (!q || z.toLowerCase().includes(q)));
+  // Rank: city segment starts with the query → any segment starts with it → contains it.
+  const rank = (z) => {
+    const segs = z.toLowerCase().split("/");
+    if (segs[segs.length - 1].startsWith(q)) return 0;
+    if (segs.some((s) => s.startsWith(q))) return 1;
+    return 2;
+  };
+  const matches = allZones
+    .filter((z) => !q || z.toLowerCase().includes(q))
+    .sort((a, b) => (q ? rank(a) - rank(b) || a.length - b.length : 0) || a.localeCompare(b));
+  // Current zone (and its region) first, so opening the list lands on it.
+  const ordered = matches.includes(current) ? [current, ...matches.filter((z) => z !== current)] : matches;
+  const shown = ordered.slice(0, TZ_LIST_MAX);
 
-  select.innerHTML = "";
-  const selectedGroup = document.createElement("optgroup");
-  selectedGroup.label = "Selected";
-  selectedGroup.appendChild(new Option(zoneLabel(current), current));
-  select.appendChild(selectedGroup);
-
+  const ul = $("tzList");
+  ul.replaceChildren();
+  // Region headings only for the unfiltered list; search results stay a flat ranked list.
   const groups = new Map();
-  for (const z of zones) {
-    const g = zoneRegion(z);
+  for (const z of shown) {
+    const g = q ? "Matches" : zoneRegion(z);
     if (!groups.has(g)) groups.set(g, []);
     groups.get(g).push(z);
   }
   for (const [g, list] of groups) {
-    const og = document.createElement("optgroup");
-    og.label = q ? `${g} (${list.length})` : g;
-    for (const z of list) og.appendChild(new Option(zoneLabel(z), z));
-    select.appendChild(og);
+    const head = document.createElement("li");
+    head.className = "group";
+    head.textContent = q ? `${matches.length} match${matches.length === 1 ? "" : "es"}` : g;
+    ul.appendChild(head);
+    for (const z of list) {
+      const li = document.createElement("li");
+      li.className = "item";
+      li.setAttribute("role", "option");
+      li.dataset.tz = z;
+      li.setAttribute("aria-selected", String(z === current));
+      const name = document.createElement("span");
+      name.textContent = zoneLabel(z);
+      const off = document.createElement("span");
+      off.className = "off";
+      off.textContent = tzOffsetShort(z);
+      li.append(name, off);
+      ul.appendChild(li);
+    }
   }
-  if (q && !zones.length) {
-    const none = new Option("No zone matches — try a city or region", "");
-    none.disabled = true;
-    select.appendChild(none);
+  if (!matches.length) {
+    const li = document.createElement("li");
+    li.className = "empty";
+    li.textContent = "No zone matches — try a city or region name.";
+    ul.appendChild(li);
+  } else if (matches.length > shown.length) {
+    const li = document.createElement("li");
+    li.className = "more";
+    li.textContent = `${matches.length - shown.length} more — keep typing to narrow down`;
+    ul.appendChild(li);
   }
-  select.value = current;
-  updateTzPreview();
+  ul.hidden = false;
+  $("tzSearch").setAttribute("aria-expanded", "true");
+  const items = tzItems();
+  const idx = items.findIndex((el) => el.dataset.tz === current);
+  setTzActive(idx >= 0 ? idx : 0);
+}
+
+function closeTzList() {
+  $("tzList").hidden = true;
+  $("tzSearch").setAttribute("aria-expanded", "false");
+  tzActive = -1;
+}
+
+function chooseTz(tz) {
+  if (!isValidTimeZone(tz)) return;
+  renderTimezones(tz);
 }
 
 function tzNamePart(tz, style, now) {
@@ -309,16 +378,27 @@ function updateTzPreview() {
   btn.title = browserTz ? `Switch to ${zoneLabel(browserTz)}` : "";
 }
 
-$("tzSearch").addEventListener("input", () => renderTimezones($("timezone").value, $("tzSearch").value));
-$("tzSearch").addEventListener("keydown", (e) => {
-  if (e.key === "Enter") { e.preventDefault(); $("timezone").focus(); }
+const tzInput = $("tzSearch");
+tzInput.addEventListener("focus", () => { tzInput.select(); openTzList(""); });
+tzInput.addEventListener("input", () => openTzList(tzInput.value));
+tzInput.addEventListener("keydown", (e) => {
+  const open = !$("tzList").hidden;
+  if (e.key === "ArrowDown") { e.preventDefault(); open ? setTzActive(tzActive + 1) : openTzList(tzInput.value); }
+  else if (e.key === "ArrowUp") { e.preventDefault(); if (open) setTzActive(tzActive - 1); }
+  else if (e.key === "Enter") {
+    e.preventDefault();
+    const el = tzItems()[tzActive];
+    if (open && el) chooseTz(el.dataset.tz);
+  }
+  else if (e.key === "Escape") { e.preventDefault(); renderTimezones(); }
 });
-$("timezone").addEventListener("change", updateTzPreview);
-$("tzUseBrowser").addEventListener("click", () => {
-  const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
-  if (!isValidTimeZone(browserTz)) return;
-  renderTimezones(browserTz, $("tzSearch").value);
+tzInput.addEventListener("blur", () => setTimeout(() => { if (!$("tzList").hidden) renderTimezones(); }, 120));
+$("tzList").addEventListener("mousedown", (e) => e.preventDefault()); // keep focus in the input
+$("tzList").addEventListener("click", (e) => {
+  const li = e.target.closest("li.item");
+  if (li) chooseTz(li.dataset.tz);
 });
+$("tzUseBrowser").addEventListener("click", () => chooseTz(Intl.DateTimeFormat().resolvedOptions().timeZone));
 setInterval(updateTzPreview, 30_000);
 
 // ---------------------------------------------------------------------------
