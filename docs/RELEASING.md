@@ -120,6 +120,8 @@ last upload is already in review) — not an error.
 | Store upload `403` / insufficient scope | Wrong scope on the consent screen (`.readonly`). Add the full `chromewebstore` scope and mint a new token. |
 | `The description field in manifest is too long` | Store limit is 132 characters for `manifest.json` → `description`. |
 | Store dashboard still shows old version | The upload landed in **Draft / Pending review**; the *Published* column updates after Google approves. Uploading again while pending restarts the review. |
+| `ITEM_NOT_UPDATABLE` — "cannot be updated now because it is in pending review" | The previous version is still under review; the store accepts one submission at a time. The GitHub release was already created. Either wait for the review to finish and re-run the failed job (`gh run rerun <run-id> --failed`), or cancel the pending submission in the dashboard and re-run. Two tags within one review window always hit this. |
+| Tag push triggered no workflow | GitHub emits no push events when more than three tags are pushed at once (e.g. after a history rewrite). Delete and re-push the one tag: `git push origin :refs/tags/vX && git push origin vX`. |
 | Push rejected `GH007 … private email` | Commit with the GitHub noreply address: `git config user.email "<id>+<user>@users.noreply.github.com"`. |
 
 ## Store listing assets are not automated
