@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill
 
-**Version 1.6.0** · [What's new](CHANGELOG.md) · MIT ·
+**Version 1.7.0** · [What's new](CHANGELOG.md) · MIT ·
 [**Install from the Chrome Web Store**](https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp)
 
 A small Chrome extension (Manifest V3) that fills your daily working times in
@@ -14,10 +14,13 @@ with their **own** personal Clockodo API key, stored only in their browser.
 ## Features
 
 - **Fill today** — one click from the popup.
-- **Fill a date range** — e.g. after vacation; skips weekends and opted-out days.
+- **Fill a date range** — e.g. after vacation; skips weekends, public holidays and opted-out days.
 - **Auto-fill every workday** — runs at a time you choose while Chrome is open,
   and catches up on next launch if that time already passed.
 - **Skip days** — quick "Skip today" toggle plus a managed list of dates to never fill.
+- **Public holidays** — skipped automatically using the holiday calendar your
+  Clockodo admin assigned to you (federal state / country); no setup, no
+  external service.
 - **Sync & backup** — settings follow you across your Chrome devices (Chrome
   Sync; API key only if you opt in), plus JSON export/import.
 - **Activity log** — what the extension booked, replaced or failed, per day or

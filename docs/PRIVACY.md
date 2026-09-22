@@ -18,6 +18,7 @@ inside your browser profile (`chrome.storage.local`):
 | Your Clockodo user id / name | Shown in the popup; used as `users_id` in requests   |
 | Your settings (hours, timezone, schedule, skip dates, customer/service) | To book the right times |
 | Cached customer/service list, last auto-fill result, last update check | Convenience / status display |
+| Your public-holiday dates for the current year(s), as assigned to you in Clockodo | So holidays are not booked; refreshed weekly, deleted with your login data |
 | Activity log (dates and times the extension booked, result, device name) | Lets you see what the extension did; synced with settings (last 150 entries) |
 
 **Sync between your devices (optional, on by default for settings):** the
@@ -57,7 +58,8 @@ device is lost.
   for its function. Requests use Clockodo's official public REST API and
   carry your email and API key so Clockodo can authenticate you. What is
   sent: the working times you configured, and read-only queries for your
-  user record, customers, services and existing working times.
+  user record, customers, services, existing working times and the
+  public-holiday calendar your Clockodo admin assigned to you.
 - **`https://raw.githubusercontent.com`** (optional, on by default, can be
   disabled in Options → Updates) — once a day the extension downloads the
   public `manifest.json` of this project to see whether a newer version

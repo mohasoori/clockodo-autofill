@@ -17,6 +17,7 @@ import {
   pullFromSync,
   exportConfig,
   importConfig,
+  getHolidayCalendar,
 } from "../lib/clockodo-api.js";
 import { fetchLatestVersion, updateCheckConfigured, compareVersions } from "../lib/updates.js";
 import { logActivity, logRangeActivity, clearActivity } from "../lib/activity.js";
@@ -214,7 +215,7 @@ async function handle(msg) {
     }
     case "signOut": {
       // Soft: disconnect only. Email and API key stay, so signing back in is
-      // just "Test connection" again.
+      // "Log in" again.
       const next = await saveConfig({ usersId: null, userName: "", autoDaily: false });
       await rescheduleAlarm(next);
       return { ok: true };
@@ -222,7 +223,7 @@ async function handle(msg) {
     case "deleteLoginData": {
       // Hard: credentials and account-bound data go; hours, schedule and preferences stay.
       const next = await saveConfig({ apiUser: "", apiKey: "", usersId: null, userName: "", customersId: null, servicesId: null, autoDaily: false });
-      await chrome.storage.local.remove(["pickLists", "lastAutoRun"]);
+      await chrome.storage.local.remove(["pickLists", "lastAutoRun", "holidays"]);
       await clearActivity(); // the log is tied to this Clockodo account; it leaves with the login data
       await rescheduleAlarm(next);
       return { ok: true };
@@ -305,6 +306,8 @@ async function handle(msg) {
       await scheduleUpdateCheck(next);
       return { ok: true };
     }
+    case "holidayCalendar":
+      return { ok: true, calendar: await getHolidayCalendar(cfg) };
     case "listCustomers":
       return { ok: true, customers: await getCustomers(cfg) };
     case "listServices":

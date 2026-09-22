@@ -4,6 +4,32 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.7.0] — 2026-09-22
+
+### Added
+- **Public holidays are skipped automatically.** The extension reads the
+  holiday calendar your Clockodo admin assigned to you (federal state or
+  country, e.g. *Sachsen-Anhalt*) via `usersNonbusinessDays`, so movable
+  feasts are right too. Options → Schedule → **Skip public holidays** (on by
+  default) shows the calendar, the number of holidays this year and the next
+  one; the Account tab shows the calendar next to your name. Skipped days
+  appear as `skipped (public holiday: Karfreitag)` in the popup and the
+  Activity log. Half-day holidays count as workdays. No state picker, no new
+  permissions, no external service.
+- Fails safe: holidays are cached per year for a week; if the list cannot be
+  loaded and nothing is cached, the fill stops with an error rather than
+  booking on a possible holiday. *Delete login data* clears the cache.
+
+### Changed
+- **Timezone picker redesigned** (Options → Schedule): live clock in the
+  selected zone, UTC offset and zone name (CEST, GMT, Eastern Time…), a
+  search box that filters the ~400 IANA zones grouped by region, and a
+  one-click *Use browser zone* button. The selected zone always stays
+  selectable while you search.
+- Account tab shows a summary box after login: who you are signed in as and
+  your Clockodo holiday calendar.
+- Wording: "Test connection" → "Log in" in the remaining messages.
+
 ## [1.6.0] — 2026-09-18
 
 ### Added

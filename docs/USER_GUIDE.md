@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.6.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.7.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Options is organised in five tabs: **Account** (your Clockodo login and what
 to book), **Schedule** (working hours, auto-fill, days to never fill),
@@ -108,12 +108,22 @@ end follows from it. Running *Replace* on a day re-rolls it.
 Choose your **Timezone** below — all times are wall-clock in that zone and
 DST-aware. Keep **Skip weekends** on unless you work weekends.
 
+**Skip public holidays** (on by default) uses the holiday calendar your
+Clockodo admin assigned to you — your federal state or country, e.g.
+*Sachsen-Anhalt* — including movable feasts such as Good Friday or Whit
+Monday. The row shows which calendar you are on, how many holidays this year
+has and the next one; the Account tab shows the calendar too. Nothing to
+configure: the extension cannot pick a state itself, and if no calendar is
+assigned it tells you to ask your admin. Half-day holidays count as normal
+workdays. The list is cached for a week per year; if it cannot be loaded and
+there is no cache, the fill stops with an error instead of booking blind.
+
 ## 6. Automatic daily fill (Options → Schedule tab → Schedule)
 
 - In **Schedule**, set the time (default 09:15) and enable
   **Auto-fill every workday**, then Save — or toggle **Auto-fill daily** in the popup.
 - At that time, while Chrome is running, today is filled unless it is a
-  weekend, an opted-out day, or already filled.
+  weekend, a public holiday, an opted-out day, or already filled.
 - If Chrome was closed at that time, it **catches up** on the next launch
   (once per day). Turning the toggle off/on after the time has passed also
   triggers an immediate catch-up.

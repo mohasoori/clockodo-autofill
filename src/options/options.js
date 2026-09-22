@@ -1,7 +1,7 @@
 // options.js
 import {
   loadConfig, saveConfig, validateSchedule, randomBlocks, isWeekend, todayStr, addDays,
-  toMinutes, toHHMM, HHMM_RE, MAX_BLOCKS,
+  toMinutes, toHHMM, HHMM_RE, MAX_BLOCKS, isValidTimeZone,
 } from "../lib/clockodo-api.js";
 import { getActivity, clearActivity, activityToCsv, renameDevice } from "../lib/activity.js";
 import { confirmDialog } from "../lib/dialog.js";
@@ -10,7 +10,7 @@ const $ = (id) => document.getElementById(id);
 
 // apiKey is handled separately: the stored key is never written back into the DOM.
 const TEXT_FIELDS = ["apiUser", "mode", "autoTime", "randomEarliestStart", "randomLatestStart"];
-const CHECKBOXES = ["autoApprove", "billable", "skipWeekends", "autoDaily", "checkUpdates", "syncSettings", "syncApiKey", "rememberKey"];
+const CHECKBOXES = ["autoApprove", "billable", "skipWeekends", "skipHolidays", "autoDaily", "checkUpdates", "syncSettings", "syncApiKey", "rememberKey"];
 
 let skipDates = [];
 let blocks = [];
@@ -242,14 +242,84 @@ for (const id of ["randomTotalH", "randomTotalM", "randomBreakMinutes", "randomB
 // ---------------------------------------------------------------------------
 // Timezone
 // ---------------------------------------------------------------------------
-function renderTimezones(selected) {
+// The selected zone always stays in the list (own group at the top) so typing
+// in the search box can never silently change the saved value.
+let allZones = null;
+const zoneLabel = (tz) => tz.replace(/_/g, " ");
+const zoneRegion = (tz) => (tz.includes("/") ? tz.split("/")[0] : "Other");
+
+function renderTimezones(selected, filter = "") {
   const select = $("timezone");
+  const current = selected || select.value;
+  if (!allZones) allZones = Intl.supportedValuesOf("timeZone");
+  const q = filter.trim().toLowerCase().replace(/\s+/g, "_");
+  const zones = allZones.filter((z) => z !== current && (!q || z.toLowerCase().includes(q)));
+
   select.innerHTML = "";
-  const zones = Intl.supportedValuesOf("timeZone");
-  if (!zones.includes(selected)) zones.unshift(selected);
-  for (const tz of zones) select.appendChild(new Option(tz, tz));
-  select.value = selected;
+  const selectedGroup = document.createElement("optgroup");
+  selectedGroup.label = "Selected";
+  selectedGroup.appendChild(new Option(zoneLabel(current), current));
+  select.appendChild(selectedGroup);
+
+  const groups = new Map();
+  for (const z of zones) {
+    const g = zoneRegion(z);
+    if (!groups.has(g)) groups.set(g, []);
+    groups.get(g).push(z);
+  }
+  for (const [g, list] of groups) {
+    const og = document.createElement("optgroup");
+    og.label = q ? `${g} (${list.length})` : g;
+    for (const z of list) og.appendChild(new Option(zoneLabel(z), z));
+    select.appendChild(og);
+  }
+  if (q && !zones.length) {
+    const none = new Option("No zone matches — try a city or region", "");
+    none.disabled = true;
+    select.appendChild(none);
+  }
+  select.value = current;
+  updateTzPreview();
 }
+
+function tzNamePart(tz, style, now) {
+  // en-GB yields real abbreviations (CEST, BST) where en-US falls back to GMT+2.
+  return new Intl.DateTimeFormat("en-GB", { timeZone: tz, timeZoneName: style })
+    .formatToParts(now).find((p) => p.type === "timeZoneName")?.value || "";
+}
+
+function updateTzPreview() {
+  const tz = $("timezone").value;
+  if (!isValidTimeZone(tz)) return;
+  const now = new Date();
+  $("tzTime").textContent = new Intl.DateTimeFormat("en-GB", { timeZone: tz, hour: "2-digit", minute: "2-digit" }).format(now);
+  let offset = tzNamePart(tz, "longOffset", now).replace("GMT", "UTC");
+  if (offset === "UTC") offset = "UTC±00:00";
+  $("tzOffset").textContent = offset;
+  const dayText = new Intl.DateTimeFormat(undefined, { timeZone: tz, weekday: "long", day: "numeric", month: "short" }).format(now);
+  // Zones without a real abbreviation come back as "GMT+3:30", which would just repeat the pill.
+  const short = tzNamePart(tz, "short", now);
+  const zoneName = /^(GMT|UTC)/.test(short) ? tzNamePart(tz, "long", now) : short;
+  $("tzAbbr").textContent = `${zoneName} · ${dayText}`;
+
+  const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  const btn = $("tzUseBrowser");
+  btn.hidden = !browserTz || browserTz === tz;
+  btn.textContent = "Use browser zone";
+  btn.title = browserTz ? `Switch to ${zoneLabel(browserTz)}` : "";
+}
+
+$("tzSearch").addEventListener("input", () => renderTimezones($("timezone").value, $("tzSearch").value));
+$("tzSearch").addEventListener("keydown", (e) => {
+  if (e.key === "Enter") { e.preventDefault(); $("timezone").focus(); }
+});
+$("timezone").addEventListener("change", updateTzPreview);
+$("tzUseBrowser").addEventListener("click", () => {
+  const browserTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+  if (!isValidTimeZone(browserTz)) return;
+  renderTimezones(browserTz, $("tzSearch").value);
+});
+setInterval(updateTzPreview, 30_000);
 
 // ---------------------------------------------------------------------------
 // Skip dates
@@ -366,7 +436,7 @@ async function refreshSetupState() {
 $("signOutBtn").addEventListener("click", async () => {
   const ok = await confirmDialog({
     title: "Sign out?",
-    message: "Disconnects this device and switches off auto-fill. Your email and API key stay saved — sign back in any time with Test connection.",
+    message: "Disconnects this device and switches off auto-fill. Your email and API key stay saved — sign back in any time with Log in.",
     confirmText: "Sign out",
   });
   if (!ok) return;
@@ -448,7 +518,68 @@ $("testBtn").addEventListener("click", async () => {
     setStatus(el, `✗ ${e.message}`, "bad");
   }
   refreshSetupState();
+  loadHolidayInfo();
 });
+
+// ---------------------------------------------------------------------------
+// Public holidays (read from the user's Clockodo holiday calendar)
+// ---------------------------------------------------------------------------
+const fmtHolidayDate = (dateStr) =>
+  new Date(dateStr + "T12:00:00Z").toLocaleDateString(undefined, { day: "numeric", month: "short", timeZone: "UTC" });
+
+// Fills both the Schedule-tab hint and the Account-card summary line.
+async function loadHolidayInfo() {
+  const el = $("holidayInfo");
+  const acct = $("accountInfo");
+  const regionEl = $("acctRegion");
+  const noteEl = $("acctRegionNote");
+  const cfg = await loadConfig();
+  el.classList.remove("bad");
+  const setRegion = (text, missing, note) => {
+    regionEl.textContent = text;
+    regionEl.className = `pill ${missing ? "missing" : "region"}`;
+    noteEl.textContent = note;
+  };
+
+  if (!cfg.usersId) {
+    el.textContent = "Log in first — the calendar comes from your Clockodo account.";
+    acct.hidden = true;
+    return;
+  }
+  acct.hidden = false;
+  $("acctWho").textContent = `${cfg.userName || cfg.apiUser} · id ${cfg.usersId}`;
+  el.textContent = "Loading your Clockodo holiday calendar…";
+  setRegion("loading…", false, "");
+
+  const res = await chrome.runtime.sendMessage({ action: "holidayCalendar" });
+  if (!res.ok) {
+    el.textContent = `Could not load the calendar: ${res.error}`;
+    el.classList.add("bad");
+    setRegion("unavailable", true, res.error);
+    return;
+  }
+  const cal = res.calendar;
+  if (!cal.assigned) {
+    el.textContent = "No holiday calendar is assigned to you in Clockodo — ask your admin, otherwise nothing is skipped.";
+    el.classList.add("bad");
+    setRegion("not assigned", true, "ask your Clockodo admin to assign one");
+    return;
+  }
+  const region = cal.groupName || `calendar #${cal.groupId}`;
+  const countText = `${cal.count} holiday${cal.count === 1 ? "" : "s"} in ${cal.year}`;
+
+  el.replaceChildren();
+  const chip = (cls, text) => { const s = document.createElement("span"); s.className = cls; s.textContent = text; return s; };
+  el.append(chip("pill region", region), chip("", countText));
+  if (cal.next) {
+    const next = chip("pill next", "Next: ");
+    const b = document.createElement("b");
+    b.textContent = `${cal.next.name} · ${fmtHolidayDate(cal.next.date)}`;
+    next.append(b);
+    el.append(chip("sep", "·"), next);
+  }
+  setRegion(region, false, `${countText} · set by your Clockodo admin`);
+}
 
 // ---------------------------------------------------------------------------
 // Tabs
@@ -868,6 +999,7 @@ async function init() {
   refreshRememberHint();
   refreshSyncToggles();
   loadActivity();
+  loadHolidayInfo();
   chrome.storage.local.get("device").then(({ device }) => { $("deviceLabel").value = device?.label || ""; });
 
   if (pickLists) {

@@ -57,6 +57,32 @@
     .setup-badge { margin-left: auto; font-size: 11px; font-weight: 600; padding: 3px 9px; border-radius: 999px; }
     .setup-badge.todo { background: var(--danger-soft); color: var(--danger); }
     .setup-badge.ok { background: var(--ok-soft); color: var(--ok); }
+    .account-summary { margin-top: 12px; padding: 10px 12px; border: 1px solid var(--border); border-radius: 10px; background: var(--bg); display: grid; gap: 8px; }
+    .account-summary .row { display: flex; align-items: center; gap: 10px; font-size: 13px; }
+    .account-summary .k { color: var(--text-muted); font-size: 12px; min-width: 118px; }
+    .account-summary .v { font-weight: 600; display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .account-summary .note { font-weight: 400; color: var(--text-muted); font-size: 12px; }
+    .pill.region { background: var(--accent-soft); color: var(--accent); font-size: 12px; padding: 3px 10px; }
+    .pill.missing { background: var(--danger-soft); color: var(--danger); font-size: 12px; padding: 3px 10px; }
+    .holiday-meta { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; margin-top: 5px; }
+    .holiday-meta .pill.next { background: var(--input-bg); color: var(--text); border: 1px solid var(--border); font-weight: 500; }
+    .holiday-meta .pill.next b { font-weight: 600; }
+    .holiday-meta .sep { color: var(--text-muted); }
+    .tz-card { border: 1px solid var(--border); border-radius: 10px; background: var(--bg); overflow: hidden; }
+    .tz-now { display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-bottom: 1px solid var(--border); }
+    .tz-ico { width: 34px; height: 34px; border-radius: 9px; background: var(--accent-soft); color: var(--accent); display: grid; place-items: center; flex: none; }
+    .tz-ico svg { width: 18px; height: 18px; }
+    .tz-clock { flex: 1 1 auto; min-width: 0; }
+    .tz-time { font-size: 22px; font-weight: 600; font-variant-numeric: tabular-nums; line-height: 1.1; letter-spacing: 0.01em; }
+    .tz-sub { font-size: 12px; color: var(--text-muted); margin-top: 3px; }
+    .tz-now .pill { margin-left: auto; }
+    .tz-browser { flex: none; }
+    .tz-pick { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.4fr); gap: 8px; padding: 10px 12px; }
+    .tz-pick input, .tz-pick select { width: 100%; }
+    @media (max-width: 600px) {
+      .tz-now { flex-wrap: wrap; }
+      .tz-pick { grid-template-columns: 1fr; }
+    }
     .tab { position: relative; }
     .tab.attention::after {
       content: ""; position: absolute; top: 7px; right: 8px; width: 7px; height: 7px; border-radius: 50%;
@@ -288,6 +314,10 @@
         <button class="danger-btn" id="deleteLoginBtn" hidden>Delete login data</button>
         <span id="testResult" class="status-text"></span>
       </div>
+      <div class="account-summary" id="accountInfo" hidden>
+        <div class="row"><span class="k">Signed in as</span><span class="v" id="acctWho"></span></div>
+        <div class="row"><span class="k">Holiday calendar</span><span class="v"><span class="pill region" id="acctRegion"></span><span class="note" id="acctRegionNote"></span></span></div>
+      </div>
     </section>
 
     <section class="card" id="bookingCard">
@@ -406,10 +436,24 @@
         <div class="hint">Every fill draws fresh values: a start inside the window, the break ± its variation, and a 35–65 % morning/afternoon split. The total is always exact; the end follows from it. Running "Replace" again re-rolls the day.</div>
       </div>
 
-      <div class="field" style="margin-top:16px">
+      <div class="field tz-field" style="margin-top:16px">
         <label class="field-label" for="timezone">Timezone</label>
-        <select id="timezone"></select>
-        <div class="hint">Block times, the auto-fill time, "today" and weekend detection all use this zone.</div>
+        <div class="tz-card">
+          <div class="tz-now">
+            <span class="tz-ico" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
+            <div class="tz-clock">
+              <div class="tz-time" id="tzTime" aria-live="off">--:--</div>
+              <div class="tz-sub" id="tzAbbr"></div>
+            </div>
+            <span class="pill region" id="tzOffset">UTC</span>
+            <button type="button" class="small tz-browser" id="tzUseBrowser" hidden>Use browser zone</button>
+          </div>
+          <div class="tz-pick">
+            <input type="search" id="tzSearch" placeholder="Search — Berlin, London, UTC…" aria-label="Search timezones" autocomplete="off" />
+            <select id="timezone" aria-describedby="tzHint"></select>
+          </div>
+        </div>
+        <div class="hint" id="tzHint">Block times, the auto-fill time, "today", weekends and holidays all use this zone. The clock above shows the current time there.</div>
       </div>
     </section>
 
@@ -422,6 +466,16 @@
         <div class="lbl">Skip weekends</div>
         <label class="switch">
           <input type="checkbox" id="skipWeekends" />
+          <span class="track"></span>
+        </label>
+      </div>
+      <div class="switch-row">
+        <div>
+          <div class="lbl">Skip public holidays</div>
+          <div class="sub holiday-meta" id="holidayInfo">From your Clockodo holiday calendar</div>
+        </div>
+        <label class="switch">
+          <input type="checkbox" id="skipHolidays" />
           <span class="track"></span>
         </label>
       </div>

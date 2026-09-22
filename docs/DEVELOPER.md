@@ -75,6 +75,7 @@ in `chrome.notifications` `iconUrl` are relative to the extension root.
   | `setAutoDaily`       | `enabled`           | `nextRun` (ms epoch)             |
   | `rescheduleAlarm`    | —                   | `nextRun`                        |
   | `getStatus`          | —                   | `nextRun`, `lastAutoRun`         |
+  | `holidayCalendar`    | —                   | `calendar` `{assigned, groupId, groupName, year, count, next}` |
   | `listCustomers`      | —                   | `customers[{id,name}]`           |
   | `listServices`       | —                   | `services[{id,name}]`            |
 
@@ -96,6 +97,7 @@ See `DEFAULT_CONFIG` in `clockodo-api.js`. Notable fields:
 | `randomTotalMinutes`, `randomBreakMinutes`, `randomBreakJitter`, `randomEarliestStart`, `randomLatestStart` | numbers, `"HH:MM"`, `"HH:MM"` | random mode: `randomBlocks(cfg)` draws a start in the window, a break of `base ± jitter`, and a 35–65 % morning share; total is exact. Fresh values on every call (`Math.random`). |
 | `timezone`     | IANA string       | default `Europe/Berlin`; validated with `Intl`   |
 | `skipWeekends` | bool              |                                                   |
+| `skipHolidays` | bool              | default `true`; full-day holidays from the user's Clockodo calendar (`getHolidayMap`) |
 | `skipDates`    | `"YYYY-MM-DD"[]`  | never fill                                        |
 | `autoDaily`, `autoTime` | bool, `"HH:MM"` |                                            |
 
@@ -105,7 +107,9 @@ See `DEFAULT_CONFIG` in `clockodo-api.js`. Notable fields:
 
 Other local storage keys: `lastAutoRun` (result + `at`), `pickLists`
 (cached customers/services for the Options dropdowns), `updateInfo`,
-`activity` (log, newest first, ≤1000), `device` (`{id,label}`).
+`activity` (log, newest first, ≤1000), `device` (`{id,label}`),
+`holidays` (`{usersId, years: {YYYY: {at, days[{date,name,halfDay}]}}}`,
+7-day TTL per year, discarded when `usersId` changes).
 Sync also holds `activity_0..N` chunks (≤7 KB each, ≤150 entries total);
 `getActivity()` merges local + synced by id. Entries are `kind:"day"`
 (one fill) or `kind:"range"` (one Fill-range run with `counts` and `days[]`).
@@ -137,6 +141,8 @@ technical contact (≤ 50 chars) — it is a constant, not the end user's email.
 | create entry (entry mode)   | `POST /api/v2/entries`                           | v2 |
 | change request (worktime)   | `POST /api/v2/workTimes/changeRequests`          | v2 |
 | approve change request      | `POST /api/v3/workTimes/changeRequests/{id}/approve` | **v3**, not v2 |
+| public holidays (per user)  | `GET  /api/v2/usersNonbusinessDays?filter[users_id]=&year=` | v2; `data[0].days[]` with `evaluated_date`, `name`, `half_day` |
+| holiday calendars           | `GET  /api/v2/nonbusinessGroups`                 | v2; `users/me` → `nonbusiness_groups_id` picks the user's |
 
 Gotchas:
 
@@ -147,6 +153,11 @@ Gotchas:
   entries, a standalone change request fails with
   `Work times must match the day's entries`. Creating entries is the path that
   works there, so `mode` defaults to `entry`.
+- Holidays: `usersNonbusinessDays` already resolves the user's calendar and
+  movable feasts (`evaluated_date`), so no state picker is needed. The
+  `year` parameter is echoed back through `yearOf(evaluated_date)`; if the
+  response holds only other years, `fetchHolidayYear` throws instead of
+  caching an empty list.
 - Error bodies vary (`{error}`, `{error:{message}}`, `{message}`, `{errors:[]}`);
   `extractErrorMessage()` normalises them.
 - Endpoint versions were verified against the official `clockodo` npm SDK

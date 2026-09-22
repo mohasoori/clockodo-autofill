@@ -25,6 +25,8 @@ const EP = {
   entry: (id) => `/api/v2/entries/${id}`,
   customers: "/api/v3/customers",
   services: "/api/v4/services",
+  nonbusinessGroups: "/api/v2/nonbusinessGroups",
+  userNonbusinessDays: "/api/v2/usersNonbusinessDays", // per-user public holidays, resolved by Clockodo
 };
 
 // WorkTimeChangeRequestIntervalType.Add === 1 (Remove === 2) — a number, not a string.
@@ -58,6 +60,7 @@ export const DEFAULT_CONFIG = {
   timezone: "Europe/Berlin", // IANA zone used for blocks, autoTime, "today" and weekends
 
   skipWeekends: true,
+  skipHolidays: true,   // public holidays from the user's Clockodo holiday calendar
   skipDates: [],        // ["2026-09-18", ...] days to never fill
   autoDaily: false,     // run automatically every workday
   autoTime: "09:15",    // when the daily alarm fires (in `timezone`)
@@ -320,9 +323,11 @@ export function isWeekend(dateStr, timeZone = "Europe/Berlin") {
   return weekday === "Sat" || weekday === "Sun";
 }
 
-export function shouldSkip(cfg, dateStr) {
+// holidays: Map<date, name> from getHolidayMap(), or null when holidays are not checked.
+export function shouldSkip(cfg, dateStr, holidays = null) {
   if (cfg.skipWeekends && isWeekend(dateStr, cfg.timezone)) return "weekend";
   if ((cfg.skipDates || []).includes(dateStr)) return "opted-out";
+  if (cfg.skipHolidays && holidays && holidays.has(dateStr)) return `public holiday: ${holidays.get(dateStr)}`;
   return null;
 }
 
@@ -524,11 +529,91 @@ async function deleteEntries(cfg, ids) {
 }
 
 // ---------------------------------------------------------------------------
+// Public holidays — the user's Clockodo holiday calendar
+// ---------------------------------------------------------------------------
+// Clockodo resolves the calendar (federal state / country group) per user and
+// returns concrete dates, including movable feasts. Cached per user and year
+// in chrome.storage.local so a fill costs no extra request most days. Fails
+// closed: with no usable cache and a failed request the fill aborts rather
+// than booking on a possible holiday.
+const HOLIDAYS_KEY = "holidays";
+const HOLIDAYS_TTL_MS = 7 * DAY_MS;
+
+export const yearOf = (dateStr) => dateStr.slice(0, 4);
+
+async function fetchHolidayYear(cfg, year) {
+  const path = `${EP.userNonbusinessDays}?filter[users_id]=${encodeURIComponent(cfg.usersId)}&year=${encodeURIComponent(year)}`;
+  const data = await request(cfg, "GET", path);
+  if (!Array.isArray(data.data)) throw new Error("Unexpected response from usersNonbusinessDays: no data list.");
+  const user = data.data.find((u) => Number(u.users_id) === cfg.usersId) || data.data[0];
+  const days = (Array.isArray(user?.days) ? user.days : []).filter((d) => DATE_RE.test(d.evaluated_date || ""));
+  const inYear = days.filter((d) => yearOf(d.evaluated_date) === String(year));
+  if (days.length && !inYear.length) {
+    throw new Error(`Clockodo returned holidays for another year than ${year}; not booking blind.`);
+  }
+  return inYear.map((d) => ({ date: d.evaluated_date, name: String(d.name || "Public holiday"), halfDay: !!d.half_day }));
+}
+
+async function readHolidayCache(cfg) {
+  const { [HOLIDAYS_KEY]: cache } = await chrome.storage.local.get(HOLIDAYS_KEY);
+  return cache && cache.usersId === cfg.usersId ? cache : { usersId: cfg.usersId, years: {} };
+}
+
+// { [year]: [{date, name, halfDay}] }. Stale years are refreshed; a failed
+// refresh keeps the stale copy, a failed first load throws.
+export async function getHolidayYears(cfg, years) {
+  const cache = await readHolidayCache(cfg);
+  let changed = false;
+  for (const year of years) {
+    const hit = cache.years[year];
+    if (hit && Date.now() - hit.at < HOLIDAYS_TTL_MS) continue;
+    try {
+      cache.years[year] = { at: Date.now(), days: await fetchHolidayYear(cfg, year) };
+      changed = true;
+    } catch (e) {
+      if (!hit) throw new Error(`Could not load public holidays from Clockodo: ${e.message}`);
+    }
+  }
+  if (changed) await chrome.storage.local.set({ [HOLIDAYS_KEY]: cache });
+  return Object.fromEntries(years.map((y) => [y, cache.years[y].days]));
+}
+
+// Map<date, name> of full-day holidays. Half-day holidays count as workdays.
+export async function getHolidayMap(cfg, years) {
+  const byYear = await getHolidayYears(cfg, years);
+  const map = new Map();
+  for (const days of Object.values(byYear)) {
+    for (const d of days) if (!d.halfDay) map.set(d.date, d.name);
+  }
+  return map;
+}
+
+// For Options: which calendar the user is on and what's coming up this year.
+export async function getHolidayCalendar(cfg) {
+  const me = await request(cfg, "GET", EP.me);
+  const user = me.user || me.data || me;
+  const groupId = Number(user && user.nonbusiness_groups_id);
+  if (!Number.isInteger(groupId) || groupId <= 0) return { assigned: false };
+
+  let groupName = "";
+  try {
+    const groups = await request(cfg, "GET", EP.nonbusinessGroups);
+    groupName = (groups.data || []).find((g) => g.id === groupId)?.name || "";
+  } catch { /* the name is only decoration */ }
+
+  const today = todayStr(cfg.timezone);
+  const year = yearOf(today);
+  const { [year]: days } = await getHolidayYears(cfg, [year]);
+  const upcoming = days.filter((d) => d.date >= today).sort((a, b) => a.date.localeCompare(b.date));
+  return { assigned: true, groupId, groupName, year, count: days.length, next: upcoming[0] || null };
+}
+
+// ---------------------------------------------------------------------------
 // Fill one day
 // ---------------------------------------------------------------------------
 export function assertFillable(cfg) {
   if (!Number.isInteger(cfg.usersId)) {
-    throw new Error("User not resolved yet — run \"Test connection\" in Options.");
+    throw new Error("Not logged in — open Options → Account and click \"Log in\".");
   }
   const scheduleError = validateSchedule(cfg);
   if (scheduleError) throw new Error(scheduleError);
@@ -546,11 +631,15 @@ export const ON_EXISTING = ["skip", "replace"];
 //   day's existing time entries (entry mode only) and book again.
 // opts.force: ignore weekend/opt-out rules and the existing check entirely.
 // opts.existing: optional Map<date, entryId[]> already fetched by the caller (range fills).
-export async function fillDay(cfg, dateStr, { force = false, onExisting = "skip", existing = null } = {}) {
+// opts.holidays: optional Map<date, name> already fetched by the caller (range fills).
+export async function fillDay(cfg, dateStr, { force = false, onExisting = "skip", existing = null, holidays = null } = {}) {
   assertFillable(cfg);
 
-  const skip = shouldSkip(cfg, dateStr);
-  if (skip && !force) return { dateStr, status: "skipped", reason: skip };
+  if (!force) {
+    if (!holidays && cfg.skipHolidays) holidays = await getHolidayMap(cfg, [yearOf(dateStr)]);
+    const skip = shouldSkip(cfg, dateStr, holidays);
+    if (skip) return { dateStr, status: "skipped", reason: skip };
+  }
 
   let replaced = 0;
   if (!force) {
@@ -651,10 +740,13 @@ export async function fillRange(cfg, fromStr, toStr, { force = false, onExisting
   assertFillable(cfg);
   const dates = eachDate(fromStr, toStr);
   const existing = force ? null : await getExisting(cfg, fromStr, toStr);
+  const holidays = !force && cfg.skipHolidays
+    ? await getHolidayMap(cfg, [...new Set([yearOf(fromStr), yearOf(toStr)])])
+    : null;
   const results = [];
   for (const dateStr of dates) {
     try {
-      results.push(await fillDay(cfg, dateStr, { force, onExisting, existing }));
+      results.push(await fillDay(cfg, dateStr, { force, onExisting, existing, holidays }));
     } catch (e) {
       results.push({ dateStr, status: "error", error: e.message });
     }

@@ -49,13 +49,16 @@ Clockodo Auto-Fill books your standard working day in Clockodo so you don't
 have to do it by hand.
 
 • One click — "Fill today" books your configured blocks.
-• Date range — catch up after vacation; weekends and opted-out days are skipped.
+• Date range — catch up after vacation; weekends, public holidays and opted-out days are skipped.
 • Automatic — runs every workday at the time you choose while Chrome is open,
   and catches up on the next launch if it was missed.
 • Flexible hours — one or more working blocks per day (gaps are breaks), in
   your own timezone, DST-safe.
 • Duplicate-safe — never books a day that already has working time.
 • Skip days — quick "Skip today" toggle plus a list of dates to never fill.
+• Public holidays — skipped automatically using the holiday calendar your
+  Clockodo admin assigned to you (your state or country). No setup, no
+  external service.
 • Sync & backup — settings follow you across your Chrome devices (API key only if you opt in), plus JSON export/import.
 • Activity log — see exactly what the extension booked, replaced or failed, per day or per range; CSV export.
 

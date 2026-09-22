@@ -99,7 +99,7 @@
   <div class="hero">
     <img src="../../assets/icons/icon48.png" alt="" />
     <div>
-      <h1>Clockodo Auto-Fill — Guide <span class="badge" data-version="prefix">v1.6.0</span></h1>
+      <h1>Clockodo Auto-Fill — Guide <span class="badge" data-version="prefix">v1.7.0</span></h1>
       <p>Fill your daily Clockodo times in one click, for a date range, or automatically every workday.</p>
       <p class="hero-links">
         <a href="https://github.com/mohasoori/clockodo-autofill" target="_blank" rel="noopener noreferrer">Source on GitHub</a> ·
@@ -126,9 +126,10 @@
 
   <!-- What's new -->
   <section class="card" id="whatsnew" style="margin-bottom:18px">
-    <h2 class="card-title" style="margin-bottom:8px">What's new in <span data-version>1.6.0</span></h2>
+    <h2 class="card-title" style="margin-bottom:8px">What's new in <span data-version>1.7.0</span></h2>
     <ul style="margin:0; padding-left:20px; font-size:13px; line-height:1.6">
       <li><strong>Confirmation dialogs</strong> redesigned (Replace, Clear log, sign-out) — themed, no more browser popups.</li>
+      <li><strong>Public holidays are skipped</strong> — read from your Clockodo holiday calendar (your federal state / country, set by your admin). No setup: Options → Schedule shows the calendar and the next holiday. Fails safe: if the calendar can't be loaded, nothing is booked.</li>
       <li><strong>Sign in/out clarity</strong> — Account shows Ready/Not set up per card; a single Log in button when signed out, Sign out + Delete login data once connected. Optional session-only API key.</li>
       <li><strong>Activity log</strong> — what the extension booked, replaced or failed, per day or per range, synced across your devices; CSV export.</li>
       <li><strong>Options in tabs</strong> — Account · Schedule · Activity · Sync &amp; updates · Help. Save writes all tabs; the last tab is remembered.</li>
@@ -174,7 +175,7 @@
         <rect x="22" y="88" width="26" height="26" rx="7" class="mock-accent"/>
         <circle cx="35" cy="101" r="7" fill="none" stroke="#fff" stroke-width="2"/>
         <text x="58" y="98" class="mock-txt">Clockodo Auto-Fill</text>
-        <text x="58" y="112" class="mock-muted"><tspan data-version>1.6.0</tspan> · Loaded from folder</text>
+        <text x="58" y="112" class="mock-muted"><tspan data-version>1.7.0</tspan> · Loaded from folder</text>
         <text x="22" y="145" class="mock-muted">Details   Remove</text>
         <rect x="248" y="130" width="28" height="12" rx="6" class="mock-accent"/>
         <circle cx="270" cy="136" r="5" fill="#fff"/>
@@ -341,6 +342,7 @@
       <ul>
         <li>Pick your <strong>Timezone</strong> below. All times are wall-clock in that zone and DST-aware.</li>
         <li>Keep <strong>Skip weekends</strong> on unless you actually work weekends.</li>
+        <li><strong>Skip public holidays</strong> (on by default) uses the holiday calendar your Clockodo admin assigned to you — e.g. <em>Sachsen-Anhalt</em> — including movable feasts like Easter Monday. The row shows the calendar, how many holidays this year and the next one. Half-day holidays count as workdays. If no calendar is assigned, ask your admin; the extension can't pick a state itself.</li>
       </ul>
     </div>
     <div class="figure">
@@ -531,7 +533,7 @@
     <ul style="margin:0; padding-left:20px; font-size:13px; line-height:1.7">
       <li><strong>Official API only.</strong> The extension talks to Clockodo exclusively through its documented public REST API (<code>https://my.clockodo.com/api</code>), the same one Clockodo's own integrations use. No scraping, no automation of the website, no hidden endpoints.</li>
       <li><strong>Your data stays with you.</strong> Your email, API key and settings are stored in the extension's storage inside <em>your</em> Chrome profile. There is no server behind this extension, no account, no analytics and no crash reporting. Settings can sync between your own devices through your Google account (Chrome Sync) — the API key <strong>only if you switch that on</strong>. Both switches: Options → Sync &amp; updates → Sync &amp; backup.</li>
-      <li><strong>Only one destination for your data.</strong> Every request carrying your credentials goes to <code>my.clockodo.com</code>, and only when you click Fill / Test / Load or the scheduled fill runs. The extension has no permission for any other website.</li>
+      <li><strong>Only one destination for your data.</strong> Every request carrying your credentials goes to <code>my.clockodo.com</code>, and only when you click Fill / Log in / Load or the scheduled fill runs. Besides booking, it only reads: your user record, customers, services, existing entries and your public-holiday calendar. The extension has no permission for any other website.</li>
       <li><strong>Optional update check.</strong> Once a day it downloads one public file (the project's <code>manifest.json</code> on GitHub) to see if a newer version exists. That request contains no personal data at all. Turn it off in Options → Sync &amp; updates → Updates if you prefer.</li>
       <li><strong>API key, not password.</strong> You never enter your Clockodo password. The personal API key can be regenerated in Clockodo at any time, which instantly invalidates the old one.</li>
       <li><strong>Sign out anytime.</strong> Options → Account → <em>Sign out</em> just disconnects (email/key stay for next time); <em>Delete login data</em> wipes the login and the activity log from this device.</li>

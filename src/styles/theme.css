@@ -94,6 +94,7 @@ a:hover { text-decoration: underline; }
 
 input[type="text"],
 input[type="password"],
+input[type="search"],
 input[type="time"],
 input[type="date"],
 select {
@@ -158,6 +159,7 @@ button.block { width: 100%; }
 .switch-row + .switch-row { border-top: 1px solid var(--border); }
 .switch-row .lbl { font-size: 13px; }
 .switch-row .sub { font-size: 11.5px; color: var(--text-muted); margin-top: 1px; }
+.switch-row .sub.bad { color: var(--danger); }
 .switch { position: relative; display: inline-block; width: 38px; height: 22px; flex: none; }
 .switch input { opacity: 0; width: 0; height: 0; position: absolute; }
 .switch .track {
