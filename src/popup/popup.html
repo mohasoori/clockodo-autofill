@@ -25,8 +25,6 @@
     #status {
       font-size: 11.5px;
       white-space: pre-wrap;
-      max-height: 110px;
-      overflow-y: auto;
       padding: 8px 10px;
       border-radius: 8px;
       background: var(--bg);
@@ -35,6 +33,27 @@
       display: none;
     }
     #status.show { display: block; }
+    #status.results { white-space: normal; padding: 0; overflow: hidden; }
+    .res-head { padding: 8px 10px; border-bottom: 1px solid var(--border); background: var(--card); }
+    .res-title { font-size: 12px; font-weight: 600; color: var(--text); }
+    .res-counts { display: flex; gap: 4px; flex-wrap: wrap; margin-top: 5px; }
+    .res-counts:empty { display: none; }
+    .pill { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 10.5px; font-weight: 600; white-space: nowrap; line-height: 1.5; }
+    .pill.created, .pill.replaced { background: var(--ok-soft); color: var(--ok); }
+    .pill.error { background: var(--danger-soft); color: var(--danger); }
+    .pill.exists, .pill.skipped { background: var(--card); color: var(--text-muted); border: 1px solid var(--border); }
+    .res-list { max-height: 168px; overflow-y: auto; }
+    .res-row {
+      display: grid; grid-template-columns: 1fr auto; align-items: center; column-gap: 8px; row-gap: 2px;
+      padding: 6px 10px; border-top: 1px solid var(--border); font-size: 11.5px;
+    }
+    .res-row:first-child { border-top: none; }
+    .res-date { font-variant-numeric: tabular-nums; font-weight: 600; white-space: nowrap; }
+    .res-row.quiet .res-date { font-weight: 500; color: var(--text-muted); }
+    .res-detail { grid-column: 1 / -1; color: var(--text-muted); font-size: 11px; line-height: 1.4; font-variant-numeric: tabular-nums; }
+    .res-detail:empty { display: none; }
+    .res-row .res-detail.times { color: var(--text); }
+    .res-row.error .res-detail { color: var(--danger); }
     .footer {
       display: flex; justify-content: space-between; align-items: center;
       font-size: 11.5px; color: var(--text-muted); padding: 0 2px;

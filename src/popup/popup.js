@@ -14,9 +14,70 @@ function send(msg) {
 function setStatus(text, kind = "") {
   const el = $("status");
   el.textContent = text;
-  el.classList.remove("ok", "bad");
+  el.classList.remove("ok", "bad", "results");
   el.classList.toggle("show", Boolean(text));
   if (kind) el.classList.add(kind);
+}
+
+// Structured fill results: a header with counts, then one compact row per day.
+const STATUS_LABEL = { created: "booked", replaced: "replaced", exists: "already filled", skipped: "skipped", error: "error" };
+// "Mon 14 Sep" — day-first, three-letter month regardless of the user's locale.
+function fmtDay(dateStr) {
+  const parts = new Intl.DateTimeFormat("en-US", { weekday: "short", day: "numeric", month: "short", timeZone: "UTC" })
+    .formatToParts(new Date(dateStr + "T12:00:00Z"));
+  const get = (t) => parts.find((p) => p.type === t)?.value || "";
+  return `${get("weekday")} ${get("day")} ${get("month")}`;
+}
+
+function el(tag, cls, text) {
+  const n = document.createElement(tag);
+  if (cls) n.className = cls;
+  if (text != null) n.textContent = text;
+  return n;
+}
+
+function resultRow(r) {
+  const quiet = r.status === "exists" || r.status === "skipped";
+  const row = el("div", `res-row ${r.status}${quiet ? " quiet" : ""}`);
+  row.append(el("span", "res-date", fmtDay(r.dateStr)));
+  const label = r.status === "replaced" && r.replaced
+    ? `replaced · ${r.replaced} removed`
+    : STATUS_LABEL[r.status] || r.status;
+  row.append(el("span", `pill ${r.status}`, label));
+
+  let detail = "";
+  let detailCls = "res-detail";
+  if (r.status === "created" || r.status === "replaced") {
+    detail = mode === "entry" ? blocksText(r.blocks) : (r.approved ? "created & approved" : "pending approval");
+    detailCls += " times";
+  } else if (r.status === "skipped") {
+    detail = r.reason || "";
+  } else if (r.status === "error") {
+    detail = r.error || "Unknown error";
+  }
+  row.append(el("div", detailCls, detail));
+  return row;
+}
+
+function showResults(results, title) {
+  const box = $("status");
+  box.replaceChildren();
+  box.className = "status-text show results";
+
+  const counts = {};
+  for (const r of results) counts[r.status] = (counts[r.status] || 0) + 1;
+  const head = el("div", "res-head");
+  head.append(el("span", "res-title", title));
+  const pills = el("span", "res-counts");
+  for (const s of ["created", "replaced", "error", "exists", "skipped"]) {
+    if (counts[s]) pills.append(el("span", `pill ${s}`, `${counts[s]} ${STATUS_LABEL[s]}`));
+  }
+  head.append(pills);
+  box.append(head);
+
+  const list = el("div", "res-list");
+  for (const r of results) list.append(resultRow(r));
+  box.append(list);
 }
 
 function setConnection(kind, label) {
@@ -25,32 +86,6 @@ function setConnection(kind, label) {
 }
 
 const blocksText = (blocks) => (blocks || []).map((b) => `${b.start}–${b.end}`).join(", ");
-
-function describe(result) {
-  switch (result.status) {
-    case "replaced":
-      return `${result.dateStr}: replaced (${result.replaced} old entr${result.replaced === 1 ? "y" : "ies"} removed) — ${blocksText(result.blocks)}`;
-    case "created":
-      if (mode === "entry") return `${result.dateStr}: booked ${blocksText(result.blocks)}`;
-      return result.approved
-        ? `${result.dateStr}: created & approved`
-        : `${result.dateStr}: created (pending approval${result.approveError ? " — " + result.approveError : ""})`;
-    case "exists":
-      return `${result.dateStr}: already filled`;
-    case "skipped":
-      return `${result.dateStr}: skipped (${result.reason})`;
-    case "error":
-      return `${result.dateStr}: error — ${result.error}`;
-    default:
-      return `${result.dateStr}: ${result.status}`;
-  }
-}
-
-function kindOf(results) {
-  if (results.some((r) => r.status === "error")) return "bad";
-  if (results.some((r) => r.status === "created" || r.status === "replaced")) return "ok";
-  return "";
-}
 
 // Returns the chosen existing-day policy, or null if the user cancelled the
 // destructive confirmation.
@@ -195,7 +230,7 @@ $("fillTodayBtn").addEventListener("click", async () => {
   const onExisting = await existingPolicy("(today)");
   if (!onExisting) return;
   const res = await run($("fillTodayBtn"), "Filling today…", () => send({ action: "fillToday", onExisting }));
-  if (res) setStatus(describe(res.result), kindOf([res.result]));
+  if (res) showResults([res.result], "Today");
 });
 
 $("fillRangeBtn").addEventListener("click", async () => {
@@ -206,18 +241,11 @@ $("fillRangeBtn").addEventListener("click", async () => {
   const onExisting = await existingPolicy(`between ${from} and ${to}`);
   if (!onExisting) return;
   const res = await run($("fillRangeBtn"), `Filling ${from} → ${to}…`, () => send({ action: "fillRange", from, to, onExisting }));
-  if (res) setStatus(`${summarize(res.results)}\n${res.results.map(describe).join("\n")}`, kindOf(res.results));
+  if (res) {
+    const n = res.results.length;
+    showResults(res.results, `${fmtDay(from)} → ${fmtDay(to)} · ${n} day${n === 1 ? "" : "s"}`);
+  }
 });
-
-function summarize(results) {
-  const counts = {};
-  for (const r of results) counts[r.status] = (counts[r.status] || 0) + 1;
-  const parts = Object.entries(counts).map(([status, n]) => `${n} ${status}`);
-  const first = results[0]?.dateStr;
-  const last = results[results.length - 1]?.dateStr;
-  const span = first && last && first !== last ? `${first} → ${last}, ` : "";
-  return `${span}${results.length} day${results.length === 1 ? "" : "s"}: ${parts.join(" · ")}`;
-}
 
 $("onExisting").addEventListener("change", () => {
   $("onExisting").classList.toggle("danger", $("onExisting").value === "replace");

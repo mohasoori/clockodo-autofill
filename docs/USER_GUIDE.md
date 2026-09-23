@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.7.1 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.7.2 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Options is organised in five tabs: **Account** (your Clockodo login and what
 to book), **Schedule** (working hours, auto-fill, days to never fill),
@@ -178,7 +178,7 @@ whole log.
 | Control            | What it does                                                    |
 |--------------------|-----------------------------------------------------------------|
 | **Fill today**     | Books today. Shows *created*, *already filled*, or *skipped*.   |
-| **Fill range**     | Books every workday between From and To (max 92 days). Use **This week / Last week / This month** to set both dates at once. The status shows the exact range being booked, then a summary (e.g. `2026-09-14 → 2026-09-20, 7 days: 5 replaced · 2 skipped`) and one line per day. |
+| **Fill range**     | Books every workday between From and To (max 92 days). Use **This week / Last week / This month** to set both dates at once. The status shows the exact range being booked, then a result card: a header with the range and count pills (booked / replaced / error / already filled / skipped) and one row per day with the booked times or the skip reason. |
 | **If a day already has any time entry** | *Skip that day* (default) never touches existing bookings. *Replace* deletes all entries on those days and books your blocks — confirmation required; use it to clean up duplicates. |
 | **Auto-fill daily**| Enables/disables the schedule; shows the next run and the result of the last automatic run (✓ booked/already filled, – skipped, ✗ error). |
 | **Skip today**     | Marks today as a day that must never be filled.                 |

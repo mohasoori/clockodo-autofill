@@ -4,6 +4,14 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.7.2] — 2026-09-23
+
+### Changed
+- **Popup results redesigned.** Fill today / Fill range now show a header
+  with the range and count pills (booked, replaced, error, already filled,
+  skipped) and one compact row per day: date, status pill, and the booked
+  times or the reason underneath — instead of a wall of green text.
+
 ## [1.7.1] — 2026-09-22
 
 ### Changed
