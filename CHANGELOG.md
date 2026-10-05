@@ -7,35 +7,38 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 ## [1.9.0] — 2026-10-05
 
 ### Added
-- **Report tab.** Options → *Report* shows the hours booked in Clockodo per
-  **week, month or year** (switch and step with ‹ ›): hours worked (overlaps
-  counted once, with a warning and a *Review* link when time was booked
-  twice), days worked with the weekdays that have no entry, average per day,
-  the change versus the previous period, a bar chart (a red cap marks double-counted time)
-  and a breakdown table (days, ISO weeks or months; click a bar or row to
-  drill in). *Covered* counts overlapping entries once. The
-  daily check keeps it fresh; *Refresh* re-reads Clockodo on demand. If the
-  extension was updated without a reload, the tab says so. The duplicate check lives on the same
-  tab.
-- **Remove double bookings.** After a duplicate scan the double-booked days
-  are listed (scrollable, with the number of extra copies). Tick days or
-  *Select all* and press *Remove selected*, or use *Remove* on a single row.
-  Each affected day keeps its oldest entry; the rest are deleted after a
-  confirmation. Partly overlapping entries are listed but never deleted.
+- **Report tab.** Options → *Report* shows your hours per **week, month or
+  year** (switch and step with ‹ ›): *Hours worked* (overlaps counted once,
+  with a warning and a *Review* link when time was booked twice), *Days
+  worked* with the number of weekdays that have no entry, *Average per day*,
+  the change versus the previous period, a bar chart (a red cap marks time
+  booked twice) and a breakdown table (days, ISO weeks or months; click a bar
+  or row to drill in). It reads all your Clockodo time entries, not only what
+  this extension created. *Refresh* re-reads Clockodo; if the extension was
+  updated without a reload, the tab says so.
+- **Duplicate check, per conflict.** Every collision is listed with its times
+  and type: *exact duplicate* (identical start and end), *contained* (one
+  entry inside another) or *overlap* (entries crossing). A day can show
+  several, e.g. only the morning duplicated, and shows its booked time versus
+  the time actually covered. The tab is marked with a dot when something is
+  found.
+- **Remove double bookings.** Exact duplicates are listed in a scrollable
+  box. Tick days or *Select all* and press *Remove selected*, or use *Remove*
+  on a single row. Each day keeps its oldest entry; the identical copies are
+  deleted after a confirmation. *Contained* and *overlap* conflicts are never
+  deleted automatically.
+- **Daily whole-year check.** After the auto-fill the whole current year is
+  scanned; a notification with the affected dates appears only when a new day
+  turns up (no daily repeats). The last result is shown in the Report tab and
+  is removed with *Delete login data*.
 
 ## [1.8.0] — 2026-10-05
 
 ### Added
-- **Duplicate check.** Options → *Report* (marked with a dot when the last check found something) scans every day
-  of a chosen year and lists every conflict with its times and type: *exact
-  duplicate* (identical start and end), *contained* (one entry inside another)
-  or *overlap* (entries crossing). A day can show several, e.g. only the
-  morning duplicated. The report also shows the total hours booked in the
-  scanned year, how much of that is double-counted, and per conflicting day
-  the booked time versus the time actually covered. Read-only. Once a day, after the auto-fill, the
-  whole current year is checked the same way; a notification with the affected
-  dates appears when a new day turns up (no daily repeats), and the last result
-  is shown in Options.
+- **Duplicate check.** Options → Activity → *Duplicate check* scans every day
+  of a chosen year and lists days with identical (double-booked) or partly
+  overlapping time entries. Read-only. After each auto-fill the current month
+  is checked the same way and a notification appears if anything is found.
 
 ### Fixed
 - **Double booking when two devices fill at the same time.** The "already
