@@ -18,9 +18,10 @@ import {
   exportConfig,
   importConfig,
   getHolidayCalendar,
+  findDuplicateDays,
 } from "../lib/clockodo-api.js";
 import { fetchLatestVersion, updateCheckConfigured, compareVersions } from "../lib/updates.js";
-import { logActivity, logRangeActivity, clearActivity } from "../lib/activity.js";
+import { logActivity, logRangeActivity, clearActivity, getDevice } from "../lib/activity.js";
 
 const ALARM_NAME = "clockodo-daily-fill";
 const UPDATE_ALARM_NAME = "clockodo-update-check";
@@ -30,20 +31,32 @@ const MAX_RANGE_DAYS = 92;
 // Alarm scheduling — one-shot, recomputed after every fire so the wall-clock
 // time in cfg.timezone survives DST changes (a fixed 24 h period would drift).
 // ---------------------------------------------------------------------------
-function scheduledTodayMs(cfg) {
-  return Date.parse(wallclockToUTC(todayStr(cfg.timezone), cfg.autoTime, cfg.timezone));
+// Each device fires a stable, device-specific number of seconds after the
+// configured time, so two browsers on the same account rarely book at the same
+// moment (the second one then simply finds the day already filled).
+const JITTER_WINDOW_S = 600;
+
+async function deviceJitterMs() {
+  const { id } = await getDevice();
+  let h = 0;
+  for (const ch of id) h = (h * 31 + ch.charCodeAt(0)) >>> 0;
+  return (h % JITTER_WINDOW_S) * 1000;
 }
 
-function nextFireTime(cfg) {
-  const today = scheduledTodayMs(cfg);
+function scheduledTodayMs(cfg, jitterMs) {
+  return Date.parse(wallclockToUTC(todayStr(cfg.timezone), cfg.autoTime, cfg.timezone)) + jitterMs;
+}
+
+function nextFireTime(cfg, jitterMs) {
+  const today = scheduledTodayMs(cfg, jitterMs);
   if (today > Date.now()) return today;
-  return Date.parse(wallclockToUTC(addDays(todayStr(cfg.timezone), 1), cfg.autoTime, cfg.timezone));
+  return Date.parse(wallclockToUTC(addDays(todayStr(cfg.timezone), 1), cfg.autoTime, cfg.timezone)) + jitterMs;
 }
 
 async function rescheduleAlarm(cfg) {
   await chrome.alarms.clear(ALARM_NAME);
   if (!cfg.autoDaily) return null;
-  const when = nextFireTime(cfg);
+  const when = nextFireTime(cfg, await deviceJitterMs());
   await chrome.alarms.create(ALARM_NAME, { when });
   return when;
 }
@@ -53,7 +66,7 @@ async function rescheduleAlarm(cfg) {
 // hasn't been handled successfully yet, run once now.
 async function catchUpIfMissed(cfg) {
   if (!cfg.autoDaily || !cfg.usersId) return;
-  if (Date.now() < scheduledTodayMs(cfg)) return;
+  if (Date.now() < scheduledTodayMs(cfg, await deviceJitterMs())) return;
   const { lastAutoRun } = await chrome.storage.local.get("lastAutoRun");
   const doneToday =
     lastAutoRun &&
@@ -94,6 +107,26 @@ async function doAutoFill(cfg) {
     await notify("Clockodo auto-fill failed", result.error || "Unknown error");
   }
   // "skipped" / "exists" → silent, nothing to report.
+
+  if (cfg.mode === "entry" && result.status !== "error") await warnAboutDuplicates(cfg, dateStr);
+}
+
+// After each auto-fill, look at the current month and raise an alert if any
+// day holds duplicate bookings. Silent when everything is clean or the check fails.
+async function warnAboutDuplicates(cfg, dateStr) {
+  try {
+    const report = await findDuplicateDays(cfg, `${dateStr.slice(0, 8)}01`, dateStr);
+    await chrome.storage.local.set({ duplicateAlert: { ...report, at: Date.now() } });
+    const n = report.exact.length + report.overlap.length;
+    if (n) {
+      await notify(
+        "Clockodo: duplicate bookings found",
+        `${n} day(s) this month have overlapping entries: ${[...report.exact, ...report.overlap].sort().join(", ")}. Open Options → Activity to scan.`
+      );
+    }
+  } catch (e) {
+    console.warn("[Clockodo Auto-Fill] duplicate check failed:", e.message);
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -305,6 +338,18 @@ async function handle(msg) {
       await rescheduleAlarm(next);
       await scheduleUpdateCheck(next);
       return { ok: true };
+    }
+    case "scanDuplicates": {
+      const year = Number(msg.year);
+      if (!Number.isInteger(year) || year < 2000 || year > 2100) throw new Error("Invalid year.");
+      const today = todayStr(cfg.timezone);
+      const to = `${year}-12-31` > today ? today : `${year}-12-31`;
+      if (`${year}-01-01` > to) throw new Error("That year has not started yet.");
+      const report = await findDuplicateDays(cfg, `${year}-01-01`, to);
+      await chrome.storage.local.set({ duplicateAlert: { ...report, at: Date.now() } });
+      const n = report.exact.length + report.overlap.length;
+      if (n) await notify("Clockodo: duplicate bookings found", `${year}: ${n} day(s) with overlapping entries.`);
+      return { ok: true, report };
     }
     case "holidayCalendar":
       return { ok: true, calendar: await getHolidayCalendar(cfg) };

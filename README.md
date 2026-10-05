@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill
 
-**Version 1.7.2** · [What's new](CHANGELOG.md) · MIT ·
+**Version 1.8.0** · [What's new](CHANGELOG.md) · MIT ·
 [**Install from the Chrome Web Store**](https://chromewebstore.google.com/detail/igjjblageocnhjonnhbgkldoojdijppp)
 
 A small Chrome extension (Manifest V3) that fills your daily working times in
@@ -25,6 +25,9 @@ with their **own** personal Clockodo API key, stored only in their browser.
   Sync; API key only if you opt in), plus JSON export/import.
 - **Activity log** — what the extension booked, replaced or failed, per day or
   per range, synced across your devices, CSV export.
+- **Duplicate check** — scan a whole year for overlapping entries; the current
+  month is checked after every auto-fill. Concurrent fills from several
+  devices converge on a single booking.
 - **Account controls** — clear setup status per section, Sign out vs Delete
   login data, optional session-only API key.
 - **Configurable hours** — fixed blocks (gaps = breaks), or *random start

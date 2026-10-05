@@ -23,7 +23,7 @@ export const CHANGE_STATUSES = ["created", "replaced", "error"];
 const newId = () => `${Date.now().toString(36)}${Math.random().toString(36).slice(2, 6)}`;
 const blocksText = (blocks) => (blocks || []).map((b) => `${b.start}-${b.end}`).join(",");
 
-async function getDevice() {
+export async function getDevice() {
   const { [DEVICE_KEY]: dev } = await chrome.storage.local.get(DEVICE_KEY);
   if (dev) return dev;
   const id = Math.random().toString(36).slice(2, 8);

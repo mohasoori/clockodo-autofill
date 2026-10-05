@@ -560,6 +560,19 @@
         <span id="deviceLabelResult" class="status-text"></span>
       </div>
     </section>
+    <section class="card">
+      <h2 class="card-title">
+        <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></span>
+        Duplicate check
+      </h2>
+      <div class="hint" style="margin-top:0">Scans every day of a year in Clockodo for overlapping time entries and lists the affected days. Read-only: nothing is changed or deleted. After each auto-fill the current month is checked the same way and you get a notification if something is found.</div>
+      <div class="action-row" style="margin-top:10px">
+        <select id="dupYear" aria-label="Year" style="width:auto"></select>
+        <button class="small" id="dupScanBtn">Scan year</button>
+        <span id="dupResult" class="status-text"></span>
+      </div>
+      <div id="dupDays" class="hint"></div>
+    </section>
     </div>
 
     <div class="tab-panel" data-tab="system">

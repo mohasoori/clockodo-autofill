@@ -495,6 +495,53 @@ export async function getExistingEntries(cfg, fromStr, toStr) {
   }
 }
 
+// Raw entries of [fromStr, toStr] (local dates, inclusive), all pages.
+async function getRawEntries(cfg, fromStr, toStr) {
+  const since = wallclockToUTC(fromStr, "00:00", cfg.timezone);
+  const until = wallclockToUTC(toStr, "23:59", cfg.timezone);
+  const path = `${EP.entries}?time_since=${encodeURIComponent(since)}&time_until=${encodeURIComponent(until)}` +
+    `&filter[users_id]=${encodeURIComponent(cfg.usersId)}`;
+  const all = [];
+  for (let page = 1; ; page++) {
+    const data = await request(cfg, "GET", `${path}&page=${page}`);
+    if (!Array.isArray(data.entries)) throw new Error("Unexpected response from entries: no entries list.");
+    all.push(...data.entries);
+    const pages = data.paging && data.paging.count_pages;
+    if (!pages || page >= pages) return all;
+  }
+}
+
+const getDayEntries = (cfg, dateStr) => getRawEntries(cfg, dateStr, dateStr);
+
+// Days in [fromStr, toStr] on which time entries overlap each other.
+// exact = identical start and end (a double booking); overlap = partial overlap.
+// Entry mode only; running entries (no end yet) are ignored.
+export async function findDuplicateDays(cfg, fromStr, toStr) {
+  if (cfg.mode !== "entry") throw new Error("The duplicate check needs time-entry mode.");
+  const byDay = new Map();
+  for (const e of await getRawEntries(cfg, fromStr, toStr)) {
+    if (!e.time_since || !e.time_until) continue;
+    const day = localDateOf(e.time_since, cfg.timezone);
+    if (!byDay.has(day)) byDay.set(day, []);
+    byDay.get(day).push({ s: Date.parse(e.time_since), u: Date.parse(e.time_until) });
+  }
+  const exact = [];
+  const overlap = [];
+  for (const [day, list] of [...byDay].sort(([a], [b]) => (a < b ? -1 : 1))) {
+    list.sort((a, b) => a.s - b.s || a.u - b.u);
+    let isExact = false;
+    let isOverlap = false;
+    for (let i = 0; i < list.length; i++) {
+      for (let j = i + 1; j < list.length && list[j].s < list[i].u; j++) {
+        if (list[j].s === list[i].s && list[j].u === list[i].u) isExact = true;
+        else isOverlap = true;
+      }
+    }
+    if (isExact) exact.push(day); else if (isOverlap) overlap.push(day);
+  }
+  return { from: fromStr, to: toStr, exact, overlap };
+}
+
 // Worktime mode: dates in [fromStr, toStr] that already have working time.
 async function getFilledWorkTimeDays(cfg, fromStr, toStr) {
   // workTimes takes plain calendar dates (YYYY-MM-DD), not timestamps.
@@ -722,7 +769,42 @@ async function fillDayAsEntries(cfg, dateStr, blocks) {
     }
     throw e;
   }
-  return { dateStr, status: "created", ids };
+  const kept = await dropLosingDuplicates(cfg, dateStr, ids);
+  if (!kept.length) return { dateStr, status: "exists" }; // a concurrent run booked first; ours was withdrawn
+  return kept.length === ids.length
+    ? { dateStr, status: "created", ids }
+    : { dateStr, status: "created", ids: kept, dedupedRace: ids.length - kept.length };
+}
+
+// The existence check and the inserts are not atomic: another device/profile or
+// a manual fill can book the same day in between. After inserting, re-read the
+// day; where one of our entries has an identical twin (same start/end) with a
+// lower id, ours loses and is deleted. The other run applies the same rule, so
+// exactly one set survives no matter who finishes first.
+const RACE_SETTLE_MS = 1500;
+
+async function dropLosingDuplicates(cfg, dateStr, ids) {
+  await new Promise((r) => setTimeout(r, RACE_SETTLE_MS));
+  const mine = new Set(ids.map(String));
+  let entries;
+  try {
+    entries = await getDayEntries(cfg, dateStr);
+  } catch {
+    return ids; // verification is best-effort; the booking itself succeeded
+  }
+  const slot = (e) => `${Date.parse(e.time_since)}|${Date.parse(e.time_until)}`;
+  const lowestBySlot = new Map();
+  for (const e of entries) {
+    const k = slot(e);
+    if (!lowestBySlot.has(k) || e.id < lowestBySlot.get(k)) lowestBySlot.set(k, e.id);
+  }
+  const losers = entries.filter((e) => mine.has(String(e.id)) && lowestBySlot.get(slot(e)) < e.id);
+  if (!losers.length) return ids;
+  for (const e of losers) {
+    try { await request(cfg, "DELETE", EP.entry(e.id)); } catch { /* the other run may have removed it already */ }
+  }
+  const gone = new Set(losers.map((e) => String(e.id)));
+  return ids.filter((id) => !gone.has(String(id)));
 }
 
 async function rollbackEntries(cfg, ids) {

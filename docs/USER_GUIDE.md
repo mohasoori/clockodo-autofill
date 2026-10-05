@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.7.2 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.8.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Options is organised in five tabs: **Account** (your Clockodo login and what
 to book), **Schedule** (working hours, auto-fill, days to never fill),
@@ -167,6 +167,25 @@ popup footer (**Activity**).
 - Errors are collapsed behind a **details** toggle, closed by default.
 - **Export CSV** (one row per affected day; opens cleanly in Excel),
   **Clear log** (all devices), and a name for this device.
+
+### Duplicate check
+
+Below the log, **Duplicate check** scans every day of the selected year in
+Clockodo and lists days whose time entries overlap: *double-booked*
+(identical start and end) and *partly overlapping*. It only reads — nothing is
+changed. Use Clockodo (or **Replace** when filling) to clean up the days it
+names. Time-entry mode only.
+
+After every auto-fill the current month is checked the same way; if anything
+is found you get a notification.
+
+### Several devices
+
+If the extension runs in more than one browser on the same account, each
+device fires at its own fixed offset (up to 10 minutes) after the configured
+auto-fill time, so they rarely collide. If two still book the same day at the
+same moment, the device whose entries have the higher ids removes its copy
+right after booking, so exactly one set remains.
 
 Only the extension's own actions are logged; changes made directly in
 Clockodo are not. The last 150 entries sync between your devices, up to

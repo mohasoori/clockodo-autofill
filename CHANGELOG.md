@@ -4,6 +4,23 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.8.0] — 2026-10-05
+
+### Added
+- **Duplicate check.** Options → Activity → *Duplicate check* scans every day
+  of a chosen year and lists days with identical (double-booked) or partly
+  overlapping time entries. Read-only. After each auto-fill the current month
+  is checked the same way and a notification appears if anything is found.
+
+### Fixed
+- **Double booking when two devices fill at the same time.** The "already
+  filled?" check and the booking are not atomic, so two browsers on one
+  account could both book the same day. Two safeguards now apply:
+  each device fires at a stable per-device offset (0–10 minutes) after the
+  configured auto-fill time, and after booking, the day is re-read — if an
+  identical entry with a lower id exists, this device deletes its own copy.
+  Concurrent runs therefore converge on exactly one set of entries.
+
 ## [1.7.2] — 2026-09-23
 
 ### Changed

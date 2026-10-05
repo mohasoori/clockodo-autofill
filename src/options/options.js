@@ -884,6 +884,48 @@ async function loadActivity() {
   renderActivity();
 }
 
+function initDupYears() {
+  const sel = $("dupYear");
+  const now = new Date().getFullYear();
+  for (let y = now; y >= now - 4; y--) sel.append(new Option(String(y), String(y)));
+}
+initDupYears();
+
+$("dupScanBtn").addEventListener("click", async () => {
+  const btn = $("dupScanBtn");
+  const out = $("dupResult");
+  const list = $("dupDays");
+  btn.disabled = true;
+  out.className = "status-text";
+  out.textContent = "Scanning…";
+  list.replaceChildren();
+  try {
+    const res = await chrome.runtime.sendMessage({ action: "scanDuplicates", year: $("dupYear").value });
+    if (!res || res.error) throw new Error(res?.error || "No response from the extension.");
+    const { exact, overlap } = res.report;
+    if (!exact.length && !overlap.length) {
+      out.className = "status-text ok";
+      out.textContent = `No duplicates in ${$("dupYear").value}.`;
+      return;
+    }
+    out.className = "status-text bad";
+    out.textContent = `${exact.length + overlap.length} day(s) with overlapping entries.`;
+    const line = (label, days) => {
+      if (!days.length) return;
+      const p = document.createElement("div");
+      p.textContent = `${label} (${days.length}): ${days.map(fmtDay).join(" · ")}`;
+      list.append(p);
+    };
+    line("Double-booked (identical times)", exact);
+    line("Partly overlapping", overlap);
+  } catch (e) {
+    out.className = "status-text bad";
+    out.textContent = e.message;
+  } finally {
+    btn.disabled = false;
+  }
+});
+
 $("activityMonth").addEventListener("change", renderActivity);
 $("activityErrorsOnly").addEventListener("change", renderActivity);
 
