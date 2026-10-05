@@ -20,7 +20,9 @@ All notable changes to Clockodo Auto-Fill. Versions follow
   of a chosen year and lists every conflict with its times and type: *exact
   duplicate* (identical start and end), *contained* (one entry inside another)
   or *overlap* (entries crossing). A day can show several, e.g. only the
-  morning duplicated. Read-only. Once a day, after the auto-fill, the
+  morning duplicated. The report also shows the total hours booked in the
+  scanned year, how much of that is double-counted, and per conflicting day
+  the booked time versus the time actually covered. Read-only. Once a day, after the auto-fill, the
   whole current year is checked the same way; a notification with the affected
   dates appears when a new day turns up (no daily repeats), and the last result
   is shown in Options.

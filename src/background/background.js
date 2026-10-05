@@ -262,7 +262,7 @@ async function handle(msg) {
     case "deleteLoginData": {
       // Hard: credentials and account-bound data go; hours, schedule and preferences stay.
       const next = await saveConfig({ apiUser: "", apiKey: "", usersId: null, userName: "", customersId: null, servicesId: null, autoDaily: false });
-      await chrome.storage.local.remove(["pickLists", "lastAutoRun", "holidays"]);
+      await chrome.storage.local.remove(["pickLists", "lastAutoRun", "holidays", "duplicateAlert"]);
       await clearActivity(); // the log is tied to this Clockodo account; it leaves with the login data
       await rescheduleAlarm(next);
       return { ok: true };

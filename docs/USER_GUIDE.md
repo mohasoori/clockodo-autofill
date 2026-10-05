@@ -179,7 +179,9 @@ conflict with its times and type:
 - **Overlap** — two entries cross each other.
 
 A day can have several, so a day where only the morning is duplicated shows
-just that block. Scanning only reads.
+just that block. Above the list you see the **total hours booked** in the
+scanned year and how much of it is double-counted; each listed day shows its
+booked time and the time it actually covers. Scanning only reads.
 
 The days are listed in a scrollable box. Tick the days you want (or **Select all**) and press **Remove
 selected**, or use **Remove** on a single row. After a confirmation, each

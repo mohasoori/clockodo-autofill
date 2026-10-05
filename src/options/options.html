@@ -113,6 +113,7 @@
     .dup-row input[type=checkbox] { margin-top: 2px; }
     .dup-row .body { flex: 1; min-width: 0; }
     .dup-row .day { font-weight: 600; }
+    .dup-row .hours { font-weight: 400; color: var(--text-muted); }
     .dup-row .conflict { margin-top: 3px; font-variant-numeric: tabular-nums; }
     .dup-row .extra { margin-top: 3px; color: var(--text-muted); font-size: 12px; }
     .dup-row .chip-type { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--bg); color: var(--text-muted); }
@@ -587,6 +588,7 @@
         <button class="small" id="dupScanBtn">Scan year</button>
         <span id="dupResult" class="status-text"></span>
       </div>
+      <div id="dupTotals" class="hint" style="margin-top:8px"></div>
       <div id="dupPanel" class="dup-panel" hidden>
         <div class="dup-head">
           <label class="inline-check"><input type="checkbox" id="dupAll" /> <span id="dupAllText">Select all</span></label>

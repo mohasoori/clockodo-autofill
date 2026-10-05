@@ -914,6 +914,18 @@ const DUP_TYPE = {
 };
 const DUP_MAX_LINES = 4;
 
+function fmtHM(ms) {
+  const m = Math.round(ms / 60000);
+  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min`;
+}
+
+function dupTotalsText(t) {
+  if (!t) return "";
+  const diff = t.bookedMs - t.effectiveMs;
+  return `Booked: ${fmtHM(t.bookedMs)} over ${t.workDays} day(s)` +
+    (diff > 0 ? ` — ${fmtHM(diff)} of that is double-counted, so ${fmtHM(t.effectiveMs)} actually covered.` : ".");
+}
+
 function showDupReport(report, year) {
   const out = $("dupResult");
   // Reports stored by older versions have no per-conflict details.
@@ -926,6 +938,7 @@ function showDupReport(report, year) {
   list.replaceChildren();
   $("dupDays").replaceChildren();
   $("dupPanel").hidden = !days.length;
+  $("dupTotals").textContent = dupTotalsText(report.totals);
   if (!days.length) {
     out.className = "status-text ok";
     out.textContent = `No duplicates in ${year}.`;
@@ -944,7 +957,16 @@ function showDupReport(report, year) {
     cb.addEventListener("change", syncDupControls);
     const body = document.createElement("div");
     body.className = "body";
-    body.append(Object.assign(document.createElement("div"), { className: "day", textContent: fmtDay(d.day) }));
+    const head = document.createElement("div");
+    head.className = "day";
+    head.textContent = fmtDay(d.day);
+    if (d.bookedMs != null) {
+      head.append(Object.assign(document.createElement("span"), {
+        className: "hours",
+        textContent: d.bookedMs === d.effectiveMs ? ` · ${fmtHM(d.bookedMs)}` : ` · booked ${fmtHM(d.bookedMs)}, covers ${fmtHM(d.effectiveMs)}`,
+      }));
+    }
+    body.append(head);
     for (const c of d.conflicts.slice(0, DUP_MAX_LINES)) {
       const line = document.createElement("div");
       line.className = "conflict";

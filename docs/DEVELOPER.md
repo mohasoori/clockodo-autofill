@@ -61,6 +61,15 @@ in `chrome.notifications` `iconUrl` are relative to the extension root.
   startup, install and a persisted alarm cannot double-book; it persists the
   result to `chrome.storage.local.lastAutoRun` and notifies only on
   `created`/`error`.
+  **Several devices:** each device fires `deviceJitterMs()` (0–599 s, derived
+  from its stable device id) after `autoTime`, so browsers sharing an account
+  rarely collide. `fillDayAsEntries` additionally re-reads the day after
+  booking (`dropLosingDuplicates`): an own entry with an identical-slot twin of
+  a lower id is deleted, so concurrent runs converge on one set.
+  **Duplicate watch:** after each auto-fill `warnAboutDuplicates` scans the
+  current year with `findDuplicateDays`, stores the result in
+  `chrome.storage.local.duplicateAlert` and notifies only for days not yet in
+  its `announced` list.
 - **Messages** (`{ action, ...payload }` → `{ ok, ... }` or `{ error }`):
 
   | action               | payload             | returns                          |
@@ -75,6 +84,9 @@ in `chrome.notifications` `iconUrl` are relative to the extension root.
   | `setAutoDaily`       | `enabled`           | `nextRun` (ms epoch)             |
   | `rescheduleAlarm`    | —                   | `nextRun`                        |
   | `getStatus`          | —                   | `nextRun`, `lastAutoRun`         |
+  | `scanDuplicates`     | `year`              | `report` `{days[{day,extra,conflicts[{type,label,other?,copies?}],bookedMs,effectiveMs}], exact[], overlap[], extras{}, totals{bookedMs,effectiveMs,workDays}}`; `type` is `exact`\|`contained`\|`overlap` |
+  | `removeDuplicates`   | `days[]` (≤ 400 `YYYY-MM-DD`) | `removed`, fresh `report` — deletes only exact copies, keeps the lowest id |
+  | `getDuplicateAlert`  | —                   | `report` of the last scan or `null` |
   | `holidayCalendar`    | —                   | `calendar` `{assigned, groupId, groupName, year, count, next}` |
   | `listCustomers`      | —                   | `customers[{id,name}]`           |
   | `listServices`       | —                   | `services[{id,name}]`            |

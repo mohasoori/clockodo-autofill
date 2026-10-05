@@ -524,7 +524,8 @@ function localTimeOf(ms, timeZone) {
 //   overlap   two entries cross each other
 // Entry mode only; running entries (no end yet) are ignored.
 // Returns { from, to, days:[{day, extra, conflicts:[{type, label, other?, copies?}]}],
-//           exact:[days with extra>0], overlap:[days with only non-exact conflicts], extras:{day:n} }
+//           exact:[days with extra>0], overlap:[days with only non-exact conflicts], extras:{day:n},
+//           totals:{bookedMs, effectiveMs, workDays} }
 export async function findDuplicateDays(cfg, fromStr, toStr) {
   if (cfg.mode !== "entry") throw new Error("The duplicate check needs time-entry mode.");
   const byDay = new Map();
@@ -536,7 +537,19 @@ export async function findDuplicateDays(cfg, fromStr, toStr) {
   }
   const range = (x) => `${localTimeOf(x.s, cfg.timezone)}–${localTimeOf(x.u, cfg.timezone)}`;
   const days = [];
+  const totals = { bookedMs: 0, effectiveMs: 0, workDays: byDay.size };
   for (const [day, list] of [...byDay].sort(([a], [b]) => (a < b ? -1 : 1))) {
+    // booked = every entry's duration; effective = time actually covered (overlaps counted once)
+    const bookedMs = list.reduce((n, x) => n + (x.u - x.s), 0);
+    let effectiveMs = 0;
+    let reach = -Infinity;
+    for (const x of [...list].sort((a, b) => a.s - b.s)) {
+      const from = Math.max(x.s, reach);
+      if (x.u > from) effectiveMs += x.u - from;
+      reach = Math.max(reach, x.u);
+    }
+    totals.bookedMs += bookedMs;
+    totals.effectiveMs += effectiveMs;
     const slots = new Map();
     for (const x of list) {
       const k = `${x.s}|${x.u}`;
@@ -560,12 +573,12 @@ export async function findDuplicateDays(cfg, fromStr, toStr) {
         conflicts.push({ type: inside ? "contained" : "overlap", label: range(a), other: range(c) });
       }
     }
-    if (conflicts.length) days.push({ day, extra, conflicts });
+    if (conflicts.length) days.push({ day, extra, conflicts, bookedMs, effectiveMs });
   }
   const exact = days.filter((d) => d.extra > 0).map((d) => d.day);
   const overlap = days.filter((d) => d.extra === 0).map((d) => d.day);
   const extras = Object.fromEntries(days.filter((d) => d.extra > 0).map((d) => [d.day, d.extra]));
-  return { from: fromStr, to: toStr, days, exact, overlap, extras };
+  return { from: fromStr, to: toStr, days, exact, overlap, extras, totals };
 }
 
 // Deletes exact duplicates (identical start and end) on the given local dates,
