@@ -174,11 +174,12 @@ Below the log, **Duplicate check** scans every day of the selected year in
 Clockodo and lists days whose time entries overlap: *double-booked*
 (identical start and end) and *partly overlapping*. Scanning only reads.
 
-When double-booked days are found, **Remove double bookings** appears. After
-a confirmation it deletes, for the selected year, every entry that has an
-identical twin (same day, start and end), keeping the oldest one of each
-group. Partly overlapping entries are never deleted automatically — fix those
-in Clockodo. Time-entry mode only.
+Double-booked days are listed in a scrollable box with the number of extra
+copies. Tick the days you want (or **Select all**) and press **Remove
+selected**, or use **Remove** on a single row. After a confirmation, each
+affected day keeps its oldest entry and the identical copies are deleted.
+Partly overlapping entries are never deleted automatically — fix those in
+Clockodo. Time-entry mode only.
 
 Once a day, after the auto-fill, the whole current year is checked the same
 way. You get a notification (with the affected dates) when a day shows up that

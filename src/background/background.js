@@ -360,12 +360,14 @@ async function handle(msg) {
       return { ok: true, report: duplicateAlert || null };
     }
     case "removeDuplicates": {
-      const year = Number(msg.year);
-      if (!Number.isInteger(year) || year < 2000 || year > 2100) throw new Error("Invalid year.");
+      const days = msg.days;
+      if (!Array.isArray(days) || !days.length || days.length > 400) throw new Error("No days selected.");
+      for (const d of days) assertDate(d, "Day");
+      const removed = await removeExactDuplicates(cfg, days);
+      const from = `${days.slice().sort()[0].slice(0, 4)}-01-01`;
       const today = todayStr(cfg.timezone);
-      const to = `${year}-12-31` > today ? today : `${year}-12-31`;
-      const removed = await removeExactDuplicates(cfg, `${year}-01-01`, to);
-      const report = await findDuplicateDays(cfg, `${year}-01-01`, to);
+      const to = `${from.slice(0, 4)}-12-31` > today ? today : `${from.slice(0, 4)}-12-31`;
+      const report = await findDuplicateDays(cfg, from, to);
       await chrome.storage.local.set({ duplicateAlert: { ...report, at: Date.now(), announced: [...report.exact, ...report.overlap].sort() } });
       return { ok: true, removed, report };
     }

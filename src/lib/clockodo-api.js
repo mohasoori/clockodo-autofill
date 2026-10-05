@@ -527,6 +527,7 @@ export async function findDuplicateDays(cfg, fromStr, toStr) {
   }
   const exact = [];
   const overlap = [];
+  const extras = {}; // exact days → number of surplus copies
   for (const [day, list] of [...byDay].sort(([a], [b]) => (a < b ? -1 : 1))) {
     list.sort((a, b) => a.s - b.s || a.u - b.u);
     let isExact = false;
@@ -537,19 +538,28 @@ export async function findDuplicateDays(cfg, fromStr, toStr) {
         else isOverlap = true;
       }
     }
-    if (isExact) exact.push(day); else if (isOverlap) overlap.push(day);
+    if (isExact) {
+      exact.push(day);
+      const seen = new Map();
+      for (const x of list) seen.set(`${x.s}|${x.u}`, (seen.get(`${x.s}|${x.u}`) || 0) + 1);
+      extras[day] = [...seen.values()].reduce((n, c) => n + c - 1, 0);
+    } else if (isOverlap) overlap.push(day);
   }
-  return { from: fromStr, to: toStr, exact, overlap };
+  return { from: fromStr, to: toStr, exact, overlap, extras };
 }
 
-// Deletes exact duplicates (same day, identical start and end) in [fromStr, toStr],
+// Deletes exact duplicates (identical start and end) on the given local dates,
 // keeping the oldest entry (lowest id) of each group. Partly overlapping entries
 // are never touched. Returns the number of entries deleted.
-export async function removeExactDuplicates(cfg, fromStr, toStr) {
+export async function removeExactDuplicates(cfg, days) {
   if (cfg.mode !== "entry") throw new Error("Removing duplicates needs time-entry mode.");
+  const wanted = new Set(days);
+  if (!wanted.size) return 0;
+  const sorted = [...wanted].sort();
   const groups = new Map();
-  for (const e of await getRawEntries(cfg, fromStr, toStr)) {
+  for (const e of await getRawEntries(cfg, sorted[0], sorted[sorted.length - 1])) {
     if (!e.time_since || !e.time_until) continue;
+    if (!wanted.has(localDateOf(e.time_since, cfg.timezone))) continue;
     const key = `${Date.parse(e.time_since)}|${Date.parse(e.time_until)}`;
     if (!groups.has(key)) groups.set(key, []);
     groups.get(key).push(e.id);

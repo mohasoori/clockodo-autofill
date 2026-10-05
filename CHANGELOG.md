@@ -7,10 +7,11 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 ## [1.9.0] — 2026-10-05
 
 ### Added
-- **Remove double bookings.** After a duplicate scan, *Remove double bookings*
-  deletes entries of the chosen year that share the same day, start and end
-  with another entry, keeping the oldest of each group (confirmation
-  required). Partly overlapping entries are listed but never deleted.
+- **Remove double bookings.** After a duplicate scan the double-booked days
+  are listed (scrollable, with the number of extra copies). Tick days or
+  *Select all* and press *Remove selected*, or use *Remove* on a single row.
+  Each affected day keeps its oldest entry; the rest are deleted after a
+  confirmation. Partly overlapping entries are listed but never deleted.
 
 ## [1.8.0] — 2026-10-05
 

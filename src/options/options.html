@@ -104,6 +104,16 @@
     .tab.active.attention::after { box-shadow: 0 0 0 2px var(--accent); }
 
     [hidden] { display: none !important; }
+    .dup-panel { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+    .dup-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 12.5px; }
+    .dup-head .spacer { flex: 1; }
+    .dup-list { max-height: 264px; overflow-y: auto; }
+    .dup-row { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-top: 1px solid var(--border); font-size: 12.5px; }
+    .dup-row:first-child { border-top: none; }
+    .dup-row .day { flex: 1; }
+    .dup-row .extra { color: var(--text-muted); }
+    .dup-row .row-remove { background: none; border: none; padding: 2px 6px; color: var(--danger); cursor: pointer; font: inherit; font-size: 12px; }
+    .dup-row .row-remove:hover { text-decoration: underline; }
     .activity-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
     .activity-toolbar select { width: auto; }
     .activity-toolbar .spacer { flex: 1; }
@@ -570,8 +580,15 @@
       <div class="action-row" style="margin-top:10px">
         <select id="dupYear" aria-label="Year" style="width:auto"></select>
         <button class="small" id="dupScanBtn">Scan year</button>
-        <button class="small danger-btn" id="dupRemoveBtn" hidden>Remove double bookings</button>
         <span id="dupResult" class="status-text"></span>
+      </div>
+      <div id="dupPanel" class="dup-panel" hidden>
+        <div class="dup-head">
+          <label class="inline-check"><input type="checkbox" id="dupAll" /> <span id="dupAllText">Select all</span></label>
+          <span class="spacer"></span>
+          <button class="small danger-btn" id="dupRemoveBtn" disabled>Remove selected</button>
+        </div>
+        <div id="dupList" class="dup-list" role="list"></div>
       </div>
       <div id="dupDays" class="hint"></div>
     </section>

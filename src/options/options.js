@@ -891,12 +891,30 @@ function initDupYears() {
 }
 initDupYears();
 
+let dupDays = []; // exact-duplicate days currently listed
+
+function selectedDupDays() {
+  return [...document.querySelectorAll("#dupList input[type=checkbox]:checked")].map((c) => c.value);
+}
+
+function syncDupControls() {
+  const n = selectedDupDays().length;
+  const btn = $("dupRemoveBtn");
+  btn.disabled = n === 0;
+  btn.textContent = n ? `Remove selected (${n})` : "Remove selected";
+  $("dupAll").checked = n > 0 && n === dupDays.length;
+  $("dupAll").indeterminate = n > 0 && n < dupDays.length;
+  $("dupAllText").textContent = `Select all (${dupDays.length})`;
+}
+
 function showDupReport(report, year) {
   const out = $("dupResult");
-  const list = $("dupDays");
-  const { exact, overlap } = report;
+  const { exact, overlap, extras = {} } = report;
+  dupDays = exact;
+  const list = $("dupList");
   list.replaceChildren();
-  $("dupRemoveBtn").hidden = !exact.length;
+  $("dupDays").replaceChildren();
+  $("dupPanel").hidden = !exact.length;
   if (!exact.length && !overlap.length) {
     out.className = "status-text ok";
     out.textContent = `No duplicates in ${year}.`;
@@ -904,35 +922,75 @@ function showDupReport(report, year) {
   }
   out.className = "status-text bad";
   out.textContent = `${exact.length + overlap.length} day(s) with overlapping entries.`;
-  const line = (label, days) => {
-    if (!days.length) return;
+  for (const day of exact) {
+    const row = document.createElement("div");
+    row.className = "dup-row";
+    row.setAttribute("role", "listitem");
+    const cb = Object.assign(document.createElement("input"), { type: "checkbox", value: day });
+    cb.addEventListener("change", syncDupControls);
+    const n = extras[day] || 1;
+    const rm = Object.assign(document.createElement("button"), { type: "button", className: "row-remove", textContent: "Remove" });
+    rm.addEventListener("click", () => removeDupDays([day]));
+    row.append(
+      cb,
+      Object.assign(document.createElement("span"), { className: "day", textContent: fmtDay(day) }),
+      Object.assign(document.createElement("span"), { className: "extra", textContent: `${n} extra ${n === 1 ? "copy" : "copies"}` }),
+      rm
+    );
+    list.append(row);
+  }
+  if (overlap.length) {
     const p = document.createElement("div");
-    p.textContent = `${label} (${days.length}): ${days.map(fmtDay).join(" · ")}`;
-    list.append(p);
-  };
-  line("Double-booked (identical times)", exact);
-  line("Partly overlapping (not removed automatically)", overlap);
+    p.textContent = `Partly overlapping, not removed automatically (${overlap.length}): ${overlap.map(fmtDay).join(" · ")}`;
+    $("dupDays").append(p);
+  }
+  syncDupControls();
 }
 
-async function dupCall(action, busyText) {
-  const btns = [$("dupScanBtn"), $("dupRemoveBtn")];
+async function dupCall(message, busyText) {
+  const btns = [$("dupScanBtn"), $("dupRemoveBtn"), $("dupAll")];
   btns.forEach((b) => { b.disabled = true; });
   $("dupResult").className = "status-text";
   $("dupResult").textContent = busyText;
   try {
-    const res = await chrome.runtime.sendMessage({ action, year: $("dupYear").value });
+    const res = await chrome.runtime.sendMessage(message);
     if (!res || res.error) throw new Error(res?.error || "No response from the extension.");
     return res;
   } catch (e) {
-    $("dupDays").replaceChildren();
-    $("dupRemoveBtn").hidden = true;
     $("dupResult").className = "status-text bad";
     $("dupResult").textContent = e.message;
     return null;
   } finally {
-    btns.forEach((b) => { b.disabled = false; });
+    $("dupScanBtn").disabled = false;
+    $("dupAll").disabled = false;
+    syncDupControls();
   }
 }
+
+async function removeDupDays(days) {
+  if (!days.length) return;
+  const year = days[0].slice(0, 4);
+  const ok = await confirmDialog({
+    title: days.length === 1 ? "Remove the duplicate entries of this day?" : `Remove duplicate entries on ${days.length} days?`,
+    message: `Where a selected day has several time entries with identical start and end, the oldest one is kept and the others are deleted in Clockodo. Partly overlapping entries are not touched. This cannot be undone.`,
+    details: days.length <= 6 ? days.map(fmtDay) : [`${fmtDay(days[0])} … ${fmtDay(days[days.length - 1])}`],
+    confirmText: "Remove",
+    danger: true,
+  });
+  if (!ok) return;
+  const res = await dupCall({ action: "removeDuplicates", days }, "Removing…");
+  if (!res) return;
+  showDupReport(res.report, year);
+  $("dupResult").className = "status-text ok";
+  $("dupResult").textContent = `Removed ${res.removed} duplicate entr${res.removed === 1 ? "y" : "ies"}.` +
+    (res.report.exact.length + res.report.overlap.length ? ` ${res.report.exact.length + res.report.overlap.length} day(s) still flagged.` : " No duplicates left.");
+}
+
+$("dupAll").addEventListener("change", () => {
+  document.querySelectorAll("#dupList input[type=checkbox]").forEach((c) => { c.checked = $("dupAll").checked; });
+  syncDupControls();
+});
+$("dupRemoveBtn").addEventListener("click", () => removeDupDays(selectedDupDays()));
 
 // Show the last daily check (if any) when Options opens.
 (async () => {
@@ -948,24 +1006,8 @@ async function dupCall(action, busyText) {
 })();
 
 $("dupScanBtn").addEventListener("click", async () => {
-  const res = await dupCall("scanDuplicates", "Scanning…");
+  const res = await dupCall({ action: "scanDuplicates", year: $("dupYear").value }, "Scanning…");
   if (res) showDupReport(res.report, $("dupYear").value);
-});
-
-$("dupRemoveBtn").addEventListener("click", async () => {
-  const year = $("dupYear").value;
-  const ok = await confirmDialog({
-    title: "Remove duplicate entries?",
-    message: `In ${year}, where a day has several time entries with identical start and end, the oldest one is kept and the others are deleted in Clockodo. Partly overlapping entries are not touched. This cannot be undone.`,
-    confirmText: "Remove duplicates",
-  });
-  if (!ok) return;
-  const res = await dupCall("removeDuplicates", "Removing…");
-  if (!res) return;
-  showDupReport(res.report, year);
-  if (!res.report.exact.length && !res.report.overlap.length) {
-    $("dupResult").textContent = `Removed ${res.removed} duplicate entr${res.removed === 1 ? "y" : "ies"}. No duplicates left in ${year}.`;
-  }
 });
 
 $("activityMonth").addEventListener("change", renderActivity);
