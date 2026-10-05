@@ -2,9 +2,10 @@
 
 *For version 1.9.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
-Options is organised in five tabs: **Account** (your Clockodo login and what
+Options is organised in six tabs: **Account** (your Clockodo login and what
 to book), **Schedule** (working hours, auto-fill, days to never fill),
-**Activity** (what the extension booked), **Sync & updates**, and **Help**
+**Activity** (what the extension booked), **Duplicates** (scan a year for
+colliding entries and clean them up), **Sync & updates**, and **Help**
 (this guide, inside the settings page).
 **Save** in the top bar saves all tabs at once.
 
@@ -168,9 +169,9 @@ popup footer (**Activity**).
 - **Export CSV** (one row per affected day; opens cleanly in Excel),
   **Clear log** (all devices), and a name for this device.
 
-### Duplicate check
+## 6d. Duplicate check (Options → Duplicates tab)
 
-Below the log, **Duplicate check** scans every day of the selected year in
+The **Duplicates** tab scans every day of the selected year in
 Clockodo and lists the days whose time entries collide, one line per
 conflict with its times and type:
 
@@ -195,7 +196,7 @@ way. You get a notification (with the affected dates) when a day shows up that
 was not reported before, so it does not repeat every day. The last result is
 shown in this card when Options opens.
 
-### Several devices
+## 6e. Several devices
 
 If the extension runs in more than one browser on the same account, each
 device fires at its own fixed offset (up to 10 minutes) after the configured

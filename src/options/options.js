@@ -928,6 +928,7 @@ function dupTotalsText(t) {
 
 function showDupReport(report, year) {
   const out = $("dupResult");
+  document.querySelector('.tab[data-tab="duplicates"]').classList.toggle("attention", Boolean(report.exact.length || report.overlap.length));
   // Reports stored by older versions have no per-conflict details.
   const days = report.days || [
     ...report.exact.map((day) => ({ day, extra: (report.extras || {})[day] || 1, conflicts: [] })),

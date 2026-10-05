@@ -16,7 +16,7 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 ## [1.8.0] — 2026-10-05
 
 ### Added
-- **Duplicate check.** Options → Activity → *Duplicate check* scans every day
+- **Duplicate check.** Options → *Duplicates* (its own tab, marked with a dot when the last check found something) scans every day
   of a chosen year and lists every conflict with its times and type: *exact
   duplicate* (identical start and end), *contained* (one entry inside another)
   or *overlap* (entries crossing). A day can show several, e.g. only the
