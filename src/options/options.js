@@ -986,20 +986,87 @@ function sumRange(map, from, to) {
   return { booked, covered, days };
 }
 
-function tile(label, value, sub) {
+const ICONS = {
+  clock: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg>',
+  days: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="3"/><path d="M3 10h18M8 3v4M16 3v4"/></svg>',
+  avg: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19V9M10 19V5M16 19v-7M22 19H2"/></svg>',
+  warn: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 2 20h20L12 3z"/><path d="M12 10v4M12 17.5v.01"/></svg>',
+};
+
+function icon(name) {
+  const span = document.createElement("span");
+  span.innerHTML = ICONS[name]; // static markup above, no user data
+  return span.firstChild;
+}
+
+// 24 h 05 min → <span class=n>24</span><span class=u>h</span><span class=n>05</span><span class=u>min</span>
+function hoursNode(ms) {
+  const m = Math.round(ms / 60000);
+  const box = document.createElement("div");
+  box.className = "t-value";
+  const part = (cls, text) => box.append(Object.assign(document.createElement("span"), { className: cls, textContent: text }));
+  part("n", String(Math.floor(m / 60)));
+  part("u", "h");
+  part("n", pad2(m % 60));
+  part("u", "min");
+  return box;
+}
+
+function tile(label, iconName, valueNode, sub, chip) {
   const t = document.createElement("div");
   t.className = "hours-tile";
-  t.append(
-    Object.assign(document.createElement("div"), { className: "t-label", textContent: label }),
-    Object.assign(document.createElement("div"), { className: "t-value", textContent: value }),
-    Object.assign(document.createElement("div"), { className: "t-sub", textContent: sub || "" })
-  );
+  const head = document.createElement("div");
+  head.className = "t-head";
+  const ico = document.createElement("span");
+  ico.className = "t-ico";
+  ico.append(icon(iconName));
+  head.append(ico, document.createTextNode(label));
+  t.append(head, valueNode);
+  if (sub || chip) {
+    const s = document.createElement("div");
+    s.className = "t-sub";
+    if (chip) s.append(Object.assign(document.createElement("span"), { className: "t-chip", textContent: chip }), document.createTextNode(sub ? " " + sub : ""));
+    else s.textContent = sub;
+    t.append(s);
+  }
   return t;
 }
 
+function plainValue(text) {
+  const box = document.createElement("div");
+  box.className = "t-value";
+  box.append(Object.assign(document.createElement("span"), { className: "n", textContent: text }));
+  return box;
+}
+
 function repMessage(text) {
-  const tiles = $("hoursTiles");
-  tiles.replaceChildren(Object.assign(document.createElement("div"), { className: "hint", textContent: text }));
+  $("hoursTiles").replaceChildren(Object.assign(document.createElement("div"), { className: "hint", textContent: text }));
+  $("hoursChart").hidden = true;
+  $("hoursTableWrap").hidden = true;
+}
+
+function repCallout(title, text) {
+  const box = document.createElement("div");
+  box.className = "rep-callout warn";
+  const ico = Object.assign(document.createElement("span"), { className: "c-ico" });
+  ico.append(icon("warn"));
+  const body = document.createElement("div");
+  body.append(
+    Object.assign(document.createElement("div"), { className: "c-title", textContent: title }),
+    Object.assign(document.createElement("div"), { className: "c-text", textContent: text })
+  );
+  const actions = document.createElement("div");
+  actions.className = "c-actions";
+  const open = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "Open extensions page" });
+  open.addEventListener("click", () => { try { chrome.tabs.create({ url: "chrome://extensions" }); } catch { /* ignore */ } });
+  const retry = Object.assign(document.createElement("button"), { type: "button", className: "small", textContent: "I reloaded it — try again" });
+  retry.style.marginLeft = "8px";
+  retry.addEventListener("click", () => loadYears(yearsOf(periodRange(repView, repCursor)), true));
+  actions.append(open, retry);
+  body.append(actions);
+  box.append(ico, body);
+  $("hoursTiles").replaceChildren(box);
+  $("hoursChart").hidden = true;
   $("hoursTableWrap").hidden = true;
 }
 
@@ -1012,51 +1079,88 @@ function renderReport() {
 
   const map = dayHoursMap();
   const total = sumRange(map, range.from, range.to);
-  const tiles = $("hoursTiles");
-  tiles.replaceChildren(
-    tile("Booked", fmtHM(total.booked), total.covered !== total.booked ? `covers ${fmtHM(total.covered)} · ${fmtHM(total.booked - total.covered)} double-counted` : ""),
-    tile("Days worked", String(total.days), ""),
-    tile("Average per day", total.days ? fmtHM(total.booked / total.days) : "–", "days with entries only")
+  const double = total.booked - total.covered;
+  $("hoursTiles").replaceChildren(
+    tile("Booked", "clock", hoursNode(total.booked), total.covered !== total.booked ? `covers ${fmtHM(total.covered)}` : "", double > 0 ? `${fmtHM(double)} double-counted` : ""),
+    tile("Days worked", "days", plainValue(String(total.days)), total.days === 1 ? "day with entries" : "days with entries"),
+    tile("Average per day", "avg", total.days ? hoursNode(total.booked / total.days) : plainValue("–"), "days with entries only")
   );
 
   // Rows: days (week view), ISO weeks (month view), months (year view).
   const rows = [];
   if (repView === "week") {
-    for (let d = range.from; d <= range.to; d = addDays(d, 1)) rows.push({ label: weekdayDay(d), from: d, to: d, drill: null });
+    for (let d = range.from; d <= range.to; d = addDays(d, 1)) {
+      rows.push({ label: weekdayDay(d), short: utcNoon(d).toLocaleDateString(undefined, { weekday: "short", timeZone: "UTC" }), from: d, to: d, drill: null });
+    }
     $("repColPeriod").textContent = "Day";
   } else if (repView === "month") {
     for (let mon = mondayOf(range.from); mon <= range.to; mon = addDays(mon, 7)) {
       const from = mon < range.from ? range.from : mon;
       const sun = addDays(mon, 6);
       const to = sun > range.to ? range.to : sun;
-      rows.push({ label: `Week ${isoWeek(mon)} · ${shortDay(from)} – ${shortDay(to)}`, from, to, drill: { view: "week", cursor: from } });
+      rows.push({ label: `Week ${isoWeek(mon)} · ${shortDay(from)} – ${shortDay(to)}`, short: `W${isoWeek(mon)}`, from, to, drill: { view: "week", cursor: from } });
     }
     $("repColPeriod").textContent = "Week";
   } else {
     for (let m = 1; m <= 12; m++) {
       const from = `${range.from.slice(0, 4)}-${pad2(m)}-01`;
-      rows.push({ label: monthLabel(from), from, to: periodRange("month", from).to, drill: { view: "month", cursor: from } });
+      rows.push({
+        label: monthLabel(from),
+        short: utcNoon(from).toLocaleString(undefined, { month: "short", timeZone: "UTC" }),
+        from, to: periodRange("month", from).to, drill: { view: "month", cursor: from },
+      });
     }
     $("repColPeriod").textContent = "Month";
   }
   const today = repToday();
+  const sums = rows.map((r) => sumRange(map, r.from, r.to));
+  const drillTo = (r) => { repView = r.drill.view; repCursor = r.drill.cursor; renderReport(); renderDupForCursor(); };
+
+  // Bar chart: bar = booked time, red cap = the double-counted part.
+  const peak = Math.max(1, ...sums.map((t) => t.booked));
+  const chart = $("hoursChart");
+  chart.replaceChildren();
+  rows.forEach((r, i) => {
+    const t = sums[i];
+    const col = document.createElement(r.drill && t.days ? "button" : "div");
+    col.className = "col" + (t.days ? "" : " zero") + (r.drill && t.days ? " drill" : "") + (today >= r.from && today <= r.to ? " now" : "");
+    col.title = t.days ? `${r.label}: ${fmtHM(t.booked)} booked` + (t.booked !== t.covered ? `, ${fmtHM(t.covered)} covered` : "") : `${r.label}: nothing booked`;
+    if (col.tagName === "BUTTON") { col.type = "button"; col.addEventListener("click", () => drillTo(r)); }
+    const val = Object.assign(document.createElement("span"), { className: "val", textContent: t.days ? `${(t.booked / 3600000).toFixed(t.booked >= 36e6 ? 0 : 1)} h` : "" });
+    const track = document.createElement("span");
+    track.className = "track";
+    const bar = document.createElement("span");
+    bar.className = "bar";
+    bar.style.height = `${t.days ? Math.max(2, (t.booked / peak) * 100) : 0}%`;
+    if (t.booked > t.covered) {
+      const extra = document.createElement("span");
+      extra.className = "extra";
+      extra.style.height = `${((t.booked - t.covered) / t.booked) * 100}%`;
+      bar.append(extra);
+    }
+    track.append(bar);
+    col.append(val, track, Object.assign(document.createElement("span"), { className: "lbl", textContent: r.short }));
+    chart.append(col);
+  });
+  chart.hidden = false;
+
   const cell = (text, num) => Object.assign(document.createElement("td"), { textContent: text, className: num ? "num" : "" });
   const body = $("hoursRows");
   body.replaceChildren();
-  for (const r of rows) {
-    const t = sumRange(map, r.from, r.to);
+  rows.forEach((r, i) => {
+    const t = sums[i];
     const tr = document.createElement("tr");
     if (!t.days) tr.className = "zero";
     if (r.drill && t.days) {
       tr.classList.add("drill");
       tr.title = `Show ${r.drill.view}`;
-      tr.addEventListener("click", () => { repView = r.drill.view; repCursor = r.drill.cursor; renderReport(); renderDupForCursor(); });
+      tr.addEventListener("click", () => drillTo(r));
     }
     if (today >= r.from && today <= r.to) tr.style.fontWeight = "600";
     tr.append(cell(r.label), cell(t.days ? String(t.days) : "–", true), cell(t.days ? fmtHM(t.booked) : "–", true),
       cell(t.days ? fmtHM(t.covered) : "–", true), cell(t.days ? fmtHM(t.booked / t.days) : "–", true));
     body.append(tr);
-  }
+  });
   $("hoursTableWrap").hidden = false;
 }
 
@@ -1135,6 +1239,8 @@ function showDupReport(report, year) {
   syncDupControls();
 }
 
+let repFailure = null;
+
 async function dupCall(message, busyText) {
   const ctl = ["dupScanBtn", "dupRemoveBtn", "dupAll", "repPrev", "repNext", "repToday"].map($);
   ctl.forEach((b) => { b.disabled = true; });
@@ -1144,12 +1250,13 @@ async function dupCall(message, busyText) {
     const res = await chrome.runtime.sendMessage(message);
     if (!res || res.error) throw new Error(res?.error || "No response from the extension.");
     if (res.report && !res.report.perDay) {
-      throw new Error("The extension's background script is outdated. Reload the extension (chrome://extensions → Reload), then press Refresh.");
+      throw Object.assign(new Error("outdated"), { outdated: true });
     }
     return res;
   } catch (e) {
+    repFailure = e;
     $("dupResult").className = "status-text bad";
-    $("dupResult").textContent = e.message;
+    $("dupResult").textContent = e.outdated ? "" : e.message;
     return null;
   } finally {
     ["dupScanBtn", "dupAll", "repPrev", "repToday"].forEach((id) => { $(id).disabled = false; });
@@ -1167,7 +1274,12 @@ async function loadYears(years, force = false) {
     repYears.set(y, res.report);
   }
   if (!yearsOf(periodRange(repView, repCursor)).every((y) => repYears.has(y))) {
-    repMessage("Could not load your hours. See the message above.");
+    if (repFailure?.outdated) {
+      repCallout("Reload the extension",
+        "The extension was updated, but its background script is still the old version, so it can't build this report yet. Open the extensions page, press Reload on Clockodo Auto-Fill, then come back here.");
+    } else {
+      repMessage("Could not load your hours.");
+    }
     return;
   }
   if (ok) {

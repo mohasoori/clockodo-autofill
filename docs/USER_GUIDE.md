@@ -178,8 +178,9 @@ move with **‹ ›** (or **Today**), and read:
 
 - three tiles — **Booked** hours, **Days worked** and **Average per day**
   (days with entries only);
-- a table that breaks the period down: days for a week, ISO weeks for a
-  month, months for a year. Click a week or month row to drill into it.
+- a bar chart and a table that break the period down: days for a week, ISO
+  weeks for a month, months for a year. Click a bar or a week/month row to
+  drill into it. A red cap on a bar marks time that was booked twice.
 
 Hours come from your Clockodo time entries (everything booked, not only what
 this extension created). **Covered** counts overlapping entries once, so if a

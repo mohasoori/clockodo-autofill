@@ -104,22 +104,53 @@
     .tab.active.attention::after { box-shadow: 0 0 0 2px var(--accent); }
 
     [hidden] { display: none !important; }
-    .rep-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
-    .rep-bar .spacer { flex: 1; }
-    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-    .seg button { background: var(--card); border: none; border-right: 1px solid var(--border); padding: 5px 12px; font: inherit; font-size: 12.5px; color: var(--text-muted); cursor: pointer; }
-    .seg button:last-child { border-right: none; }
-    .seg button.active { background: var(--accent); color: #fff; }
-    .rep-nav { display: inline-flex; align-items: center; gap: 6px; }
-    .rep-label { min-width: 190px; text-align: center; font-weight: 600; font-size: 13px; }
+    .rep-top { display: flex; align-items: center; gap: 8px 10px; flex-wrap: wrap; margin-top: 14px; }
+    .rep-top .spacer { flex: 1; }
+    .seg { display: inline-flex; padding: 3px; gap: 2px; background: var(--accent-soft); border-radius: 999px; }
+    .seg button { border: none; background: transparent; padding: 6px 16px; border-radius: 999px; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--text-muted); cursor: pointer; transition: background .15s, color .15s; }
+    .seg button:hover { color: var(--text); }
+    .seg button.active { background: var(--card); color: var(--accent); box-shadow: 0 1px 3px rgba(16, 24, 40, .14); }
+    .rep-nav { display: inline-flex; align-items: center; gap: 2px; border: 1px solid var(--border); border-radius: 999px; padding: 2px; background: var(--card); }
+    .rep-label { min-width: 150px; text-align: center; font-weight: 700; font-size: 14px; letter-spacing: -.1px; }
+    .icon-btn { display: inline-grid; place-items: center; width: 30px; height: 30px; padding: 0; border: none; border-radius: 999px; background: transparent; color: var(--text-muted); cursor: pointer; transition: background .15s, color .15s; }
+    .icon-btn svg { width: 16px; height: 16px; }
+    .icon-btn:hover:not(:disabled) { background: var(--accent-soft); color: var(--accent); }
+    .icon-btn:disabled { opacity: .35; cursor: default; }
+    .ghost-btn { border: none; background: transparent; color: var(--accent); font: inherit; font-size: 12.5px; font-weight: 600; padding: 6px 10px; border-radius: 8px; cursor: pointer; }
+    .ghost-btn:hover:not(:disabled) { background: var(--accent-soft); }
+    .ghost-btn:disabled { opacity: .4; cursor: default; }
+    .rep-status { min-height: 18px; margin-top: 8px; font-size: 12px; }
+    .hours-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 10px 0 18px; }
+    .hours-tile { border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; background: var(--card); }
+    .hours-tile .t-head { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
+    .hours-tile .t-ico { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
+    .hours-tile .t-ico svg { width: 14px; height: 14px; }
+    .hours-tile .t-value { margin-top: 10px; font-variant-numeric: tabular-nums; line-height: 1.1; }
+    .hours-tile .t-value .n { font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
+    .hours-tile .t-value .u { font-size: 13px; font-weight: 600; color: var(--text-muted); margin: 0 6px 0 2px; }
+    .hours-tile .t-sub { margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+    .hours-tile .t-chip { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+    .rep-callout { grid-column: 1 / -1; display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); }
+    .rep-callout.warn { background: var(--warn-soft); border-color: transparent; }
+    .rep-callout .c-ico { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--card); color: var(--warn); }
+    .rep-callout .c-ico svg { width: 18px; height: 18px; }
+    .rep-callout .c-title { font-weight: 700; margin-bottom: 2px; }
+    .rep-callout .c-text { color: var(--text-muted); font-size: 12.5px; }
+    .rep-callout .c-actions { margin-top: 10px; }
+    .rep-chart { display: flex; align-items: stretch; gap: 8px; height: 190px; padding: 18px 6px 0; margin-bottom: 18px; border-top: 1px solid var(--border); }
+    .rep-chart .col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; border: none; background: transparent; padding: 0; font: inherit; color: inherit; cursor: default; }
+    .rep-chart .col.drill { cursor: pointer; }
+    .rep-chart .col .val { font-size: 11px; font-weight: 600; color: var(--text-muted); font-variant-numeric: tabular-nums; white-space: nowrap; }
+    .rep-chart .col .track { flex: 1; width: 100%; max-width: 44px; display: flex; align-items: flex-end; }
+    .rep-chart .col .bar { width: 100%; min-height: 3px; border-radius: 8px 8px 3px 3px; background: linear-gradient(180deg, var(--accent), color-mix(in srgb, var(--accent) 62%, transparent)); display: flex; flex-direction: column; justify-content: flex-start; overflow: hidden; transition: filter .15s; }
+    .rep-chart .col.zero .bar { background: var(--border); }
+    .rep-chart .col.drill:hover .bar { filter: brightness(1.1); }
+    .rep-chart .col .bar .extra { background: var(--danger); opacity: .85; width: 100%; }
+    .rep-chart .col .lbl { font-size: 11.5px; color: var(--text-muted); white-space: nowrap; }
+    .rep-chart .col.now .lbl { color: var(--accent); font-weight: 700; }
     #hoursRows tr.drill { cursor: pointer; }
     #hoursRows tr.drill:hover td { background: var(--bg); }
     #hoursRows tr.zero td { color: var(--text-muted); }
-    .hours-tiles { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
-    .hours-tile { flex: 1 1 150px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
-    .hours-tile .t-label { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
-    .hours-tile .t-value { font-size: 20px; font-weight: 700; margin-top: 2px; font-variant-numeric: tabular-nums; }
-    .hours-tile .t-sub { font-size: 12px; color: var(--text-muted); margin-top: 2px; }
     .activity-table td.num { font-variant-numeric: tabular-nums; }
     #hoursRows tr.current td { font-weight: 600; }
     .dup-panel { margin-top: 12px; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
@@ -605,23 +636,24 @@
         Hours booked
       </h2>
       <div class="hint" style="margin-top:0">Read from your Clockodo time entries (everything booked, not only what this extension created). <em>Covered</em> counts overlapping entries once.</div>
-      <div class="rep-bar">
+      <div class="rep-top">
         <div class="seg" id="repView" role="group" aria-label="Period">
           <button type="button" data-view="week">Week</button>
           <button type="button" data-view="month">Month</button>
           <button type="button" data-view="year">Year</button>
         </div>
         <div class="rep-nav">
-          <button type="button" class="small" id="repPrev" aria-label="Previous period">&lsaquo;</button>
+          <button type="button" class="icon-btn" id="repPrev" aria-label="Previous period" title="Previous"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 6l-6 6 6 6"/></svg></button>
           <span id="repLabel" class="rep-label"></span>
-          <button type="button" class="small" id="repNext" aria-label="Next period">&rsaquo;</button>
-          <button type="button" class="small" id="repToday">Today</button>
+          <button type="button" class="icon-btn" id="repNext" aria-label="Next period" title="Next"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></svg></button>
         </div>
+        <button type="button" class="ghost-btn" id="repToday">Today</button>
         <span class="spacer"></span>
-        <button type="button" class="small" id="dupScanBtn">Refresh</button>
+        <button type="button" class="icon-btn" id="dupScanBtn" aria-label="Refresh from Clockodo" title="Refresh from Clockodo"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20 11a8 8 0 1 0-2.3 5.7"/><path d="M20 4v7h-7"/></svg></button>
       </div>
-      <div id="dupResult" class="status-text"></div>
+      <div id="dupResult" class="status-text rep-status"></div>
       <div id="hoursTiles" class="hours-tiles"></div>
+      <div id="hoursChart" class="rep-chart" hidden></div>
       <div class="activity-table-wrap" id="hoursTableWrap" hidden>
         <table class="activity-table">
           <thead><tr><th id="repColPeriod">Period</th><th>Days</th><th>Booked</th><th>Covered</th><th>Avg / day</th></tr></thead>
