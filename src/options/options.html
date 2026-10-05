@@ -108,10 +108,15 @@
     .dup-head { display: flex; align-items: center; gap: 10px; padding: 8px 12px; background: var(--bg); border-bottom: 1px solid var(--border); font-size: 12.5px; }
     .dup-head .spacer { flex: 1; }
     .dup-list { max-height: 264px; overflow-y: auto; }
-    .dup-row { display: flex; align-items: center; gap: 10px; padding: 7px 12px; border-top: 1px solid var(--border); font-size: 12.5px; }
+    .dup-row { display: flex; align-items: flex-start; gap: 10px; padding: 8px 12px; border-top: 1px solid var(--border); font-size: 12.5px; }
     .dup-row:first-child { border-top: none; }
-    .dup-row .day { flex: 1; }
-    .dup-row .extra { color: var(--text-muted); }
+    .dup-row input[type=checkbox] { margin-top: 2px; }
+    .dup-row .body { flex: 1; min-width: 0; }
+    .dup-row .day { font-weight: 600; }
+    .dup-row .conflict { margin-top: 3px; font-variant-numeric: tabular-nums; }
+    .dup-row .extra { margin-top: 3px; color: var(--text-muted); font-size: 12px; }
+    .dup-row .chip-type { display: inline-block; padding: 1px 7px; border-radius: 999px; font-size: 11px; font-weight: 600; background: var(--bg); color: var(--text-muted); }
+    .dup-row .chip-type.exact { background: var(--danger-soft); color: var(--danger); }
     .dup-row .row-remove { background: none; border: none; padding: 2px 6px; color: var(--danger); cursor: pointer; font: inherit; font-size: 12px; }
     .dup-row .row-remove:hover { text-decoration: underline; }
     .activity-toolbar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 12px; }
@@ -576,7 +581,7 @@
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2"/></svg></span>
         Duplicate check
       </h2>
-      <div class="hint" style="margin-top:0">Scans every day of a year in Clockodo for overlapping time entries and lists the affected days. Scanning only reads. If double bookings (identical times) are found you can remove them, keeping the oldest entry of each. Once a day, after the auto-fill, the whole current year is checked the same way; you get a notification when a new affected day appears.</div>
+      <div class="hint" style="margin-top:0">Scans every day of a year in Clockodo for colliding time entries and lists each conflict with its times and type: exact duplicate, contained (one entry inside another) or overlap (entries crossing). Scanning only reads. If double bookings (identical times) are found you can remove them, keeping the oldest entry of each. Once a day, after the auto-fill, the whole current year is checked the same way; you get a notification when a new affected day appears.</div>
       <div class="action-row" style="margin-top:10px">
         <select id="dupYear" aria-label="Year" style="width:auto"></select>
         <button class="small" id="dupScanBtn">Scan year</button>

@@ -171,15 +171,22 @@ popup footer (**Activity**).
 ### Duplicate check
 
 Below the log, **Duplicate check** scans every day of the selected year in
-Clockodo and lists days whose time entries overlap: *double-booked*
-(identical start and end) and *partly overlapping*. Scanning only reads.
+Clockodo and lists the days whose time entries collide, one line per
+conflict with its times and type:
 
-Double-booked days are listed in a scrollable box with the number of extra
-copies. Tick the days you want (or **Select all**) and press **Remove
+- **Exact duplicate** — identical start and end (e.g. `08:30–13:00 booked 2×`).
+- **Contained** — one entry lies completely inside another.
+- **Overlap** — two entries cross each other.
+
+A day can have several, so a day where only the morning is duplicated shows
+just that block. Scanning only reads.
+
+The days are listed in a scrollable box. Tick the days you want (or **Select all**) and press **Remove
 selected**, or use **Remove** on a single row. After a confirmation, each
 affected day keeps its oldest entry and the identical copies are deleted.
-Partly overlapping entries are never deleted automatically — fix those in
-Clockodo. Time-entry mode only.
+Only exact duplicates are removed; *contained* and *overlap* conflicts are
+never deleted automatically (days with only those have no checkbox) — fix
+them in Clockodo. Time-entry mode only.
 
 Once a day, after the auto-fill, the whole current year is checked the same
 way. You get a notification (with the affected dates) when a day shows up that

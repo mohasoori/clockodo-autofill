@@ -907,42 +907,67 @@ function syncDupControls() {
   $("dupAllText").textContent = `Select all (${dupDays.length})`;
 }
 
+const DUP_TYPE = {
+  exact: { chip: "Exact duplicate", text: (c) => `${c.label} booked ${c.copies}×` },
+  contained: { chip: "Contained", text: (c) => `${c.other} lies inside ${c.label}` },
+  overlap: { chip: "Overlap", text: (c) => `${c.label} overlaps ${c.other}` },
+};
+const DUP_MAX_LINES = 4;
+
 function showDupReport(report, year) {
   const out = $("dupResult");
-  const { exact, overlap, extras = {} } = report;
-  dupDays = exact;
+  // Reports stored by older versions have no per-conflict details.
+  const days = report.days || [
+    ...report.exact.map((day) => ({ day, extra: (report.extras || {})[day] || 1, conflicts: [] })),
+    ...report.overlap.map((day) => ({ day, extra: 0, conflicts: [] })),
+  ].sort((x, y) => (x.day < y.day ? -1 : 1));
+  dupDays = days.filter((d) => d.extra > 0).map((d) => d.day);
   const list = $("dupList");
   list.replaceChildren();
   $("dupDays").replaceChildren();
-  $("dupPanel").hidden = !exact.length;
-  if (!exact.length && !overlap.length) {
+  $("dupPanel").hidden = !days.length;
+  if (!days.length) {
     out.className = "status-text ok";
     out.textContent = `No duplicates in ${year}.`;
     return;
   }
+  const exactDays = dupDays.length;
   out.className = "status-text bad";
-  out.textContent = `${exact.length + overlap.length} day(s) with overlapping entries.`;
-  for (const day of exact) {
+  out.textContent = `${days.length} day(s) with colliding entries` +
+    (exactDays ? ` — ${exactDays} removable (exact duplicates).` : " — none are exact duplicates, so nothing can be removed automatically.");
+  for (const d of days) {
     const row = document.createElement("div");
     row.className = "dup-row";
     row.setAttribute("role", "listitem");
-    const cb = Object.assign(document.createElement("input"), { type: "checkbox", value: day });
+    const removable = d.extra > 0;
+    const cb = Object.assign(document.createElement("input"), { type: "checkbox", value: d.day, disabled: !removable });
     cb.addEventListener("change", syncDupControls);
-    const n = extras[day] || 1;
-    const rm = Object.assign(document.createElement("button"), { type: "button", className: "row-remove", textContent: "Remove" });
-    rm.addEventListener("click", () => removeDupDays([day]));
-    row.append(
-      cb,
-      Object.assign(document.createElement("span"), { className: "day", textContent: fmtDay(day) }),
-      Object.assign(document.createElement("span"), { className: "extra", textContent: `${n} extra ${n === 1 ? "copy" : "copies"}` }),
-      rm
-    );
+    const body = document.createElement("div");
+    body.className = "body";
+    body.append(Object.assign(document.createElement("div"), { className: "day", textContent: fmtDay(d.day) }));
+    for (const c of d.conflicts.slice(0, DUP_MAX_LINES)) {
+      const line = document.createElement("div");
+      line.className = "conflict";
+      line.append(
+        Object.assign(document.createElement("span"), { className: `chip-type ${c.type}`, textContent: DUP_TYPE[c.type].chip }),
+        document.createTextNode(" " + DUP_TYPE[c.type].text(c))
+      );
+      body.append(line);
+    }
+    if (d.conflicts.length > DUP_MAX_LINES) {
+      body.append(Object.assign(document.createElement("div"), { className: "extra", textContent: `+${d.conflicts.length - DUP_MAX_LINES} more` }));
+    }
+    const others = d.conflicts.filter((c) => c.type !== "exact").length;
+    if (removable && others) {
+      body.append(Object.assign(document.createElement("div"), { className: "extra", textContent: `Removing deletes only the exact copies (${d.extra}); the other ${others} stay.` }));
+    }
+    row.append(cb, body);
+    if (removable) {
+      const rm = Object.assign(document.createElement("button"), { type: "button", className: "row-remove", textContent: "Remove" });
+      rm.addEventListener("click", () => removeDupDays([d.day]));
+      row.append(rm);
+    }
     list.append(row);
-  }
-  if (overlap.length) {
-    const p = document.createElement("div");
-    p.textContent = `Partly overlapping, not removed automatically (${overlap.length}): ${overlap.map(fmtDay).join(" · ")}`;
-    $("dupDays").append(p);
   }
   syncDupControls();
 }

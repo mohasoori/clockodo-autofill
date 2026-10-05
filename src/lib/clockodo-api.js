@@ -513,9 +513,18 @@ async function getRawEntries(cfg, fromStr, toStr) {
 
 const getDayEntries = (cfg, dateStr) => getRawEntries(cfg, dateStr, dateStr);
 
-// Days in [fromStr, toStr] on which time entries overlap each other.
-// exact = identical start and end (a double booking); overlap = partial overlap.
+// Local HH:MM of an instant, in cfg.timezone.
+function localTimeOf(ms, timeZone) {
+  return new Intl.DateTimeFormat("en-GB", { timeZone, hour: "2-digit", minute: "2-digit", hourCycle: "h23" }).format(new Date(ms));
+}
+
+// Days in [fromStr, toStr] on which time entries collide, with every conflict:
+//   exact     identical start and end (a double booking; `copies` entries)
+//   contained one entry lies completely inside another
+//   overlap   two entries cross each other
 // Entry mode only; running entries (no end yet) are ignored.
+// Returns { from, to, days:[{day, extra, conflicts:[{type, label, other?, copies?}]}],
+//           exact:[days with extra>0], overlap:[days with only non-exact conflicts], extras:{day:n} }
 export async function findDuplicateDays(cfg, fromStr, toStr) {
   if (cfg.mode !== "entry") throw new Error("The duplicate check needs time-entry mode.");
   const byDay = new Map();
@@ -525,27 +534,38 @@ export async function findDuplicateDays(cfg, fromStr, toStr) {
     if (!byDay.has(day)) byDay.set(day, []);
     byDay.get(day).push({ s: Date.parse(e.time_since), u: Date.parse(e.time_until) });
   }
-  const exact = [];
-  const overlap = [];
-  const extras = {}; // exact days → number of surplus copies
+  const range = (x) => `${localTimeOf(x.s, cfg.timezone)}–${localTimeOf(x.u, cfg.timezone)}`;
+  const days = [];
   for (const [day, list] of [...byDay].sort(([a], [b]) => (a < b ? -1 : 1))) {
-    list.sort((a, b) => a.s - b.s || a.u - b.u);
-    let isExact = false;
-    let isOverlap = false;
-    for (let i = 0; i < list.length; i++) {
-      for (let j = i + 1; j < list.length && list[j].s < list[i].u; j++) {
-        if (list[j].s === list[i].s && list[j].u === list[i].u) isExact = true;
-        else isOverlap = true;
+    const slots = new Map();
+    for (const x of list) {
+      const k = `${x.s}|${x.u}`;
+      if (!slots.has(k)) slots.set(k, { s: x.s, u: x.u, n: 0 });
+      slots.get(k).n++;
+    }
+    const uniq = [...slots.values()].sort((a, b) => a.s - b.s || a.u - b.u);
+    const conflicts = [];
+    let extra = 0;
+    for (const x of uniq) {
+      if (x.n > 1) {
+        conflicts.push({ type: "exact", label: range(x), copies: x.n });
+        extra += x.n - 1;
       }
     }
-    if (isExact) {
-      exact.push(day);
-      const seen = new Map();
-      for (const x of list) seen.set(`${x.s}|${x.u}`, (seen.get(`${x.s}|${x.u}`) || 0) + 1);
-      extras[day] = [...seen.values()].reduce((n, c) => n + c - 1, 0);
-    } else if (isOverlap) overlap.push(day);
+    for (let i = 0; i < uniq.length; i++) {
+      for (let j = i + 1; j < uniq.length && uniq[j].s < uniq[i].u; j++) {
+        const a = uniq[i];
+        const c = uniq[j];
+        const inside = (c.s >= a.s && c.u <= a.u) || (a.s >= c.s && a.u <= c.u);
+        conflicts.push({ type: inside ? "contained" : "overlap", label: range(a), other: range(c) });
+      }
+    }
+    if (conflicts.length) days.push({ day, extra, conflicts });
   }
-  return { from: fromStr, to: toStr, exact, overlap, extras };
+  const exact = days.filter((d) => d.extra > 0).map((d) => d.day);
+  const overlap = days.filter((d) => d.extra === 0).map((d) => d.day);
+  const extras = Object.fromEntries(days.filter((d) => d.extra > 0).map((d) => [d.day, d.extra]));
+  return { from: fromStr, to: toStr, days, exact, overlap, extras };
 }
 
 // Deletes exact duplicates (identical start and end) on the given local dates,

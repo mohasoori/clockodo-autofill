@@ -127,7 +127,7 @@ async function warnAboutDuplicates(cfg, dateStr) {
     if (fresh.length) {
       await notify(
         "Clockodo: duplicate bookings found",
-        `${days.length} day(s) in ${dateStr.slice(0, 4)} have overlapping entries: ${days.join(", ")}. Open Options → Activity to review.`
+        `${days.length} day(s) in ${dateStr.slice(0, 4)} have colliding entries (${report.exact.length} with exact duplicates): ${days.join(", ")}. Open Options → Activity to review.`
       );
     }
   } catch (e) {

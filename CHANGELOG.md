@@ -17,8 +17,10 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 
 ### Added
 - **Duplicate check.** Options → Activity → *Duplicate check* scans every day
-  of a chosen year and lists days with identical (double-booked) or partly
-  overlapping time entries. Read-only. Once a day, after the auto-fill, the
+  of a chosen year and lists every conflict with its times and type: *exact
+  duplicate* (identical start and end), *contained* (one entry inside another)
+  or *overlap* (entries crossing). A day can show several, e.g. only the
+  morning duplicated. Read-only. Once a day, after the auto-fill, the
   whole current year is checked the same way; a notification with the affected
   dates appears when a new day turns up (no daily repeats), and the last result
   is shown in Options.
