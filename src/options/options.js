@@ -934,6 +934,19 @@ async function dupCall(action, busyText) {
   }
 }
 
+// Show the last daily check (if any) when Options opens.
+(async () => {
+  try {
+    const res = await chrome.runtime.sendMessage({ action: "getDuplicateAlert" });
+    const r = res && res.report;
+    if (!r) return;
+    const year = r.from.slice(0, 4);
+    if ([...$("dupYear").options].some((o) => o.value === year)) $("dupYear").value = year;
+    showDupReport(r, year);
+    $("dupResult").textContent += ` (last checked ${new Date(r.at).toLocaleString()})`;
+  } catch { /* nothing to show */ }
+})();
+
 $("dupScanBtn").addEventListener("click", async () => {
   const res = await dupCall("scanDuplicates", "Scanning…");
   if (res) showDupReport(res.report, $("dupYear").value);

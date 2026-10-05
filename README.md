@@ -26,7 +26,7 @@ with their **own** personal Clockodo API key, stored only in their browser.
 - **Activity log** — what the extension booked, replaced or failed, per day or
   per range, synced across your devices, CSV export.
 - **Duplicate check** — scan a whole year for overlapping entries; the current
-  month is checked after every auto-fill. Concurrent fills from several
+  year is checked once a day after the auto-fill. Concurrent fills from several
   devices converge on a single booking.
 - **Account controls** — clear setup status per section, Sign out vs Delete
   login data, optional session-only API key.

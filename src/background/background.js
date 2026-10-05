@@ -112,17 +112,22 @@ async function doAutoFill(cfg) {
   if (cfg.mode === "entry" && result.status !== "error") await warnAboutDuplicates(cfg, dateStr);
 }
 
-// After each auto-fill, look at the current month and raise an alert if any
-// day holds duplicate bookings. Silent when everything is clean or the check fails.
+// Once per day (after the auto-fill) scan the whole current year for duplicate
+// bookings. The result is kept for Options; a notification is only raised when
+// a day shows up that has not been announced before, so it never nags daily.
+// Silent when everything is clean or the check fails.
 async function warnAboutDuplicates(cfg, dateStr) {
   try {
-    const report = await findDuplicateDays(cfg, `${dateStr.slice(0, 8)}01`, dateStr);
-    await chrome.storage.local.set({ duplicateAlert: { ...report, at: Date.now() } });
-    const n = report.exact.length + report.overlap.length;
-    if (n) {
+    const report = await findDuplicateDays(cfg, `${dateStr.slice(0, 4)}-01-01`, dateStr);
+    const days = [...report.exact, ...report.overlap].sort();
+    const { duplicateAlert } = await chrome.storage.local.get("duplicateAlert");
+    const announced = new Set(duplicateAlert?.announced || []);
+    const fresh = days.filter((d) => !announced.has(d));
+    await chrome.storage.local.set({ duplicateAlert: { ...report, at: Date.now(), announced: days } });
+    if (fresh.length) {
       await notify(
         "Clockodo: duplicate bookings found",
-        `${n} day(s) this month have overlapping entries: ${[...report.exact, ...report.overlap].sort().join(", ")}. Open Options → Activity to scan.`
+        `${days.length} day(s) in ${dateStr.slice(0, 4)} have overlapping entries: ${days.join(", ")}. Open Options → Activity to review.`
       );
     }
   } catch (e) {
@@ -347,10 +352,12 @@ async function handle(msg) {
       const to = `${year}-12-31` > today ? today : `${year}-12-31`;
       if (`${year}-01-01` > to) throw new Error("That year has not started yet.");
       const report = await findDuplicateDays(cfg, `${year}-01-01`, to);
-      await chrome.storage.local.set({ duplicateAlert: { ...report, at: Date.now() } });
-      const n = report.exact.length + report.overlap.length;
-      if (n) await notify("Clockodo: duplicate bookings found", `${year}: ${n} day(s) with overlapping entries.`);
+      await chrome.storage.local.set({ duplicateAlert: { ...report, at: Date.now(), announced: [...report.exact, ...report.overlap].sort() } });
       return { ok: true, report };
+    }
+    case "getDuplicateAlert": {
+      const { duplicateAlert } = await chrome.storage.local.get("duplicateAlert");
+      return { ok: true, report: duplicateAlert || null };
     }
     case "removeDuplicates": {
       const year = Number(msg.year);
@@ -359,7 +366,7 @@ async function handle(msg) {
       const to = `${year}-12-31` > today ? today : `${year}-12-31`;
       const removed = await removeExactDuplicates(cfg, `${year}-01-01`, to);
       const report = await findDuplicateDays(cfg, `${year}-01-01`, to);
-      await chrome.storage.local.set({ duplicateAlert: { ...report, at: Date.now() } });
+      await chrome.storage.local.set({ duplicateAlert: { ...report, at: Date.now(), announced: [...report.exact, ...report.overlap].sort() } });
       return { ok: true, removed, report };
     }
     case "holidayCalendar":

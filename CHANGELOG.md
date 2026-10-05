@@ -17,8 +17,10 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 ### Added
 - **Duplicate check.** Options → Activity → *Duplicate check* scans every day
   of a chosen year and lists days with identical (double-booked) or partly
-  overlapping time entries. Read-only. After each auto-fill the current month
-  is checked the same way and a notification appears if anything is found.
+  overlapping time entries. Read-only. Once a day, after the auto-fill, the
+  whole current year is checked the same way; a notification with the affected
+  dates appears when a new day turns up (no daily repeats), and the last result
+  is shown in Options.
 
 ### Fixed
 - **Double booking when two devices fill at the same time.** The "already

@@ -180,8 +180,10 @@ identical twin (same day, start and end), keeping the oldest one of each
 group. Partly overlapping entries are never deleted automatically — fix those
 in Clockodo. Time-entry mode only.
 
-After every auto-fill the current month is checked the same way; if anything
-is found you get a notification.
+Once a day, after the auto-fill, the whole current year is checked the same
+way. You get a notification (with the affected dates) when a day shows up that
+was not reported before, so it does not repeat every day. The last result is
+shown in this card when Options opens.
 
 ### Several devices
 
