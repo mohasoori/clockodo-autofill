@@ -4,6 +4,14 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 [Semantic Versioning](https://semver.org/); the current version is the
 `version` field in `manifest.json` and is shown in Options and the Help page.
 
+## [1.9.0] — 2026-10-05
+
+### Added
+- **Remove double bookings.** After a duplicate scan, *Remove double bookings*
+  deletes entries of the chosen year that share the same day, start and end
+  with another entry, keeping the oldest of each group (confirmation
+  required). Partly overlapping entries are listed but never deleted.
+
 ## [1.8.0] — 2026-10-05
 
 ### Added

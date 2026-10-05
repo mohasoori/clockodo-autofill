@@ -542,6 +542,30 @@ export async function findDuplicateDays(cfg, fromStr, toStr) {
   return { from: fromStr, to: toStr, exact, overlap };
 }
 
+// Deletes exact duplicates (same day, identical start and end) in [fromStr, toStr],
+// keeping the oldest entry (lowest id) of each group. Partly overlapping entries
+// are never touched. Returns the number of entries deleted.
+export async function removeExactDuplicates(cfg, fromStr, toStr) {
+  if (cfg.mode !== "entry") throw new Error("Removing duplicates needs time-entry mode.");
+  const groups = new Map();
+  for (const e of await getRawEntries(cfg, fromStr, toStr)) {
+    if (!e.time_since || !e.time_until) continue;
+    const key = `${Date.parse(e.time_since)}|${Date.parse(e.time_until)}`;
+    if (!groups.has(key)) groups.set(key, []);
+    groups.get(key).push(e.id);
+  }
+  let removed = 0;
+  for (const ids of groups.values()) {
+    if (ids.length < 2) continue;
+    ids.sort((a, b) => a - b);
+    for (const id of ids.slice(1)) {
+      await request(cfg, "DELETE", EP.entry(id));
+      removed++;
+    }
+  }
+  return removed;
+}
+
 // Worktime mode: dates in [fromStr, toStr] that already have working time.
 async function getFilledWorkTimeDays(cfg, fromStr, toStr) {
   // workTimes takes plain calendar dates (YYYY-MM-DD), not timestamps.

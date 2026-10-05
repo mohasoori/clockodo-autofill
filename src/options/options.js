@@ -891,38 +891,67 @@ function initDupYears() {
 }
 initDupYears();
 
-$("dupScanBtn").addEventListener("click", async () => {
-  const btn = $("dupScanBtn");
+function showDupReport(report, year) {
   const out = $("dupResult");
   const list = $("dupDays");
-  btn.disabled = true;
-  out.className = "status-text";
-  out.textContent = "Scanning…";
+  const { exact, overlap } = report;
   list.replaceChildren();
+  $("dupRemoveBtn").hidden = !exact.length;
+  if (!exact.length && !overlap.length) {
+    out.className = "status-text ok";
+    out.textContent = `No duplicates in ${year}.`;
+    return;
+  }
+  out.className = "status-text bad";
+  out.textContent = `${exact.length + overlap.length} day(s) with overlapping entries.`;
+  const line = (label, days) => {
+    if (!days.length) return;
+    const p = document.createElement("div");
+    p.textContent = `${label} (${days.length}): ${days.map(fmtDay).join(" · ")}`;
+    list.append(p);
+  };
+  line("Double-booked (identical times)", exact);
+  line("Partly overlapping (not removed automatically)", overlap);
+}
+
+async function dupCall(action, busyText) {
+  const btns = [$("dupScanBtn"), $("dupRemoveBtn")];
+  btns.forEach((b) => { b.disabled = true; });
+  $("dupResult").className = "status-text";
+  $("dupResult").textContent = busyText;
   try {
-    const res = await chrome.runtime.sendMessage({ action: "scanDuplicates", year: $("dupYear").value });
+    const res = await chrome.runtime.sendMessage({ action, year: $("dupYear").value });
     if (!res || res.error) throw new Error(res?.error || "No response from the extension.");
-    const { exact, overlap } = res.report;
-    if (!exact.length && !overlap.length) {
-      out.className = "status-text ok";
-      out.textContent = `No duplicates in ${$("dupYear").value}.`;
-      return;
-    }
-    out.className = "status-text bad";
-    out.textContent = `${exact.length + overlap.length} day(s) with overlapping entries.`;
-    const line = (label, days) => {
-      if (!days.length) return;
-      const p = document.createElement("div");
-      p.textContent = `${label} (${days.length}): ${days.map(fmtDay).join(" · ")}`;
-      list.append(p);
-    };
-    line("Double-booked (identical times)", exact);
-    line("Partly overlapping", overlap);
+    return res;
   } catch (e) {
-    out.className = "status-text bad";
-    out.textContent = e.message;
+    $("dupDays").replaceChildren();
+    $("dupRemoveBtn").hidden = true;
+    $("dupResult").className = "status-text bad";
+    $("dupResult").textContent = e.message;
+    return null;
   } finally {
-    btn.disabled = false;
+    btns.forEach((b) => { b.disabled = false; });
+  }
+}
+
+$("dupScanBtn").addEventListener("click", async () => {
+  const res = await dupCall("scanDuplicates", "Scanning…");
+  if (res) showDupReport(res.report, $("dupYear").value);
+});
+
+$("dupRemoveBtn").addEventListener("click", async () => {
+  const year = $("dupYear").value;
+  const ok = await confirmDialog({
+    title: "Remove duplicate entries?",
+    message: `In ${year}, where a day has several time entries with identical start and end, the oldest one is kept and the others are deleted in Clockodo. Partly overlapping entries are not touched. This cannot be undone.`,
+    confirmText: "Remove duplicates",
+  });
+  if (!ok) return;
+  const res = await dupCall("removeDuplicates", "Removing…");
+  if (!res) return;
+  showDupReport(res.report, year);
+  if (!res.report.exact.length && !res.report.overlap.length) {
+    $("dupResult").textContent = `Removed ${res.removed} duplicate entr${res.removed === 1 ? "y" : "ies"}. No duplicates left in ${year}.`;
   }
 });
 

@@ -19,6 +19,7 @@ import {
   importConfig,
   getHolidayCalendar,
   findDuplicateDays,
+  removeExactDuplicates,
 } from "../lib/clockodo-api.js";
 import { fetchLatestVersion, updateCheckConfigured, compareVersions } from "../lib/updates.js";
 import { logActivity, logRangeActivity, clearActivity, getDevice } from "../lib/activity.js";
@@ -350,6 +351,16 @@ async function handle(msg) {
       const n = report.exact.length + report.overlap.length;
       if (n) await notify("Clockodo: duplicate bookings found", `${year}: ${n} day(s) with overlapping entries.`);
       return { ok: true, report };
+    }
+    case "removeDuplicates": {
+      const year = Number(msg.year);
+      if (!Number.isInteger(year) || year < 2000 || year > 2100) throw new Error("Invalid year.");
+      const today = todayStr(cfg.timezone);
+      const to = `${year}-12-31` > today ? today : `${year}-12-31`;
+      const removed = await removeExactDuplicates(cfg, `${year}-01-01`, to);
+      const report = await findDuplicateDays(cfg, `${year}-01-01`, to);
+      await chrome.storage.local.set({ duplicateAlert: { ...report, at: Date.now() } });
+      return { ok: true, removed, report };
     }
     case "holidayCalendar":
       return { ok: true, calendar: await getHolidayCalendar(cfg) };

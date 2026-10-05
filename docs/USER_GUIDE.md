@@ -1,6 +1,6 @@
 # Clockodo Auto-Fill — User Guide
 
-*For version 1.8.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
+*For version 1.9.0 — see [CHANGELOG.md](../CHANGELOG.md) for what's new.*
 
 Options is organised in five tabs: **Account** (your Clockodo login and what
 to book), **Schedule** (working hours, auto-fill, days to never fill),
@@ -172,9 +172,13 @@ popup footer (**Activity**).
 
 Below the log, **Duplicate check** scans every day of the selected year in
 Clockodo and lists days whose time entries overlap: *double-booked*
-(identical start and end) and *partly overlapping*. It only reads — nothing is
-changed. Use Clockodo (or **Replace** when filling) to clean up the days it
-names. Time-entry mode only.
+(identical start and end) and *partly overlapping*. Scanning only reads.
+
+When double-booked days are found, **Remove double bookings** appears. After
+a confirmation it deletes, for the selected year, every entry that has an
+identical twin (same day, start and end), keeping the oldest one of each
+group. Partly overlapping entries are never deleted automatically — fix those
+in Clockodo. Time-entry mode only.
 
 After every auto-fill the current month is checked the same way; if anything
 is found you get a notification.
