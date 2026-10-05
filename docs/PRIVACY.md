@@ -19,7 +19,7 @@ inside your browser profile (`chrome.storage.local`):
 | Your settings (hours, timezone, schedule, skip dates, customer/service) | To book the right times |
 | Cached customer/service list, last auto-fill result, last update check | Convenience / status display |
 | Your public-holiday dates for the current year(s), as assigned to you in Clockodo | So holidays are not booked; refreshed weekly, deleted with your login data |
-| Result of the last duplicate check (affected dates, their entry times, total booked hours) | Shown in Options → Duplicates; stays on this device and is deleted with your login data |
+| Result of the last duplicate check (affected dates, their entry times, total booked hours) | Shown in Options → Report; stays on this device and is deleted with your login data |
 | Activity log (dates and times the extension booked, result, device name) | Lets you see what the extension did; synced with settings (last 150 entries) |
 
 **Sync between your devices (optional, on by default for settings):** the

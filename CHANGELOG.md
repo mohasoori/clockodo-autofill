@@ -7,6 +7,11 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 ## [1.9.0] — 2026-10-05
 
 ### Added
+- **Report tab.** Options → *Report* shows the hours booked in Clockodo:
+  this month, the year total, the average per day, and a month-by-month table
+  (days, booked, covered, average per day). The daily check keeps it fresh;
+  *Scan year* refreshes it on demand. The duplicate check lives on the same
+  tab.
 - **Remove double bookings.** After a duplicate scan the double-booked days
   are listed (scrollable, with the number of extra copies). Tick days or
   *Select all* and press *Remove selected*, or use *Remove* on a single row.
@@ -16,7 +21,7 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 ## [1.8.0] — 2026-10-05
 
 ### Added
-- **Duplicate check.** Options → *Duplicates* (its own tab, marked with a dot when the last check found something) scans every day
+- **Duplicate check.** Options → *Report* (marked with a dot when the last check found something) scans every day
   of a chosen year and lists every conflict with its times and type: *exact
   duplicate* (identical start and end), *contained* (one entry inside another)
   or *overlap* (entries crossing). A day can show several, e.g. only the

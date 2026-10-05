@@ -4,8 +4,8 @@
 
 Options is organised in six tabs: **Account** (your Clockodo login and what
 to book), **Schedule** (working hours, auto-fill, days to never fill),
-**Activity** (what the extension booked), **Duplicates** (scan a year for
-colliding entries and clean them up), **Sync & updates**, and **Help**
+**Activity** (what the extension booked), **Report** (hours booked per month
+and year, plus the duplicate check), **Sync & updates**, and **Help**
 (this guide, inside the settings page).
 **Save** in the top bar saves all tabs at once.
 
@@ -169,10 +169,21 @@ popup footer (**Activity**).
 - **Export CSV** (one row per affected day; opens cleanly in Excel),
   **Clear log** (all devices), and a name for this device.
 
-## 6d. Duplicate check (Options → Duplicates tab)
+## 6d. Report: hours and duplicate check (Options → Report tab)
 
-The **Duplicates** tab scans every day of the selected year in
-Clockodo and lists the days whose time entries collide, one line per
+### Hours booked
+
+Pick a year and press **Scan year**. The tab reads your time entries from
+Clockodo (everything booked, not only what this extension created) and shows
+tiles for **This month**, the **year total** and the **average per day**, plus a
+month-by-month table with days worked, hours **booked**, hours **covered**
+(overlapping entries counted once) and average per day. The result of the
+daily check (below) is shown right when the tab opens; Scan year refreshes it.
+Time-entry mode only.
+
+### Duplicate check
+
+The same scan lists the days whose time entries collide, one line per
 conflict with its times and type:
 
 - **Exact duplicate** — identical start and end (e.g. `08:30–13:00 booked 2×`).
@@ -180,9 +191,8 @@ conflict with its times and type:
 - **Overlap** — two entries cross each other.
 
 A day can have several, so a day where only the morning is duplicated shows
-just that block. Above the list you see the **total hours booked** in the
-scanned year and how much of it is double-counted; each listed day shows its
-booked time and the time it actually covers. Scanning only reads.
+just that block. Each listed day shows its booked time and the time it
+actually covers. Scanning only reads.
 
 The days are listed in a scrollable box. Tick the days you want (or **Select all**) and press **Remove
 selected**, or use **Remove** on a single row. After a confirmation, each

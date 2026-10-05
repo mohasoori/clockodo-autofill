@@ -919,16 +919,63 @@ function fmtHM(ms) {
   return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min`;
 }
 
-function dupTotalsText(t) {
-  if (!t) return "";
-  const diff = t.bookedMs - t.effectiveMs;
-  return `Booked: ${fmtHM(t.bookedMs)} over ${t.workDays} day(s)` +
-    (diff > 0 ? ` — ${fmtHM(diff)} of that is double-counted, so ${fmtHM(t.effectiveMs)} actually covered.` : ".");
+
+const MONTH_NAMES = Array.from({ length: 12 }, (_, i) => new Date(2000, i, 1).toLocaleString(undefined, { month: "long" }));
+const monthLabel = (mk) => `${MONTH_NAMES[Number(mk.slice(5)) - 1]} ${mk.slice(0, 4)}`;
+
+function tile(label, value, sub) {
+  const t = document.createElement("div");
+  t.className = "hours-tile";
+  t.append(
+    Object.assign(document.createElement("div"), { className: "t-label", textContent: label }),
+    Object.assign(document.createElement("div"), { className: "t-value", textContent: value }),
+    Object.assign(document.createElement("div"), { className: "t-sub", textContent: sub || "" })
+  );
+  return t;
+}
+
+function renderHours(report, year) {
+  const tiles = $("hoursTiles");
+  const rows = $("hoursRows");
+  tiles.replaceChildren();
+  rows.replaceChildren();
+  const months = report.months;
+  $("hoursTableWrap").hidden = !months;
+  if (!months || !report.totals) {
+    // A report saved by an older version has no hours in it yet.
+    tiles.append(Object.assign(document.createElement("div"), { className: "hint", textContent: "Press Scan year to load your hours." }));
+    return;
+  }
+  const t = report.totals;
+  const covers = (m) => (m.bookedMs === m.effectiveMs ? "" : `covers ${fmtHM(m.effectiveMs)}`);
+  const currentKey = report.to.slice(0, 7);
+  const cur = months.find((m) => m.month === currentKey);
+  if (cur && report.to.slice(0, 4) === String(new Date().getFullYear())) {
+    tiles.append(tile("This month", fmtHM(cur.bookedMs), `${cur.workDays} day(s)` + (covers(cur) ? ` · ${covers(cur)}` : "")));
+  }
+  tiles.append(
+    tile(`${year} total`, fmtHM(t.bookedMs), `${t.workDays} day(s)` + (covers(t) ? ` · ${covers(t)}` : "")),
+    tile("Average per day", t.workDays ? fmtHM(t.bookedMs / t.workDays) : "–", "booked days only")
+  );
+  const cell = (text, num) => Object.assign(document.createElement("td"), { textContent: text, className: num ? "num" : "" });
+  for (const m of months) {
+    const tr = document.createElement("tr");
+    if (m.month === currentKey) tr.className = "current";
+    tr.append(cell(monthLabel(m.month)), cell(String(m.workDays), true), cell(fmtHM(m.bookedMs), true),
+      cell(fmtHM(m.effectiveMs), true), cell(m.workDays ? fmtHM(m.bookedMs / m.workDays) : "–", true));
+    rows.append(tr);
+  }
+  if (!months.length) {
+    const tr = document.createElement("tr");
+    tr.append(Object.assign(document.createElement("td"), { colSpan: 5, className: "empty", textContent: "No time entries in this year." }));
+    rows.append(tr);
+  }
 }
 
 function showDupReport(report, year) {
-  const out = $("dupResult");
-  document.querySelector('.tab[data-tab="duplicates"]').classList.toggle("attention", Boolean(report.exact.length || report.overlap.length));
+  renderHours(report, year);
+  const out = $("dupSummary");
+  document.querySelector('.tab[data-tab="report"]').classList.toggle("attention", Boolean(report.exact.length || report.overlap.length));
   // Reports stored by older versions have no per-conflict details.
   const days = report.days || [
     ...report.exact.map((day) => ({ day, extra: (report.extras || {})[day] || 1, conflicts: [] })),
@@ -939,7 +986,6 @@ function showDupReport(report, year) {
   list.replaceChildren();
   $("dupDays").replaceChildren();
   $("dupPanel").hidden = !days.length;
-  $("dupTotals").textContent = dupTotalsText(report.totals);
   if (!days.length) {
     out.className = "status-text ok";
     out.textContent = `No duplicates in ${year}.`;
@@ -1029,8 +1075,9 @@ async function removeDupDays(days) {
   const res = await dupCall({ action: "removeDuplicates", days }, "Removing…");
   if (!res) return;
   showDupReport(res.report, year);
-  $("dupResult").className = "status-text ok";
-  $("dupResult").textContent = `Removed ${res.removed} duplicate entr${res.removed === 1 ? "y" : "ies"}.` +
+  $("dupResult").textContent = "";
+  $("dupSummary").className = "status-text ok";
+  $("dupSummary").textContent = `Removed ${res.removed} duplicate entr${res.removed === 1 ? "y" : "ies"}.` +
     (res.report.exact.length + res.report.overlap.length ? ` ${res.report.exact.length + res.report.overlap.length} day(s) still flagged.` : " No duplicates left.");
 }
 
@@ -1045,17 +1092,22 @@ $("dupRemoveBtn").addEventListener("click", () => removeDupDays(selectedDupDays(
   try {
     const res = await chrome.runtime.sendMessage({ action: "getDuplicateAlert" });
     const r = res && res.report;
-    if (!r) return;
+    if (!r) { renderHours({}, ""); return; }
     const year = r.from.slice(0, 4);
     if ([...$("dupYear").options].some((o) => o.value === year)) $("dupYear").value = year;
     showDupReport(r, year);
-    $("dupResult").textContent += ` (last checked ${new Date(r.at).toLocaleString()})`;
+    $("dupResult").className = "status-text";
+    $("dupResult").textContent = `Last checked ${new Date(r.at).toLocaleString()}`;
   } catch { /* nothing to show */ }
 })();
 
 $("dupScanBtn").addEventListener("click", async () => {
   const res = await dupCall({ action: "scanDuplicates", year: $("dupYear").value }, "Scanning…");
-  if (res) showDupReport(res.report, $("dupYear").value);
+  if (res) {
+    showDupReport(res.report, $("dupYear").value);
+    $("dupResult").className = "status-text ok";
+    $("dupResult").textContent = `Scanned ${new Date().toLocaleTimeString()}`;
+  }
 });
 
 $("activityMonth").addEventListener("change", renderActivity);
