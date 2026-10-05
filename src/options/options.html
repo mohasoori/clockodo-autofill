@@ -104,6 +104,17 @@
     .tab.active.attention::after { box-shadow: 0 0 0 2px var(--accent); }
 
     [hidden] { display: none !important; }
+    .rep-bar { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+    .rep-bar .spacer { flex: 1; }
+    .seg { display: inline-flex; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+    .seg button { background: var(--card); border: none; border-right: 1px solid var(--border); padding: 5px 12px; font: inherit; font-size: 12.5px; color: var(--text-muted); cursor: pointer; }
+    .seg button:last-child { border-right: none; }
+    .seg button.active { background: var(--accent); color: #fff; }
+    .rep-nav { display: inline-flex; align-items: center; gap: 6px; }
+    .rep-label { min-width: 190px; text-align: center; font-weight: 600; font-size: 13px; }
+    #hoursRows tr.drill { cursor: pointer; }
+    #hoursRows tr.drill:hover td { background: var(--bg); }
+    #hoursRows tr.zero td { color: var(--text-muted); }
     .hours-tiles { display: flex; gap: 10px; flex-wrap: wrap; margin: 14px 0; }
     .hours-tile { flex: 1 1 150px; border: 1px solid var(--border); border-radius: 10px; padding: 10px 14px; }
     .hours-tile .t-label { font-size: 11.5px; color: var(--text-muted); font-weight: 600; }
@@ -593,16 +604,27 @@
         <span class="ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/></svg></span>
         Hours booked
       </h2>
-      <div class="hint" style="margin-top:0">Read from your Clockodo time entries (everything booked, not only what this extension created). Overlapping entries are counted once in <em>covered</em>.</div>
-      <div class="action-row" style="margin-top:10px">
-        <select id="dupYear" aria-label="Year" style="width:auto"></select>
-        <button class="small" id="dupScanBtn">Scan year</button>
-        <span id="dupResult" class="status-text"></span>
+      <div class="hint" style="margin-top:0">Read from your Clockodo time entries (everything booked, not only what this extension created). <em>Covered</em> counts overlapping entries once.</div>
+      <div class="rep-bar">
+        <div class="seg" id="repView" role="group" aria-label="Period">
+          <button type="button" data-view="week">Week</button>
+          <button type="button" data-view="month">Month</button>
+          <button type="button" data-view="year">Year</button>
+        </div>
+        <div class="rep-nav">
+          <button type="button" class="small" id="repPrev" aria-label="Previous period">&lsaquo;</button>
+          <span id="repLabel" class="rep-label"></span>
+          <button type="button" class="small" id="repNext" aria-label="Next period">&rsaquo;</button>
+          <button type="button" class="small" id="repToday">Today</button>
+        </div>
+        <span class="spacer"></span>
+        <button type="button" class="small" id="dupScanBtn">Refresh</button>
       </div>
+      <div id="dupResult" class="status-text"></div>
       <div id="hoursTiles" class="hours-tiles"></div>
       <div class="activity-table-wrap" id="hoursTableWrap" hidden>
         <table class="activity-table">
-          <thead><tr><th>Month</th><th>Days</th><th>Booked</th><th>Covered</th><th>Avg / day</th></tr></thead>
+          <thead><tr><th id="repColPeriod">Period</th><th>Days</th><th>Booked</th><th>Covered</th><th>Avg / day</th></tr></thead>
           <tbody id="hoursRows"></tbody>
         </table>
       </div>

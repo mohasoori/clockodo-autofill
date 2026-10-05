@@ -173,13 +173,22 @@ popup footer (**Activity**).
 
 ### Hours booked
 
-Pick a year and press **Scan year**. The tab reads your time entries from
-Clockodo (everything booked, not only what this extension created) and shows
-tiles for **This month**, the **year total** and the **average per day**, plus a
-month-by-month table with days worked, hours **booked**, hours **covered**
-(overlapping entries counted once) and average per day. The result of the
-daily check (below) is shown right when the tab opens; Scan year refreshes it.
-Time-entry mode only.
+The tab opens on the current month. Choose **Week**, **Month** or **Year**,
+move with **‹ ›** (or **Today**), and read:
+
+- three tiles — **Booked** hours, **Days worked** and **Average per day**
+  (days with entries only);
+- a table that breaks the period down: days for a week, ISO weeks for a
+  month, months for a year. Click a week or month row to drill into it.
+
+Hours come from your Clockodo time entries (everything booked, not only what
+this extension created). **Covered** counts overlapping entries once, so if a
+day was double-booked, *Booked* is higher than *Covered* and the tile says by
+how much. **Refresh** re-reads Clockodo; other years load when you navigate to
+them. Time-entry mode only.
+
+If the tab says the background script is outdated, reload the extension at
+`chrome://extensions` (Developer mode → Reload).
 
 ### Duplicate check
 

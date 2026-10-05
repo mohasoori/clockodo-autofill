@@ -884,13 +884,6 @@ async function loadActivity() {
   renderActivity();
 }
 
-function initDupYears() {
-  const sel = $("dupYear");
-  const now = new Date().getFullYear();
-  for (let y = now; y >= now - 4; y--) sel.append(new Option(String(y), String(y)));
-}
-initDupYears();
-
 let dupDays = []; // exact-duplicate days currently listed
 
 function selectedDupDays() {
@@ -914,14 +907,84 @@ const DUP_TYPE = {
 };
 const DUP_MAX_LINES = 4;
 
+
+
+// ---- Report tab: hours per week / month / year ------------------------------
+const repYears = new Map(); // year → report from the background (includes perDay)
+let repView = "month";      // "week" | "month" | "year"
+let repCursor = null;       // a YYYY-MM-DD inside the shown period
+
+const pad2 = (n) => String(n).padStart(2, "0");
+const ymd = (d) => `${d.getUTCFullYear()}-${pad2(d.getUTCMonth() + 1)}-${pad2(d.getUTCDate())}`;
+const utcNoon = (s) => new Date(`${s}T12:00:00Z`);
+const mondayOf = (s) => {
+  const d = utcNoon(s);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7));
+  return ymd(d);
+};
+function isoWeek(s) {
+  const d = utcNoon(s);
+  d.setUTCDate(d.getUTCDate() - ((d.getUTCDay() + 6) % 7) + 3); // Thursday of this week
+  const thursday = d.valueOf();
+  d.setUTCMonth(0, 1);
+  if (d.getUTCDay() !== 4) d.setUTCMonth(0, 1 + ((4 - d.getUTCDay()) + 7) % 7);
+  return 1 + Math.ceil((thursday - d) / 604800000);
+}
+const MONTH_NAMES = Array.from({ length: 12 }, (_, i) => new Date(Date.UTC(2000, i, 1)).toLocaleString(undefined, { month: "long", timeZone: "UTC" }));
+const monthLabel = (mk) => `${MONTH_NAMES[Number(mk.slice(5, 7)) - 1]} ${mk.slice(0, 4)}`;
+const shortDay = (s) => utcNoon(s).toLocaleDateString(undefined, { month: "short", day: "numeric", timeZone: "UTC" });
+const weekdayDay = (s) => utcNoon(s).toLocaleDateString(undefined, { weekday: "short", month: "short", day: "numeric", timeZone: "UTC" });
+const repToday = () => todayStr($("timezone").value || undefined);
+
 function fmtHM(ms) {
   const m = Math.round(ms / 60000);
-  return `${Math.floor(m / 60)} h ${String(m % 60).padStart(2, "0")} min`;
+  return `${Math.floor(m / 60)} h ${pad2(m % 60)} min`;
 }
 
+function periodRange(view, cur) {
+  if (view === "week") {
+    const from = mondayOf(cur);
+    return { from, to: addDays(from, 6) };
+  }
+  if (view === "month") {
+    const y = Number(cur.slice(0, 4));
+    const m = Number(cur.slice(5, 7));
+    return { from: `${y}-${pad2(m)}-01`, to: ymd(new Date(Date.UTC(y, m, 0, 12))) };
+  }
+  return { from: `${cur.slice(0, 4)}-01-01`, to: `${cur.slice(0, 4)}-12-31` };
+}
 
-const MONTH_NAMES = Array.from({ length: 12 }, (_, i) => new Date(2000, i, 1).toLocaleString(undefined, { month: "long" }));
-const monthLabel = (mk) => `${MONTH_NAMES[Number(mk.slice(5)) - 1]} ${mk.slice(0, 4)}`;
+function periodLabel(view, cur) {
+  const { from, to } = periodRange(view, cur);
+  if (view === "week") return `Week ${isoWeek(from)} · ${shortDay(from)} – ${shortDay(to)}, ${to.slice(0, 4)}`;
+  if (view === "month") return monthLabel(from);
+  return from.slice(0, 4);
+}
+
+function shiftCursor(view, cur, dir) {
+  if (view === "week") return addDays(mondayOf(cur), 7 * dir);
+  if (view === "month") return ymd(new Date(Date.UTC(Number(cur.slice(0, 4)), Number(cur.slice(5, 7)) - 1 + dir, 1, 12)));
+  return `${Number(cur.slice(0, 4)) + dir}-01-01`;
+}
+
+const yearsOf = ({ from, to }) => [...new Set([from.slice(0, 4), to.slice(0, 4)])];
+
+function dayHoursMap() {
+  const map = new Map();
+  for (const r of repYears.values()) for (const d of r.perDay || []) map.set(d.day, d);
+  return map;
+}
+
+function sumRange(map, from, to) {
+  let booked = 0;
+  let covered = 0;
+  let days = 0;
+  for (let d = from; d <= to; d = addDays(d, 1)) {
+    const x = map.get(d);
+    if (x) { booked += x.bookedMs; covered += x.effectiveMs; days++; }
+  }
+  return { booked, covered, days };
+}
 
 function tile(label, value, sub) {
   const t = document.createElement("div");
@@ -934,46 +997,77 @@ function tile(label, value, sub) {
   return t;
 }
 
-function renderHours(report, year) {
+function repMessage(text) {
   const tiles = $("hoursTiles");
-  const rows = $("hoursRows");
-  tiles.replaceChildren();
-  rows.replaceChildren();
-  const months = report.months;
-  $("hoursTableWrap").hidden = !months;
-  if (!months || !report.totals) {
-    // A report saved by an older version has no hours in it yet.
-    tiles.append(Object.assign(document.createElement("div"), { className: "hint", textContent: "Press Scan year to load your hours." }));
-    return;
-  }
-  const t = report.totals;
-  const covers = (m) => (m.bookedMs === m.effectiveMs ? "" : `covers ${fmtHM(m.effectiveMs)}`);
-  const currentKey = report.to.slice(0, 7);
-  const cur = months.find((m) => m.month === currentKey);
-  if (cur && report.to.slice(0, 4) === String(new Date().getFullYear())) {
-    tiles.append(tile("This month", fmtHM(cur.bookedMs), `${cur.workDays} day(s)` + (covers(cur) ? ` · ${covers(cur)}` : "")));
-  }
-  tiles.append(
-    tile(`${year} total`, fmtHM(t.bookedMs), `${t.workDays} day(s)` + (covers(t) ? ` · ${covers(t)}` : "")),
-    tile("Average per day", t.workDays ? fmtHM(t.bookedMs / t.workDays) : "–", "booked days only")
+  tiles.replaceChildren(Object.assign(document.createElement("div"), { className: "hint", textContent: text }));
+  $("hoursTableWrap").hidden = true;
+}
+
+function renderReport() {
+  for (const b of document.querySelectorAll("#repView button")) b.classList.toggle("active", b.dataset.view === repView);
+  const range = periodRange(repView, repCursor);
+  $("repLabel").textContent = periodLabel(repView, repCursor);
+  $("repNext").disabled = periodRange(repView, shiftCursor(repView, repCursor, 1)).from > repToday();
+  if (!yearsOf(range).every((y) => repYears.has(y))) return repMessage("Loading…");
+
+  const map = dayHoursMap();
+  const total = sumRange(map, range.from, range.to);
+  const tiles = $("hoursTiles");
+  tiles.replaceChildren(
+    tile("Booked", fmtHM(total.booked), total.covered !== total.booked ? `covers ${fmtHM(total.covered)} · ${fmtHM(total.booked - total.covered)} double-counted` : ""),
+    tile("Days worked", String(total.days), ""),
+    tile("Average per day", total.days ? fmtHM(total.booked / total.days) : "–", "days with entries only")
   );
+
+  // Rows: days (week view), ISO weeks (month view), months (year view).
+  const rows = [];
+  if (repView === "week") {
+    for (let d = range.from; d <= range.to; d = addDays(d, 1)) rows.push({ label: weekdayDay(d), from: d, to: d, drill: null });
+    $("repColPeriod").textContent = "Day";
+  } else if (repView === "month") {
+    for (let mon = mondayOf(range.from); mon <= range.to; mon = addDays(mon, 7)) {
+      const from = mon < range.from ? range.from : mon;
+      const sun = addDays(mon, 6);
+      const to = sun > range.to ? range.to : sun;
+      rows.push({ label: `Week ${isoWeek(mon)} · ${shortDay(from)} – ${shortDay(to)}`, from, to, drill: { view: "week", cursor: from } });
+    }
+    $("repColPeriod").textContent = "Week";
+  } else {
+    for (let m = 1; m <= 12; m++) {
+      const from = `${range.from.slice(0, 4)}-${pad2(m)}-01`;
+      rows.push({ label: monthLabel(from), from, to: periodRange("month", from).to, drill: { view: "month", cursor: from } });
+    }
+    $("repColPeriod").textContent = "Month";
+  }
+  const today = repToday();
   const cell = (text, num) => Object.assign(document.createElement("td"), { textContent: text, className: num ? "num" : "" });
-  for (const m of months) {
+  const body = $("hoursRows");
+  body.replaceChildren();
+  for (const r of rows) {
+    const t = sumRange(map, r.from, r.to);
     const tr = document.createElement("tr");
-    if (m.month === currentKey) tr.className = "current";
-    tr.append(cell(monthLabel(m.month)), cell(String(m.workDays), true), cell(fmtHM(m.bookedMs), true),
-      cell(fmtHM(m.effectiveMs), true), cell(m.workDays ? fmtHM(m.bookedMs / m.workDays) : "–", true));
-    rows.append(tr);
+    if (!t.days) tr.className = "zero";
+    if (r.drill && t.days) {
+      tr.classList.add("drill");
+      tr.title = `Show ${r.drill.view}`;
+      tr.addEventListener("click", () => { repView = r.drill.view; repCursor = r.drill.cursor; renderReport(); renderDupForCursor(); });
+    }
+    if (today >= r.from && today <= r.to) tr.style.fontWeight = "600";
+    tr.append(cell(r.label), cell(t.days ? String(t.days) : "–", true), cell(t.days ? fmtHM(t.booked) : "–", true),
+      cell(t.days ? fmtHM(t.covered) : "–", true), cell(t.days ? fmtHM(t.booked / t.days) : "–", true));
+    body.append(tr);
   }
-  if (!months.length) {
-    const tr = document.createElement("tr");
-    tr.append(Object.assign(document.createElement("td"), { colSpan: 5, className: "empty", textContent: "No time entries in this year." }));
-    rows.append(tr);
-  }
+  $("hoursTableWrap").hidden = false;
+}
+
+// Duplicate card follows the year of the shown period.
+function renderDupForCursor() {
+  const year = repCursor.slice(0, 4);
+  const r = repYears.get(year);
+  if (r) showDupReport(r, year);
 }
 
 function showDupReport(report, year) {
-  renderHours(report, year);
   const out = $("dupSummary");
   document.querySelector('.tab[data-tab="report"]').classList.toggle("attention", Boolean(report.exact.length || report.overlap.length));
   // Reports stored by older versions have no per-conflict details.
@@ -1042,23 +1136,46 @@ function showDupReport(report, year) {
 }
 
 async function dupCall(message, busyText) {
-  const btns = [$("dupScanBtn"), $("dupRemoveBtn"), $("dupAll")];
-  btns.forEach((b) => { b.disabled = true; });
+  const ctl = ["dupScanBtn", "dupRemoveBtn", "dupAll", "repPrev", "repNext", "repToday"].map($);
+  ctl.forEach((b) => { b.disabled = true; });
   $("dupResult").className = "status-text";
   $("dupResult").textContent = busyText;
   try {
     const res = await chrome.runtime.sendMessage(message);
     if (!res || res.error) throw new Error(res?.error || "No response from the extension.");
+    if (res.report && !res.report.perDay) {
+      throw new Error("The extension's background script is outdated. Reload the extension (chrome://extensions → Reload), then press Refresh.");
+    }
     return res;
   } catch (e) {
     $("dupResult").className = "status-text bad";
     $("dupResult").textContent = e.message;
     return null;
   } finally {
-    $("dupScanBtn").disabled = false;
-    $("dupAll").disabled = false;
+    ["dupScanBtn", "dupAll", "repPrev", "repToday"].forEach((id) => { $(id).disabled = false; });
     syncDupControls();
+    renderReport(); // restores the Next button's own limit
   }
+}
+
+async function loadYears(years, force = false) {
+  let ok = true;
+  for (const y of years) {
+    if (!force && repYears.has(y)) continue;
+    const res = await dupCall({ action: "scanDuplicates", year: y }, `Loading ${y}…`);
+    if (!res) { ok = false; break; }
+    repYears.set(y, res.report);
+  }
+  if (!yearsOf(periodRange(repView, repCursor)).every((y) => repYears.has(y))) {
+    repMessage("Could not load your hours. See the message above.");
+    return;
+  }
+  if (ok) {
+    $("dupResult").className = "status-text";
+    $("dupResult").textContent = `Updated ${new Date().toLocaleTimeString()}`;
+  }
+  renderReport();
+  renderDupForCursor();
 }
 
 async function removeDupDays(days) {
@@ -1074,6 +1191,8 @@ async function removeDupDays(days) {
   if (!ok) return;
   const res = await dupCall({ action: "removeDuplicates", days }, "Removing…");
   if (!res) return;
+  repYears.set(year, res.report);
+  renderReport();
   showDupReport(res.report, year);
   $("dupResult").textContent = "";
   $("dupSummary").className = "status-text ok";
@@ -1087,28 +1206,48 @@ $("dupAll").addEventListener("change", () => {
 });
 $("dupRemoveBtn").addEventListener("click", () => removeDupDays(selectedDupDays()));
 
-// Show the last daily check (if any) when Options opens.
-(async () => {
+// The last daily check is cached in the background; use it so the Report tab
+// opens instantly, and flag the tab when it found collisions.
+let repStarted = false;
+const repCached = (async () => {
   try {
     const res = await chrome.runtime.sendMessage({ action: "getDuplicateAlert" });
     const r = res && res.report;
-    if (!r) { renderHours({}, ""); return; }
-    const year = r.from.slice(0, 4);
-    if ([...$("dupYear").options].some((o) => o.value === year)) $("dupYear").value = year;
-    showDupReport(r, year);
-    $("dupResult").className = "status-text";
-    $("dupResult").textContent = `Last checked ${new Date(r.at).toLocaleString()}`;
-  } catch { /* nothing to show */ }
+    if (!r) return;
+    document.querySelector('.tab[data-tab="report"]').classList.toggle("attention", Boolean(r.exact.length || r.overlap.length));
+    if (r.perDay) repYears.set(r.from.slice(0, 4), r);
+  } catch { /* no cache */ }
 })();
 
-$("dupScanBtn").addEventListener("click", async () => {
-  const res = await dupCall({ action: "scanDuplicates", year: $("dupYear").value }, "Scanning…");
-  if (res) {
-    showDupReport(res.report, $("dupYear").value);
-    $("dupResult").className = "status-text ok";
-    $("dupResult").textContent = `Scanned ${new Date().toLocaleTimeString()}`;
-  }
-});
+async function ensureReport() {
+  if (repStarted) return;
+  repStarted = true;
+  await repCached;
+  repCursor = repToday();
+  renderReport();
+  await loadYears(yearsOf(periodRange(repView, repCursor)).filter((y) => !repYears.has(y)));
+  renderDupForCursor();
+}
+
+document.querySelector('.tab[data-tab="report"]').addEventListener("click", ensureReport);
+if (document.querySelector(".tab-panel.active")?.dataset.tab === "report") ensureReport();
+
+for (const b of document.querySelectorAll("#repView button")) {
+  b.addEventListener("click", async () => {
+    repView = b.dataset.view;
+    renderReport();
+    await loadYears(yearsOf(periodRange(repView, repCursor)));
+  });
+}
+const navigate = async (cursor) => {
+  repCursor = cursor;
+  renderReport();
+  await loadYears(yearsOf(periodRange(repView, repCursor)));
+};
+$("repPrev").addEventListener("click", () => navigate(shiftCursor(repView, repCursor, -1)));
+$("repNext").addEventListener("click", () => navigate(shiftCursor(repView, repCursor, 1)));
+$("repToday").addEventListener("click", () => navigate(repToday()));
+$("dupScanBtn").addEventListener("click", () => loadYears(yearsOf(periodRange(repView, repCursor)), true));
 
 $("activityMonth").addEventListener("change", renderActivity);
 $("activityErrorsOnly").addEventListener("change", renderActivity);

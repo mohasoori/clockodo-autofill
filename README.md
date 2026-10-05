@@ -25,8 +25,8 @@ with their **own** personal Clockodo API key, stored only in their browser.
   Sync; API key only if you opt in), plus JSON export/import.
 - **Activity log** — what the extension booked, replaced or failed, per day or
   per range, synced across your devices, CSV export.
-- **Report** — hours booked this month and this year, with a month-by-month
-  table, read from your Clockodo entries.
+- **Report** — hours booked per week, month or year with a breakdown table,
+  read from your Clockodo entries.
 - **Duplicate check** — scan a whole year for overlapping entries; the current
   year is checked once a day after the auto-fill. Concurrent fills from several
   devices converge on a single booking.

@@ -84,7 +84,7 @@ in `chrome.notifications` `iconUrl` are relative to the extension root.
   | `setAutoDaily`       | `enabled`           | `nextRun` (ms epoch)             |
   | `rescheduleAlarm`    | —                   | `nextRun`                        |
   | `getStatus`          | —                   | `nextRun`, `lastAutoRun`         |
-  | `scanDuplicates`     | `year`              | `report` `{days[{day,extra,conflicts[{type,label,other?,copies?}],bookedMs,effectiveMs}], exact[], overlap[], extras{}, totals{bookedMs,effectiveMs,workDays}, months[{month,bookedMs,effectiveMs,workDays}]}`; `type` is `exact`\|`contained`\|`overlap` |
+  | `scanDuplicates`     | `year`              | `report` `{days[{day,extra,conflicts[{type,label,other?,copies?}],bookedMs,effectiveMs}], exact[], overlap[], extras{}, perDay[{day,bookedMs,effectiveMs}]}` (the Report tab derives week/month/year sums from `perDay`; an older worker returns no `perDay` and Options asks for a reload); `type` is `exact`\|`contained`\|`overlap` |
   | `removeDuplicates`   | `days[]` (≤ 400 `YYYY-MM-DD`) | `removed`, fresh `report` — deletes only exact copies, keeps the lowest id |
   | `getDuplicateAlert`  | —                   | `report` of the last scan or `null` |
   | `holidayCalendar`    | —                   | `calendar` `{assigned, groupId, groupName, year, count, next}` |
