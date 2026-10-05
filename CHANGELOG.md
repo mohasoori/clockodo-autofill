@@ -8,8 +8,10 @@ All notable changes to Clockodo Auto-Fill. Versions follow
 
 ### Added
 - **Report tab.** Options → *Report* shows the hours booked in Clockodo per
-  **week, month or year** (switch and step with ‹ ›): booked hours, days
-  worked, average per day, a bar chart (a red cap marks double-counted time)
+  **week, month or year** (switch and step with ‹ ›): hours worked (overlaps
+  counted once, with a warning and a *Review* link when time was booked
+  twice), days worked with the weekdays that have no entry, average per day,
+  the change versus the previous period, a bar chart (a red cap marks double-counted time)
   and a breakdown table (days, ISO weeks or months; click a bar or row to
   drill in). *Covered* counts overlapping entries once. The
   daily check keeps it fresh; *Refresh* re-reads Clockodo on demand. If the

@@ -176,16 +176,21 @@ popup footer (**Activity**).
 The tab opens on the current month. Choose **Week**, **Month** or **Year**,
 move with **‹ ›** (or **Today**), and read:
 
-- three tiles — **Booked** hours, **Days worked** and **Average per day**
-  (days with entries only);
+- three cards — **Hours worked** (time actually covered; overlaps counted
+  once), **Days worked** and **Average per day** (days with entries only).
+  Under *Hours worked*: a warning with **Review** (jumps to the duplicate
+  list) when time was booked twice, the total booked, and — for finished
+  periods — the change versus the previous week/month/year. Under *Days
+  worked*: how many weekdays up to today have no entry (holidays and leave
+  count as missing here);
 - a bar chart and a table that break the period down: days for a week, ISO
   weeks for a month, months for a year. Click a bar or a week/month row to
   drill into it. A red cap on a bar marks time that was booked twice.
 
 Hours come from your Clockodo time entries (everything booked, not only what
 this extension created). **Covered** counts overlapping entries once, so if a
-day was double-booked, *Booked* is higher than *Covered* and the tile says by
-how much. **Refresh** re-reads Clockodo; other years load when you navigate to
+day was double-booked, *Booked* (chart, table) is higher than *Covered* and
+the card says by how much. **Refresh** re-reads Clockodo; other years load when you navigate to
 them. Time-entry mode only.
 
 If the tab says the background script is outdated, reload the extension at

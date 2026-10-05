@@ -121,15 +121,23 @@
     .ghost-btn:disabled { opacity: .4; cursor: default; }
     .rep-status { min-height: 18px; margin-top: 8px; font-size: 12px; }
     .hours-tiles { display: grid; grid-template-columns: repeat(auto-fit, minmax(170px, 1fr)); gap: 12px; margin: 10px 0 18px; }
-    .hours-tile { border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; background: var(--card); }
+    .hours-tile { border: 1px solid var(--border); border-radius: 14px; padding: 14px 16px; background: var(--card); display: flex; flex-direction: column; }
+    .hours-tile.primary { background: linear-gradient(145deg, var(--accent-soft), transparent 70%), var(--card); border-color: color-mix(in srgb, var(--accent) 28%, var(--border)); }
     .hours-tile .t-head { display: flex; align-items: center; gap: 8px; color: var(--text-muted); font-size: 12px; font-weight: 600; }
     .hours-tile .t-ico { display: grid; place-items: center; width: 26px; height: 26px; border-radius: 8px; background: var(--accent-soft); color: var(--accent); }
     .hours-tile .t-ico svg { width: 14px; height: 14px; }
     .hours-tile .t-value { margin-top: 10px; font-variant-numeric: tabular-nums; line-height: 1.1; }
     .hours-tile .t-value .n { font-size: 28px; font-weight: 700; letter-spacing: -.5px; }
     .hours-tile .t-value .u { font-size: 13px; font-weight: 600; color: var(--text-muted); margin: 0 6px 0 2px; }
-    .hours-tile .t-sub { margin-top: 8px; font-size: 12px; color: var(--text-muted); }
-    .hours-tile .t-chip { display: inline-block; padding: 2px 8px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-weight: 600; }
+    .hours-tile .t-lines { margin-top: 10px; display: flex; flex-direction: column; gap: 6px; font-size: 12px; color: var(--text-muted); }
+    .hours-tile .t-line { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+    .hours-tile .t-chip { display: inline-flex; align-items: center; gap: 5px; padding: 3px 9px; border-radius: 999px; background: var(--warn-soft); color: var(--warn); font-weight: 600; white-space: nowrap; }
+    .hours-tile .t-chip svg { width: 12px; height: 12px; }
+    .hours-tile .t-link { border: none; background: none; padding: 0; font: inherit; font-weight: 600; color: var(--accent); cursor: pointer; }
+    .hours-tile .t-link:hover { text-decoration: underline; }
+    .hours-tile .t-delta { font-weight: 600; font-variant-numeric: tabular-nums; }
+    .hours-tile .t-delta.up { color: var(--ok); }
+    .hours-tile .t-delta.down { color: var(--danger); }
     .rep-callout { grid-column: 1 / -1; display: flex; gap: 14px; align-items: flex-start; padding: 16px 18px; border-radius: 14px; border: 1px solid var(--border); background: var(--card); }
     .rep-callout.warn { background: var(--warn-soft); border-color: transparent; }
     .rep-callout .c-ico { flex: none; display: grid; place-items: center; width: 34px; height: 34px; border-radius: 10px; background: var(--card); color: var(--warn); }
@@ -137,6 +145,10 @@
     .rep-callout .c-title { font-weight: 700; margin-bottom: 2px; }
     .rep-callout .c-text { color: var(--text-muted); font-size: 12.5px; }
     .rep-callout .c-actions { margin-top: 10px; }
+    .rep-legend { display: flex; align-items: center; gap: 6px; margin: -10px 0 16px 6px; font-size: 11.5px; color: var(--text-muted); }
+    .rep-legend .dot { width: 9px; height: 9px; border-radius: 3px; background: var(--accent); margin-left: 8px; }
+    .rep-legend .dot:first-child { margin-left: 0; }
+    .rep-legend .dot.twice { background: var(--danger); }
     .rep-chart { display: flex; align-items: stretch; gap: 8px; height: 190px; padding: 18px 6px 0; margin-bottom: 18px; border-top: 1px solid var(--border); }
     .rep-chart .col { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: center; justify-content: flex-end; gap: 6px; border: none; background: transparent; padding: 0; font: inherit; color: inherit; cursor: default; }
     .rep-chart .col.drill { cursor: pointer; }
@@ -654,6 +666,7 @@
       <div id="dupResult" class="status-text rep-status"></div>
       <div id="hoursTiles" class="hours-tiles"></div>
       <div id="hoursChart" class="rep-chart" hidden></div>
+      <div id="hoursLegend" class="rep-legend" hidden><span class="dot"></span>Booked <span class="dot twice"></span>Booked twice</div>
       <div class="activity-table-wrap" id="hoursTableWrap" hidden>
         <table class="activity-table">
           <thead><tr><th id="repColPeriod">Period</th><th>Days</th><th>Booked</th><th>Covered</th><th>Avg / day</th></tr></thead>

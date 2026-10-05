@@ -1012,9 +1012,9 @@ function hoursNode(ms) {
   return box;
 }
 
-function tile(label, iconName, valueNode, sub, chip) {
+function tile(label, iconName, valueNode, lines = [], primary = false) {
   const t = document.createElement("div");
-  t.className = "hours-tile";
+  t.className = "hours-tile" + (primary ? " primary" : "");
   const head = document.createElement("div");
   head.className = "t-head";
   const ico = document.createElement("span");
@@ -1022,14 +1022,21 @@ function tile(label, iconName, valueNode, sub, chip) {
   ico.append(icon(iconName));
   head.append(ico, document.createTextNode(label));
   t.append(head, valueNode);
-  if (sub || chip) {
-    const s = document.createElement("div");
-    s.className = "t-sub";
-    if (chip) s.append(Object.assign(document.createElement("span"), { className: "t-chip", textContent: chip }), document.createTextNode(sub ? " " + sub : ""));
-    else s.textContent = sub;
-    t.append(s);
+  if (lines.length) {
+    const box = document.createElement("div");
+    box.className = "t-lines";
+    for (const l of lines) box.append(l);
+    t.append(box);
   }
   return t;
+}
+
+// One line under a tile value; children are strings or nodes.
+function tileLine(...children) {
+  const row = document.createElement("div");
+  row.className = "t-line";
+  row.append(...children);
+  return row;
 }
 
 function plainValue(text) {
@@ -1042,6 +1049,7 @@ function plainValue(text) {
 function repMessage(text) {
   $("hoursTiles").replaceChildren(Object.assign(document.createElement("div"), { className: "hint", textContent: text }));
   $("hoursChart").hidden = true;
+  $("hoursLegend").hidden = true;
   $("hoursTableWrap").hidden = true;
 }
 
@@ -1067,6 +1075,7 @@ function repCallout(title, text) {
   box.append(ico, body);
   $("hoursTiles").replaceChildren(box);
   $("hoursChart").hidden = true;
+  $("hoursLegend").hidden = true;
   $("hoursTableWrap").hidden = true;
 }
 
@@ -1080,10 +1089,47 @@ function renderReport() {
   const map = dayHoursMap();
   const total = sumRange(map, range.from, range.to);
   const double = total.booked - total.covered;
+  const today0 = repToday();
+  const complete = range.to <= today0;
+
+  // Weekdays up to today without any entry (holidays and leave count as missing here).
+  const tz = $("timezone").value || undefined;
+  let missing = 0;
+  for (let d = range.from; d <= range.to && d <= today0; d = addDays(d, 1)) {
+    if (!isWeekend(d, tz) && !map.has(d)) missing++;
+  }
+
+  // Compare with the previous period, only when this one is finished and that one is loaded.
+  const prevRange = periodRange(repView, shiftCursor(repView, repCursor, -1));
+  const prev = yearsOf(prevRange).every((y) => repYears.has(y)) ? sumRange(map, prevRange.from, prevRange.to) : null;
+  const unit = { week: "week", month: "month", year: "year" }[repView];
+
+  const worked = [];
+  if (double > 0) {
+    const chip = Object.assign(document.createElement("span"), { className: "t-chip" });
+    chip.append(icon("warn"), document.createTextNode(`${fmtHM(double)} booked twice`));
+    const review = Object.assign(document.createElement("button"), { type: "button", className: "t-link", textContent: "Review" });
+    review.addEventListener("click", () => $("dupSummary").scrollIntoView({ behavior: "smooth", block: "center" }));
+    worked.push(tileLine(chip, review));
+    worked.push(tileLine(`${fmtHM(total.booked)} booked in total`));
+  }
+  if (!complete) {
+    worked.push(tileLine(`${unit} to date`));
+  } else if (prev && prev.days) {
+    const diff = total.covered - prev.covered;
+    const arrow = diff === 0 ? "=" : diff > 0 ? "▲" : "▼";
+    worked.push(tileLine(
+      Object.assign(document.createElement("span"), { className: `t-delta ${diff > 0 ? "up" : diff < 0 ? "down" : ""}`, textContent: `${arrow} ${fmtHM(Math.abs(diff))}` }),
+      `vs previous ${unit}`
+    ));
+  }
+
   $("hoursTiles").replaceChildren(
-    tile("Booked", "clock", hoursNode(total.booked), total.covered !== total.booked ? `covers ${fmtHM(total.covered)}` : "", double > 0 ? `${fmtHM(double)} double-counted` : ""),
-    tile("Days worked", "days", plainValue(String(total.days)), total.days === 1 ? "day with entries" : "days with entries"),
-    tile("Average per day", "avg", total.days ? hoursNode(total.booked / total.days) : plainValue("–"), "days with entries only")
+    tile("Hours worked", "clock", hoursNode(total.covered), worked, true),
+    tile("Days worked", "days", plainValue(String(total.days)), [
+      tileLine(missing ? `${missing} weekday${missing === 1 ? "" : "s"} without entries` : "no weekday without entries"),
+    ]),
+    tile("Average per day", "avg", total.days ? hoursNode(total.covered / total.days) : plainValue("–"), [tileLine("days with entries only")])
   );
 
   // Rows: days (week view), ISO weeks (month view), months (year view).
@@ -1143,6 +1189,7 @@ function renderReport() {
     chart.append(col);
   });
   chart.hidden = false;
+  $("hoursLegend").hidden = !sums.some((t) => t.booked > t.covered);
 
   const cell = (text, num) => Object.assign(document.createElement("td"), { textContent: text, className: num ? "num" : "" });
   const body = $("hoursRows");
